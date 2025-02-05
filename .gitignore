@@ -1,0 +1,67 @@
+# IDE 설정
+.idea/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.idea.StockTradingBackend/
+
+# 빌드 결과물
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Visual Studio 임시 파일
+*.tmp
+*.temp
+*.cache
+*.[Cc]ache
+*.bak
+
+# Entity Framework Migrations & DB
+*.Migration.cs
+*.Designer.cs
+ApplicationDbContextModelSnapshot.cs
+*.db
+*.sqlite
+*.sqlite3
+
+# 환경설정 파일
+appsettings.*.json
+!appsettings.json
+!appsettings.example.json
+*.Development.json
+*.Production.json
+launchSettings.json
+**/Properties/launchSettings.json
+
+# 보안 관련 파일
+*.key
+*.pfx
+*.snk
+**/DataProtection-Keys/
+key-*.xml
+
+# 기타
+*.log
+*.vs
+*.idea
+*.suo
+*.ntvs*
+*.njsproj.user
+*.sln.iml
