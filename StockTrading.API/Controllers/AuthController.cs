@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
             var user = await _userService.GetOrCreateGoogleUser(payload);
             var token = _jwtService.GenerateToken(user);
     
-            return Ok(new { token });
+            return Ok(new GoogleLoginResponse(user, token));
         }
         catch (Exception ex)
         {

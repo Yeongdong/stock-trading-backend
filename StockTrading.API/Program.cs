@@ -13,12 +13,6 @@ using IAuthenticationService = StockTradingBackend.DataAccess.Interfaces.IAuthen
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 로깅 설정 추가
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
-builder.Logging.SetMinimumLevel(LogLevel.Information);
-
 // 기본 서비스 등록
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -34,6 +28,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
+builder.Services.AddScoped<IKisService, KisService>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options => 

@@ -9,4 +9,7 @@ public class User
     public DateTime CreatedAt { get; set; }
     public string Role { get; set; }
     public string PasswordHash { get; set; }
+    public string KisAppKey { get; set; }
+    public string KisAppSecret { get; set; }
+    public KisToken KisToken { get; set; }
 }

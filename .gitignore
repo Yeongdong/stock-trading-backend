@@ -40,6 +40,10 @@ ApplicationDbContextModelSnapshot.cs
 *.db
 *.sqlite
 *.sqlite3
+# Migrations
+[0-9]*_*.cs
+**/Migrations/*.cs
+!**/Migrations/readme.md
 
 # 환경설정 파일
 appsettings.*.json

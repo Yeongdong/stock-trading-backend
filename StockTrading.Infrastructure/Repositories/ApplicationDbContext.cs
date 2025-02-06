@@ -10,6 +10,8 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<KisToken> KisTokens { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,10 +47,18 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("role")
                 .HasMaxLength(50)
                 .HasDefaultValue("User");
-            
+
             entity.Property(e => e.PasswordHash)
                 .HasColumnName("password_hash")
                 .HasMaxLength(256)
+                .IsRequired(false);
+
+            entity.Property(e => e.KisAppKey)
+                .HasColumnName("kis_app_key")
+                .IsRequired(false);
+
+            entity.Property(e => e.KisAppSecret)
+                .HasColumnName("kis_app_secret")
                 .IsRequired(false);
 
             entity.HasIndex(e => e.GoogleId)
@@ -57,6 +67,21 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Email)
                 .IsUnique()
                 .HasDatabaseName("ix_users_email");
+        });
+        
+        modelBuilder.Entity<KisToken>(entity =>
+        {
+            entity.ToTable("kis_tokens");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.AccessToken).IsRequired();
+            entity.Property(e => e.ExpiresIn).IsRequired();
+            entity.Property(e => e.TokenType).IsRequired();
+
+            entity.HasOne(e => e.User)
+                .WithOne(e => e.KisToken)
+                .HasForeignKey<KisToken>(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

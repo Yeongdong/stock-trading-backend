@@ -28,7 +28,7 @@ public class UserService : IUserService
                 Name = payload.Name,
                 GoogleId = payload.Subject,
                 CreatedAt = DateTime.UtcNow,
-                Role = "User"
+                Role = "User",
             };
 
             _context.Users.Add(user);

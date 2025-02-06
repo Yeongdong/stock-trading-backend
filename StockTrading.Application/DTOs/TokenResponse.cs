@@ -1,8 +1,22 @@
-namespace stock_trading_backend;
+using System.Text.Json.Serialization;
+
+namespace StockTrading.DataAccess.DTOs;
 
 public class TokenResponse
 {
-    public string access_token { get; }
-    public string token_type { get; }
-    public int expires_in { get; }
+    [JsonPropertyName("access_token")] public string AccessToken { get; init; }
+
+    [JsonPropertyName("access_token_token_expired")]
+    public string AccessTokenTokenExpired { get; init; }
+
+    [JsonPropertyName("token_type")] public string TokenType { get; init; }
+
+    [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
+
+    public bool IsValid()
+    {
+        return !string.IsNullOrEmpty(AccessToken)
+               && !string.IsNullOrEmpty(TokenType)
+               && ExpiresIn > 0;
+    }
 }
