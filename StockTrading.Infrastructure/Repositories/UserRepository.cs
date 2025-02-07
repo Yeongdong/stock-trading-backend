@@ -1,27 +1,35 @@
+using Microsoft.EntityFrameworkCore;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Infrastructure.Repositories;
 
-public class UserRepository: IUserRepository
+public class UserRepository : IUserRepository
 {
-    public Task<User> GetByEmailAsync(string email)
+    private readonly ApplicationDbContext _context;
+
+    public async Task<User> GetByGoogleIdAsync(string googleId)
     {
-        throw new NotImplementedException();
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.GoogleId == googleId);
     }
 
-    public Task<User> GetByRefreshTokenAsync(string refreshToken)
+    public async Task<User> AddAsync(User user)
     {
-        throw new NotImplementedException();
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return user;
     }
 
-    public Task UpdateAsync(User user)
+    public async Task<User> GetByIdAsync(int id)
     {
-        throw new NotImplementedException();
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
-    public Task CreateAsync(User user)
+    public async Task<User> GetByEmailAsync(string email)
     {
-        throw new NotImplementedException();
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 }

@@ -1,24 +1,21 @@
 using Google.Apis.Auth;
-using Microsoft.EntityFrameworkCore;
 using StockTrading.DataAccess.Services.Interfaces;
-using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Infrastructure.Implementations;
 
 public class UserService : IUserService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IUserRepository _userRepository;
 
-    public UserService(ApplicationDbContext context)
+    public UserService(IUserRepository userRepository)
     {
-        _context = context;
+        _userRepository = userRepository;
     }
 
     public async Task<User> GetOrCreateGoogleUser(GoogleJsonWebSignature.Payload payload)
     {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.GoogleId == payload.Subject);
+        var user = await _userRepository.GetByGoogleIdAsync(payload.Subject);
 
         if (user == null)
         {
@@ -31,8 +28,7 @@ public class UserService : IUserService
                 Role = "User",
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            user = await _userRepository.AddAsync(user);
         }
 
         return user;
@@ -40,14 +36,11 @@ public class UserService : IUserService
 
     public async Task<User> GetUserById(int id)
     {
-        return await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == id);
+        return await _userRepository.GetByIdAsync(id);
     }
 
     public async Task<User> GetUserByEmail(string email)
     {
-        return await _context.Users
-            .FirstOrDefaultAsync(u => u.Email == email);
+        return await _userRepository.GetByEmailAsync(email);
     }
-    // getToken 후에 토큰을 User엔티티에 저장하는 로직 추가
 }
