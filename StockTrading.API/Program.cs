@@ -16,7 +16,6 @@ var builder = WebApplication.CreateBuilder(args);
 // 기본 서비스 등록
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHttpClient();
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
@@ -31,7 +30,7 @@ builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
 builder.Services.AddScoped<IKisService, KisService>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-builder.Services.AddDbContext<ApplicationDbContext>(options => 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -94,6 +93,19 @@ builder.Services.AddCors(options =>
                 .AllowCredentials();
         });
 });
+
+// KIS 서비스 등록
+builder.Services.AddHttpClient<KisApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443");
+});
+
+builder.Services.AddHttpClient<KoreaInvestmentService>(client =>
+{
+    client.BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443");
+});
+
+builder.Services.AddScoped<KisApiClient>();
 
 var app = builder.Build();
 

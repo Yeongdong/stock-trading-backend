@@ -1,21 +1,26 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
+using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 public class KoreaInvestmentService : IKoreaInvestmentService
 {
     private readonly HttpClient _httpClient;
+    private readonly KisApiClient _kisApiClient;
     private readonly ILogger<KoreaInvestmentService> _logger;
     private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
-    public KoreaInvestmentService(HttpClient httpClient, ILogger<KoreaInvestmentService> logger)
+    public KoreaInvestmentService(HttpClient httpClient, ILogger<KoreaInvestmentService> logger, KisApiClient kisApiClient)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _kisApiClient = kisApiClient;
     }
 
     public async Task<TokenResponse> GetTokenAsync(string appKey, string appSecret)
@@ -61,5 +66,10 @@ public class KoreaInvestmentService : IKoreaInvestmentService
             _logger.LogError($"토큰 발급 중 에러 발생: {ex.Message}");
             throw;
         }
+    }
+
+    public async Task<StockBalance> GetStockBalanceAsync(User user)
+    {
+        return await _kisApiClient.GetStockBalanceAsync(user);
     }
 }

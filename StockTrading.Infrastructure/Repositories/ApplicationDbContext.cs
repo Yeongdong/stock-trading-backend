@@ -60,6 +60,10 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.KisAppSecret)
                 .HasColumnName("kis_app_secret")
                 .IsRequired(false);
+            
+            entity.Property(e => e.AccountNumber)
+                .HasColumnName("account_number")
+                .IsRequired(false);
 
             entity.HasIndex(e => e.GoogleId)
                 .HasDatabaseName("ix_users_google_id");
