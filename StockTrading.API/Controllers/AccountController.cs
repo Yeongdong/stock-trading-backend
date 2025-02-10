@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
-using StockTrading.Infrastructure.Repositories;
 
 namespace stock_trading_backend.Controllers;
 
@@ -11,41 +9,30 @@ namespace stock_trading_backend.Controllers;
 [Route("api/[controller]")]
 public class AccountController : ControllerBase
 {
-    private readonly IKoreaInvestmentService _koreaInvestmentService;
     private readonly IKisService _kisService;
+    private readonly IUserService _userService;
     private readonly IGoogleAuthProvider _googleAuthProvider;
-    private readonly ApplicationDbContext _context;
 
-    public AccountController(IKoreaInvestmentService koreaInvestmentService, IKisService kisService, IGoogleAuthProvider googleAuthProvider, ApplicationDbContext context)
+    public AccountController(IKisService kisService, IUserService userService, IGoogleAuthProvider googleAuthProvider)
     {
-        _koreaInvestmentService = koreaInvestmentService;
         _kisService = kisService;
+        _userService = userService;
         _googleAuthProvider = googleAuthProvider;
-        _context = context;
     }
 
     [Authorize]
-    [HttpPost("token")]
-    public async Task<IActionResult> GetToken([FromBody] KisTokenRequest request)
+    [HttpPost("userInfo")]
+    public async Task<IActionResult> UpdateUserInfo([FromBody] UserInfoRequest request)
     {
         try
         {
             var userInfo = await _googleAuthProvider.GetUserInfoAsync(User);
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == userInfo.Email);
-            var result = await _koreaInvestmentService.GetTokenAsync(request.AppKey, request.AppSecret);
-            var expiresIn = DateTime.UtcNow.AddSeconds(result.ExpiresIn);
-            
-            await _kisService.SaveTokenAsync(
-                user.Id,
-                result.AccessToken,
-                expiresIn,
-                result.TokenType);
-            return Ok(new
-            {
-                AccessToken = result.AccessToken,
-                ExpiresIn = result.ExpiresIn,
-                TokenType = result.TokenType
-            });
+            var user = await _userService.GetUserByEmail(userInfo.Email);
+
+            var result = await _kisService.UpdateUserKisInfoAndTokenAsync(user.Id, request.AppKey, request.AppSecret,
+                request.AccountNumber);
+
+            return Ok(result);
         }
         catch (HttpRequestException ex)
         {

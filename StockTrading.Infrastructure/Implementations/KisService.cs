@@ -28,49 +28,34 @@ public class KisService : IKisService
         _logger = logger;
     }
 
-    public async Task SaveTokenAsync(int userId, string accessToken, DateTime expiresIn, string tokenType)
+    public async Task<StockBalance> GetStockBalanceAsync(User user)
     {
+        return await _kisApiClient.GetStockBalanceAsync(user);
+    }
+
+    public async Task<TokenResponse> UpdateUserKisInfoAndTokenAsync(int userId, string appKey, string appSecret,
+        string accountNumber)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            _logger.LogInformation($"토큰 저장 시도 - UserId: {userId}");
-            _logger.LogInformation($"토큰 저장 시도 - AccessToken: {accessToken}");
+            var kisToken = await GetTokenAsync(appKey, appSecret);
+            var expiresIn = DateTime.UtcNow.AddSeconds(kisToken.ExpiresIn);
 
-            var existingToken = await _context.KisTokens
-                .FirstOrDefaultAsync(t => t.UserId == userId);
+            await UpdateUserKisInfo(userId, appKey, appSecret, accountNumber);
+            await SaveTokenAsync(userId, kisToken.AccessToken, expiresIn, kisToken.TokenType);
 
-            if (existingToken != null)
-            {
-                _logger.LogInformation("기존 토큰 업데이트");
-                existingToken.AccessToken = accessToken;
-                existingToken.ExpiresIn = expiresIn;
-                existingToken.TokenType = tokenType;
-                _context.KisTokens.Update(existingToken);
-            }
-            else
-            {
-                _logger.LogInformation("새로운 토큰 생성");
-                var newToken = new KisToken
-                {
-                    UserId = userId,
-                    AccessToken = accessToken,
-                    ExpiresIn = expiresIn,
-                    TokenType = tokenType
-                };
-                await _context.KisTokens.AddAsync(newToken);
-            }
-
-            var result = await _context.SaveChangesAsync();
-            _logger.LogInformation($"저장된 변경사항: {result}");
+            await transaction.CommitAsync();
+            return kisToken;
         }
-        catch (Exception ex)
+        catch
         {
-            _logger.LogError($"토큰 저장 중 에러 발생: {ex.Message}");
-            _logger.LogError($"Stack trace: {ex.StackTrace}");
+            await transaction.RollbackAsync();
             throw;
         }
     }
 
-    public async Task<TokenResponse> GetTokenAsync(string appKey, string appSecret)
+    private async Task<TokenResponse> GetTokenAsync(string appKey, string appSecret)
     {
         try
         {
@@ -115,8 +100,81 @@ public class KisService : IKisService
         }
     }
 
-    public async Task<StockBalance> GetStockBalanceAsync(User user)
+    /**
+     * User의 Kis 관련 정보 관리
+     */
+    private async Task UpdateUserKisInfo(int userId, string appKey, string appSecret, string accountNumber)
     {
-        return await _kisApiClient.GetStockBalanceAsync(user);
+        try
+        {
+            _logger.LogInformation($"KIS 정보 업데이트 시도 - UserId: {userId}");
+
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+
+            if (user == null)
+            {
+                _logger.LogError($"사용자를 찾을 수 없습니다 - UserId: {userId}");
+                throw new KeyNotFoundException($"UserId {userId}에 해당하는 사용자를 찾을 수 없습니다.");
+            }
+
+            user.KisAppKey = appKey;
+            user.KisAppSecret = appSecret;
+            user.AccountNumber = accountNumber;
+
+            _context.Users.Update(user);
+            var result = await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"KIS 정보 업데이트 완료 - 변경사항: {result}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"KIS 정보 업데이트 중 에러 발생: {ex.Message}");
+            _logger.LogError($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
+    }
+
+    /**
+     * KisToken 정보 관리
+     **/
+    private async Task SaveTokenAsync(int userId, string accessToken, DateTime expiresIn, string tokenType)
+    {
+        try
+        {
+            _logger.LogInformation($"토큰 저장 시도 - UserId: {userId}");
+            _logger.LogInformation($"토큰 저장 시도 - AccessToken: {accessToken}");
+
+            var existingToken = await _context.KisTokens
+                .FirstOrDefaultAsync(t => t.UserId == userId);
+
+            if (existingToken != null)
+            {
+                _logger.LogInformation("기존 토큰 업데이트");
+                existingToken.AccessToken = accessToken;
+                existingToken.ExpiresIn = expiresIn;
+                existingToken.TokenType = tokenType;
+                _context.KisTokens.Update(existingToken);
+            }
+            else
+            {
+                _logger.LogInformation("새로운 토큰 생성");
+                var newToken = new KisToken
+                {
+                    UserId = userId,
+                    AccessToken = accessToken,
+                    ExpiresIn = expiresIn,
+                    TokenType = tokenType
+                };
+                await _context.KisTokens.AddAsync(newToken);
+            }
+
+            var result = await _context.SaveChangesAsync();
+            _logger.LogInformation($"저장된 변경사항: {result}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"토큰 저장 중 에러 발생: {ex.Message}");
+            throw;
+        }
     }
 }
