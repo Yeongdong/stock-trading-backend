@@ -10,14 +10,14 @@ namespace stock_trading_backend.Controllers;
 [Route("api/[controller]")]
 public class StockController : ControllerBase
 {
-    private readonly IKoreaInvestmentService _koreaInvestmentService;
+    private readonly IKisService _kisService;
     private readonly IUserService _userService;
     private readonly DbContext _dbContext;
 
-    public StockController(IKoreaInvestmentService koreaInvestmentService, IUserService userService,
+    public StockController(IKisService kisService, IUserService userService,
         DbContext dbContext)
     {
-        _koreaInvestmentService = koreaInvestmentService;
+        _kisService = kisService;
         _userService = userService;
         _dbContext = dbContext;
     }
@@ -40,7 +40,7 @@ public class StockController : ControllerBase
 
         try
         {
-            var balance = await _koreaInvestmentService.GetStockBalanceAsync(user);
+            var balance = await _kisService.GetStockBalanceAsync(user);
             return Ok(balance);
         }
         catch (Exception ex)

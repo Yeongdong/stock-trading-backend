@@ -13,15 +13,12 @@ using IAuthenticationService = StockTradingBackend.DataAccess.Interfaces.IAuthen
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 기본 서비스 등록
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
-// 의존성 주입 설정
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-builder.Services.AddScoped<IKoreaInvestmentService, KoreaInvestmentService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -100,7 +97,7 @@ builder.Services.AddHttpClient<KisApiClient>(client =>
     client.BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443");
 });
 
-builder.Services.AddHttpClient<KoreaInvestmentService>(client =>
+builder.Services.AddHttpClient<KisService>(client =>
 {
     client.BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443");
 });
