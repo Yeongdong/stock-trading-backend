@@ -36,6 +36,7 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.GoogleId)
                 .HasColumnName("google_id")
+                .IsRequired()
                 .HasMaxLength(50);
 
             entity.Property(e => e.CreatedAt)
@@ -78,9 +79,15 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("kis_tokens");
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.AccessToken).IsRequired();
-            entity.Property(e => e.ExpiresIn).IsRequired();
-            entity.Property(e => e.TokenType).IsRequired();
+            entity.Property(e => e.AccessToken)
+                .HasColumnName("access_token")
+                .IsRequired();
+            entity.Property(e => e.ExpiresIn)
+                .HasColumnName("expires_in")
+                .IsRequired();
+            entity.Property(e => e.TokenType)
+                .HasColumnName("token_type")
+                .IsRequired();
 
             entity.HasOne(e => e.User)
                 .WithOne(e => e.KisToken)

@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 
@@ -12,14 +11,13 @@ public class StockController : ControllerBase
 {
     private readonly IKisService _kisService;
     private readonly IUserService _userService;
-    private readonly DbContext _dbContext;
+    private readonly ILogger<StockController> _logger;
 
-    public StockController(IKisService kisService, IUserService userService,
-        DbContext dbContext)
+    public StockController(IKisService kisService, IUserService userService, ILogger<StockController> logger)
     {
         _kisService = kisService;
         _userService = userService;
-        _dbContext = dbContext;
+        _logger = logger;
     }
 
     [HttpGet("balance")]
@@ -33,10 +31,6 @@ public class StockController : ControllerBase
         }
 
         var user = await _userService.GetUserByEmail(email);
-        if (user == null)
-        {
-            return NotFound();
-        }
 
         try
         {

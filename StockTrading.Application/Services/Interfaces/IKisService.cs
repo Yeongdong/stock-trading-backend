@@ -6,7 +6,7 @@ namespace StockTrading.DataAccess.Services.Interfaces;
 
 public interface IKisService
 {
-    Task<StockBalance> GetStockBalanceAsync(User user);
+    Task<StockBalance> GetStockBalanceAsync(UserDto user);
     Task<TokenResponse> UpdateUserKisInfoAndTokenAsync(int userId, string appKey, string appSecret,
         string accountNumber);
 }

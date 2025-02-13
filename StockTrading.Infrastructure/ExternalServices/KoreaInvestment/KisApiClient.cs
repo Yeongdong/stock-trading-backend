@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -16,11 +16,8 @@ public class KisApiClient
         _httpClient.BaseAddress = new Uri(BASE_URL);
     }
 
-    public async Task<StockBalance> GetStockBalanceAsync(User user)
+    public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "uapi/domestic-stock/v1/trading/inquire-balance");
-
         var queryParams = new Dictionary<string, string>
         {
             ["CANO"] = user.AccountNumber,
@@ -35,18 +32,20 @@ public class KisApiClient
             ["CTX_AREA_FK100"] = "",
             ["CTX_AREA_NK100"] = ""
         };
-        
         var queryString = string.Join("&", queryParams
             .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
-        request.RequestUri = new Uri($"{request.RequestUri}?{queryString}");
         
-        request.Headers.Add("content-type", "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            $"uapi/domestic-stock/v1/trading/inquire-balance?{queryString}");
+        
         request.Headers.Add("authorization", $"Bearer {user.KisToken.AccessToken}");
         request.Headers.Add("appkey", user.KisAppKey);
         request.Headers.Add("appsecret", user.KisAppSecret);
-        request.Headers.Add("tr_id", "VTTC8434R");
+        request.Headers.Add("tr_id", "VTTC8434R");  // 모의투자 거래ID
 
         var response = await _httpClient.SendAsync(request);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"API Response: {responseContent}");
         var apiResponse = await response.Content.ReadFromJsonAsync<StockBalanceOutput>();
         
         return new StockBalance
@@ -64,9 +63,9 @@ public class KisApiClient
             
             Summary = new Summary
             {
-                TotalDeposit = apiResponse.Summary.TotalDeposit,
-                StockEvaluation = apiResponse.Summary.StockEvaluation,
-                TotalEvaluation = apiResponse.Summary.TotalEvaluation
+                TotalDeposit = apiResponse.Summary[0].TotalDeposit,
+                StockEvaluation = apiResponse.Summary[0].StockEvaluation,
+                TotalEvaluation = apiResponse.Summary[0].TotalEvaluation
             }
         };
     }

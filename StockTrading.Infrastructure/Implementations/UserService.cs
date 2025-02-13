@@ -1,4 +1,6 @@
 using Google.Apis.Auth;
+using Microsoft.Extensions.Logging;
+using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
 
@@ -7,10 +9,12 @@ namespace StockTrading.Infrastructure.Implementations;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, ILogger<UserService> logger)
     {
         _userRepository = userRepository;
+        _logger = logger;
     }
 
     public async Task<User> GetOrCreateGoogleUser(GoogleJsonWebSignature.Payload payload)
@@ -19,7 +23,7 @@ public class UserService : IUserService
 
         if (user == null)
         {
-            user = new User
+            var newUser = new User
             {
                 Email = payload.Email,
                 Name = payload.Name,
@@ -27,8 +31,7 @@ public class UserService : IUserService
                 CreatedAt = DateTime.UtcNow,
                 Role = "User",
             };
-
-            user = await _userRepository.AddAsync(user);
+            user = await _userRepository.AddAsync(newUser);
         }
 
         return user;
@@ -39,8 +42,10 @@ public class UserService : IUserService
         return await _userRepository.GetByIdAsync(id);
     }
 
-    public async Task<User> GetUserByEmail(string email)
+    public async Task<UserDto> GetUserByEmail(string email)
     {
-        return await _userRepository.GetByEmailAsync(email);
+        var userDto = await _userRepository.GetByEmailAsync(email);
+
+        return userDto;
     }
 }

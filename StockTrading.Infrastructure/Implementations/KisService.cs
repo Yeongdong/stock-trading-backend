@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using stock_trading_backend.DTOs;
@@ -28,7 +27,7 @@ public class KisService : IKisService
         _logger = logger;
     }
 
-    public async Task<StockBalance> GetStockBalanceAsync(User user)
+    public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
     {
         return await _kisApiClient.GetStockBalanceAsync(user);
     }
@@ -39,14 +38,14 @@ public class KisService : IKisService
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            var kisToken = await GetTokenAsync(appKey, appSecret);
-            var expiresIn = DateTime.UtcNow.AddSeconds(kisToken.ExpiresIn);
+            var tokenResponse = await GetTokenAsync(appKey, appSecret);
+            var expiresIn = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
+            await SaveTokenAsync(userId, tokenResponse.AccessToken, expiresIn, tokenResponse.TokenType);
             await UpdateUserKisInfo(userId, appKey, appSecret, accountNumber);
-            await SaveTokenAsync(userId, kisToken.AccessToken, expiresIn, kisToken.TokenType);
 
             await transaction.CommitAsync();
-            return kisToken;
+            return tokenResponse;
         }
         catch
         {
@@ -78,12 +77,6 @@ public class KisService : IKisService
                 throw new HttpRequestException($"Failed to get token: {responseContent}");
             }
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
             var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
             if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
             {
@@ -109,7 +102,8 @@ public class KisService : IKisService
         {
             _logger.LogInformation($"KIS 정보 업데이트 시도 - UserId: {userId}");
 
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+            var user = await _context.Users
+                .FirstOrDefaultAsync(x => x.Id == userId);
 
             if (user == null)
             {
@@ -155,21 +149,18 @@ public class KisService : IKisService
                 existingToken.TokenType = tokenType;
                 _context.KisTokens.Update(existingToken);
             }
-            else
-            {
-                _logger.LogInformation("새로운 토큰 생성");
-                var newToken = new KisToken
-                {
-                    UserId = userId,
-                    AccessToken = accessToken,
-                    ExpiresIn = expiresIn,
-                    TokenType = tokenType
-                };
-                await _context.KisTokens.AddAsync(newToken);
-            }
 
-            var result = await _context.SaveChangesAsync();
-            _logger.LogInformation($"저장된 변경사항: {result}");
+            _logger.LogInformation("새로운 토큰 생성");
+            var newToken = new KisToken
+            {
+                UserId = userId,
+                AccessToken = accessToken,
+                ExpiresIn = expiresIn,
+                TokenType = tokenType
+            };
+
+            await _context.KisTokens.AddAsync(newToken);
+            await _context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
