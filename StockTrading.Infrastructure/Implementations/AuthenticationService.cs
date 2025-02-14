@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;
+using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Interfaces;
 using IAuthenticationService = StockTradingBackend.DataAccess.Interfaces.IAuthenticationService;

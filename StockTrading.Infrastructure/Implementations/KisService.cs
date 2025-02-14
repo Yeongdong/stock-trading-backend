@@ -1,32 +1,70 @@
+using System.ComponentModel;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
+using StockTrading.DataAccess.DTOs.OrderDTOs;
+using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Entities;
+using StockTradingBackend.DataAccess.Enums;
 
 namespace StockTrading.Infrastructure.Implementations;
 
+/**
+ * 서비스 사용을 위한 로직 구현 계층
+ */
 public class KisService : IKisService
 {
     private readonly HttpClient _httpClient;
     private readonly KisApiClient _kisApiClient;
     private readonly ApplicationDbContext _context;
+    private readonly IOrderRepository _orderRepository;
     private readonly ILogger<KisService> _logger;
     private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
-    public KisService(HttpClient httpClient, KisApiClient kisApiClient, ApplicationDbContext context,
-        ILogger<KisService> logger)
+    public KisService(HttpClient httpClient, KisApiClient kisApiClient, ApplicationDbContext context, IOrderRepository orderRepository, ILogger<KisService> logger)
     {
         _httpClient = httpClient;
         _kisApiClient = kisApiClient;
         _context = context;
+        _orderRepository = orderRepository;
         _logger = logger;
     }
 
+    public async Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest order, UserDto user)
+    {
+        // stockOrder를 만들어서
+        // 1. 요청 전달 후
+        // 2. DB에 저장
+        var stockOrder = new StockOrder(
+            stockCode: order.PDNO,
+            orderType: order.ORD_DVSN,
+            quantity: int.Parse(order.ORD_QTY),
+            price: decimal.Parse(order.ORD_UNPR),
+            user: user.ToEntity()
+        );
+        
+        var kisRequest = new StockOrderRequest
+        {
+            ACNT_PRDT_CD = "01",
+            PDNO = order.PDNO,
+            ORD_DVSN = order.ORD_DVSN,
+            ORD_QTY = order.ORD_QTY,
+            ORD_UNPR = order.ORD_UNPR,
+        };
+
+        var apiResponse = await _kisApiClient.PlaceOrderAsync(kisRequest, user);
+        await _orderRepository.SaveAsync(stockOrder);
+        
+        return apiResponse;
+
+        // return await _kisApiClient.PlaceOrderAsync();
+    }
+    
     public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
     {
         return await _kisApiClient.GetStockBalanceAsync(user);
@@ -38,7 +76,7 @@ public class KisService : IKisService
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            var tokenResponse = await GetTokenAsync(appKey, appSecret);
+            var tokenResponse = await GetKisTokenAsync(appKey, appSecret);
             var expiresIn = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
             await SaveTokenAsync(userId, tokenResponse.AccessToken, expiresIn, tokenResponse.TokenType);
@@ -54,7 +92,7 @@ public class KisService : IKisService
         }
     }
 
-    private async Task<TokenResponse> GetTokenAsync(string appKey, string appSecret)
+    private async Task<TokenResponse> GetKisTokenAsync(string appKey, string appSecret)
     {
         try
         {
@@ -167,5 +205,12 @@ public class KisService : IKisService
             _logger.LogError($"토큰 저장 중 에러 발생: {ex.Message}");
             throw;
         }
+    }
+
+    private string GetOrderTypeDescription(OrderType orderType)
+    {
+        var field = orderType.GetType().GetField(orderType.ToString());
+        var attribute = (DescriptionAttribute)Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute));
+        return attribute?.Description ?? orderType.ToString();
     }
 }

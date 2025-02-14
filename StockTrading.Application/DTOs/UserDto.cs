@@ -1,3 +1,5 @@
+using StockTradingBackend.DataAccess.Entities;
+
 namespace StockTrading.DataAccess.DTOs;
 
 public class UserDto
@@ -9,4 +11,18 @@ public class UserDto
     public string? KisAppSecret { get; set; }
     public string? AccountNumber { get; set; }
     public KisTokenDto? KisToken { get; set; }
+
+    public User ToEntity()
+    {
+        return new User
+        {
+            Id = Id,
+            Email = Email,
+            Name = Name,
+            KisAppKey = KisAppKey,
+            KisAppSecret = KisAppSecret,
+            AccountNumber = AccountNumber,
+            KisToken = KisToken?.ToEntity()
+        };
+    }
 }

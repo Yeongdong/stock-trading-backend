@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using stock_trading_backend.DTOs;
+using StockTrading.DataAccess.DTOs;
+using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 
 namespace stock_trading_backend.Controllers;
@@ -23,14 +25,7 @@ public class StockController : ControllerBase
     [HttpGet("balance")]
     public async Task<ActionResult<StockBalance>> GetBalance()
     {
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
-
-        if (string.IsNullOrEmpty(email))
-        {
-            return Unauthorized();
-        }
-
-        var user = await _userService.GetUserByEmail(email);
+        var user = await GetUser();
 
         try
         {
@@ -41,5 +36,34 @@ public class StockController : ControllerBase
         {
             return StatusCode(500, "잔고 조회 중 오류 발생");
         }
+    }
+
+    [HttpPost("Order")]
+    public async Task<ActionResult<StockOrderResponse>> PlaceOrder(StockOrderRequest request)
+    {
+        var user = await GetUser();
+        
+        try
+        {
+            var orderState = await _kisService.PlaceOrderAsync(request, user);
+            return Ok(orderState);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "주문 실패");
+        }
+    }
+
+    private async Task<UserDto> GetUser()
+    {
+        var email = User.FindFirst(ClaimTypes.Email)?.Value;
+
+        if (string.IsNullOrEmpty(email))
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var user = await _userService.GetUserByEmail(email);
+        return user;
     }
 }

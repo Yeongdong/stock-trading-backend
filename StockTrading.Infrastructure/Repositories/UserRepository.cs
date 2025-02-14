@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StockTrading.DataAccess.DTOs;
+using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
 

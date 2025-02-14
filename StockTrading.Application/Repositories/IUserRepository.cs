@@ -1,7 +1,7 @@
 using StockTrading.DataAccess.DTOs;
 using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTrading.DataAccess.Services.Interfaces;
+namespace StockTrading.DataAccess.Repositories;
 
 public interface IUserRepository
 {
