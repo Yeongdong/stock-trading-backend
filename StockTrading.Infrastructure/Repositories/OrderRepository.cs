@@ -1,3 +1,4 @@
+using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Repositories;
 using StockTradingBackend.DataAccess.Entities;
 
@@ -12,7 +13,7 @@ public class OrderRepository: IOrderRepository
         _context = context;
     }
 
-    public Task<StockOrder> SaveAsync(StockOrder order)
+    public async Task<StockOrder> SaveAsync(StockOrder order, UserDto user)
     {
         throw new NotImplementedException();
     }

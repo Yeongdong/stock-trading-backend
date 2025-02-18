@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.DataAccess.Repositories;
@@ -37,28 +36,17 @@ public class KisService : IKisService
 
     public async Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest order, UserDto user)
     {
-        // stockOrder를 만들어서
-        // 1. 요청 전달 후
-        // 2. DB에 저장
         var stockOrder = new StockOrder(
             stockCode: order.PDNO,
+            tradeType: order.tr_id,
             orderType: order.ORD_DVSN,
             quantity: int.Parse(order.ORD_QTY),
             price: decimal.Parse(order.ORD_UNPR),
             user: user.ToEntity()
         );
         
-        var kisRequest = new StockOrderRequest
-        {
-            ACNT_PRDT_CD = "01",
-            PDNO = order.PDNO,
-            ORD_DVSN = order.ORD_DVSN,
-            ORD_QTY = order.ORD_QTY,
-            ORD_UNPR = order.ORD_UNPR,
-        };
-
-        var apiResponse = await _kisApiClient.PlaceOrderAsync(kisRequest, user);
-        await _orderRepository.SaveAsync(stockOrder);
+        var apiResponse = await _kisApiClient.PlaceOrderAsync(order, user);
+        await _orderRepository.SaveAsync(stockOrder, user);
         
         return apiResponse;
 
@@ -67,6 +55,7 @@ public class KisService : IKisService
     
     public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
     {
+        Console.WriteLine("call getStockBalance");
         return await _kisApiClient.GetStockBalanceAsync(user);
     }
 

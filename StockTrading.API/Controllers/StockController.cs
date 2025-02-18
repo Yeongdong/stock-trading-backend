@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.DataAccess.Services.Interfaces;
@@ -38,14 +37,16 @@ public class StockController : ControllerBase
         }
     }
 
-    [HttpPost("Order")]
+    [HttpPost("order")]
     public async Task<ActionResult<StockOrderResponse>> PlaceOrder(StockOrderRequest request)
     {
         var user = await GetUser();
         
         try
         {
+            _logger.LogInformation("주문 시작: {@Request}", request); // 요청 로깅
             var orderState = await _kisService.PlaceOrderAsync(request, user);
+            _logger.LogInformation("주문 완료: {@Response}", orderState); // 응답 로깅
             return Ok(orderState);
         }
         catch (Exception ex)

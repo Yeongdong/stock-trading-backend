@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using StockTrading.DataAccess.DTOs;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Infrastructure.Repositories;

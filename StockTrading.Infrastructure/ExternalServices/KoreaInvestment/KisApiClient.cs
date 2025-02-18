@@ -2,7 +2,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
@@ -10,7 +9,7 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 /**
- * KIS와의 통신을 담당하는 계층
+ * KIS와의 통신을 담당하는 클래스
  */
 public class KisApiClient
 {
@@ -27,16 +26,27 @@ public class KisApiClient
     {
         try
         {
-            SetAuthorizationHeader(user);
-            SetRequiredHeaders(user);
+            var kisRequest = new StockOrderRequestToKis
+            {
+                CANO = user.AccountNumber,
+                ACNT_PRDT_CD = "01",
+                PDNO = request.PDNO,
+                ORD_DVSN = request.ORD_DVSN,
+                ORD_QTY = request.ORD_QTY,
+                ORD_UNPR = request.ORD_UNPR,
+            };
 
             var content = new StringContent(
-                JsonSerializer.Serialize(request),
+                JsonSerializer.Serialize(kisRequest),
                 Encoding.UTF8,
                 "application/json"
             );
 
-            var response = await _httpClient.PostAsync("/uapi/domestic-stock/v1/trading/order-cash", content);
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/uapi/domestic-stock/v1/trading/order-cash");
+            SetRequiredHeaders(httpRequest, request.tr_id, user);
+            httpRequest.Content = content;
+
+            var response = await _httpClient.SendAsync(httpRequest);
             response.EnsureSuccessStatusCode();
 
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -81,10 +91,7 @@ public class KisApiClient
         var request = new HttpRequestMessage(HttpMethod.Get,
             $"uapi/domestic-stock/v1/trading/inquire-balance?{queryString}");
 
-        request.Headers.Add("authorization", $"Bearer {user.KisToken.AccessToken}");
-        request.Headers.Add("appkey", user.KisAppKey);
-        request.Headers.Add("appsecret", user.KisAppSecret);
-        request.Headers.Add("tr_id", "VTTC8434R"); // 모의투자 거래ID
+        SetRequiredHeaders(request,"VTTC8434R", user);
 
         var response = await _httpClient.SendAsync(request);
         var apiResponse = await response.Content.ReadFromJsonAsync<StockBalanceOutput>();
@@ -111,17 +118,12 @@ public class KisApiClient
         };
     }
 
-    private void SetAuthorizationHeader(UserDto user)
+    private void SetRequiredHeaders(HttpRequestMessage httpRequestMessage, string trId, UserDto user)
     {
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", user.KisToken.AccessToken);
-    }
-
-    private void SetRequiredHeaders(UserDto user)
-    {
-        _httpClient.DefaultRequestHeaders.Add("appkey", user.KisAppKey);
-        _httpClient.DefaultRequestHeaders.Add("appsecret", user.KisAppSecret);
-        _httpClient.DefaultRequestHeaders.Add("tr_id", "VTTC8434R");
-        _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        httpRequestMessage.Headers.Add("authorization", $"Bearer {user.KisToken.AccessToken}");
+        httpRequestMessage.Headers.Add("appkey", user.KisAppKey);
+        httpRequestMessage.Headers.Add("appsecret", user.KisAppSecret);
+        httpRequestMessage.Headers.Add("tr_id", trId);
+        httpRequestMessage.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
 }

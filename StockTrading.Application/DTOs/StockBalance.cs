@@ -1,6 +1,4 @@
-using StockTrading.DataAccess.DTOs;
-
-namespace stock_trading_backend.DTOs;
+namespace StockTrading.DataAccess.DTOs;
 
 public class StockBalance 
 {
