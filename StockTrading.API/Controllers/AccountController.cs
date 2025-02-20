@@ -29,7 +29,7 @@ public class AccountController : ControllerBase
             var userInfo = await _googleAuthProvider.GetUserInfoAsync(User);
             var user = await _userService.GetUserByEmail(userInfo.Email);
 
-            var result = await _kisService.UpdateUserKisInfoAndTokenAsync(user.Id, request.AppKey, request.AppSecret,
+            var result = await _kisService.UpdateUserKisInfoAndTokensAsync(user.Id, request.AppKey, request.AppSecret,
                 request.AccountNumber);
 
             return Ok(result);

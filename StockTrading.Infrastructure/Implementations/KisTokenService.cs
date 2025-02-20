@@ -1,26 +1,31 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.DataAccess.DTOs;
+using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Infrastructure.Implementations;
 
-public class KisTokenService: IKisTokenService
+public class KisTokenService : IKisTokenService
 {
-    
     private readonly HttpClient _httpClient;
+    private readonly IKisTokenRepository _kisTokenRepository;
+    private readonly IUserKisInfoRepository _userKisInfoRepository;
     private readonly ILogger<KisTokenService> _logger;
     private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
-    public KisTokenService(HttpClient httpClient, ILogger<KisTokenService> logger)
+    public KisTokenService(HttpClient httpClient, IKisTokenRepository kisTokenRepository,
+        IUserKisInfoRepository userKisInfoRepository, ILogger<KisTokenService> logger)
     {
         _httpClient = httpClient;
+        _kisTokenRepository = kisTokenRepository;
+        _userKisInfoRepository = userKisInfoRepository;
         _logger = logger;
         _httpClient.BaseAddress = new Uri(BASE_URL);
     }
 
-    public async Task<TokenResponse> GetKisTokenAsync(string appKey, string appSecret)
+    public async Task<TokenResponse> GetKisTokenAsync(int userId, string appKey, string appSecret, string accountNumber)
     {
         try
         {
@@ -34,7 +39,6 @@ public class KisTokenService: IKisTokenService
             var response = await _httpClient.PostAsJsonAsync($"{BASE_URL}/oauth2/tokenP", bodyData);
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation($"Response Status: {response.StatusCode}");
             _logger.LogInformation($"Response Content: {responseContent}");
 
             if (!response.IsSuccessStatusCode)
@@ -44,12 +48,12 @@ public class KisTokenService: IKisTokenService
             }
 
             var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
-            if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
-            {
-                throw new InvalidOperationException("Invalid token response");
-            }
-
             _logger.LogInformation("토큰 발급 성공");
+
+            await _kisTokenRepository.SaveKisToken(userId, tokenResponse);
+            await _userKisInfoRepository.UpdateUserKisInfo(userId, appKey, appSecret, accountNumber);
+
+            _logger.LogInformation("토큰 저장 성공");
             return tokenResponse;
         }
         catch (Exception ex)
@@ -58,13 +62,11 @@ public class KisTokenService: IKisTokenService
             throw;
         }
     }
-    
-    public async Task<string> GetWebSocketTokenAsync(string appKey, string appSecret)
+
+    public async Task<string> GetWebSocketTokenAsync(int userId, string appKey, string appSecret)
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/oauth2/Approval");
-
             var content = new
             {
                 grant_type = "client_credentials",
@@ -72,10 +74,13 @@ public class KisTokenService: IKisTokenService
                 appsecret = appSecret
             };
 
-            var response = await _httpClient.SendAsync(request);
+            var response = await _httpClient.PostAsJsonAsync("/oauth2/Approval", content);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<WebSocketApprovalResponse>();
+            await _userKisInfoRepository.SaveWebSocketTokenAsync(userId, result.ApprovalKey);
+            _logger.LogInformation("웹토큰 저장 성공");
+            
             return result.ApprovalKey;
         }
         catch (Exception ex)

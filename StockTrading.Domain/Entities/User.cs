@@ -13,4 +13,5 @@ public class User
     public string? KisAppSecret { get; set; }
     public string? AccountNumber { get; set; }
     public KisToken? KisToken { get; set; }
+    public string? WebSocketToken { get; set; }
 }
