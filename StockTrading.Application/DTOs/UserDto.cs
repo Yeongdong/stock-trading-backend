@@ -11,6 +11,7 @@ public class UserDto
     public string? KisAppSecret { get; set; }
     public string? AccountNumber { get; set; }
     public KisTokenDto? KisToken { get; set; }
+    public string? WebSocketToken { get; set; }
 
     public User ToEntity()
     {
@@ -22,7 +23,8 @@ public class UserDto
             KisAppKey = KisAppKey,
             KisAppSecret = KisAppSecret,
             AccountNumber = AccountNumber,
-            KisToken = KisToken?.ToEntity()
+            KisToken = KisToken?.ToEntity(),
+            WebSocketToken = WebSocketToken,
         };
     }
 }
