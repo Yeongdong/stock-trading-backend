@@ -34,17 +34,20 @@ public class KisTokenRepository: IKisTokenRepository
                 existingToken.TokenType = tokenResponse.TokenType;
                 _context.KisTokens.Update(existingToken);
             }
-
-            _logger.LogInformation("새로운 토큰 생성");
-            var newToken = new KisToken
+            else
             {
-                UserId = userId,
-                AccessToken = tokenResponse.AccessToken,
-                ExpiresIn = expiresIn,
-                TokenType = tokenResponse.TokenType
-            };
+                _logger.LogInformation("새로운 토큰 생성");
+                var newToken = new KisToken
+                {
+                    UserId = userId,
+                    AccessToken = tokenResponse.AccessToken,
+                    ExpiresIn = expiresIn,
+                    TokenType = tokenResponse.TokenType
+                };
 
-            await _context.KisTokens.AddAsync(newToken);
+                await _context.KisTokens.AddAsync(newToken);
+            }
+
             await _context.SaveChangesAsync();
         }
         catch (Exception ex)
