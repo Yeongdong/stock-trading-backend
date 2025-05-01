@@ -14,7 +14,6 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<KisToken> KisTokens { get; set; }
 
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<User>(entity =>
