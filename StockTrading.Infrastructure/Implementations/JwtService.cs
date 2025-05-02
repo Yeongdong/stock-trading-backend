@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using StockTrading.DataAccess.DTOs;
 using StockTradingBackend.DataAccess.Entities;
 using StockTradingBackend.DataAccess.Exceptions.Authentication;
 using StockTradingBackend.DataAccess.Interfaces;
@@ -24,7 +25,7 @@ public class JwtService : IJwtService
         _logger = logger;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(UserDto user)
     {
         try
         {

@@ -64,7 +64,7 @@ public class StockController : ControllerBase
             throw new UnauthorizedAccessException();
         }
 
-        var user = await _userService.GetUserByEmail(email);
+        var user = await _userService.GetUserByEmailAsync(email);
         return user;
     }
 }

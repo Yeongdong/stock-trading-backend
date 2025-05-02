@@ -90,41 +90,6 @@ public class UserRepositoryTest
     }
     
     [Fact]
-    public async Task GetByIdAsync_ReturnsUser_WhenUserExists()
-    {
-        using var context = CreateContext();
-        var repository = new UserRepository(context);
-
-        var user = new User
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-            GoogleId = "google123",
-            Role = "User",
-            CreatedAt = DateTime.UtcNow
-        };
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
-
-        var result = await repository.GetByIdAsync(user.Id);
-
-        Assert.NotNull(result);
-        Assert.Equal("test@example.com", result.Email);
-        Assert.Equal("Test User", result.Name);
-    }
-    
-    [Fact]
-    public async Task GetByIdAsync_ReturnsNull_WhenUserDoesNotExist()
-    {
-        using var context = CreateContext();
-        var repository = new UserRepository(context);
-
-        var result = await repository.GetByIdAsync(999); // 존재하지 않는 ID
-
-        Assert.Null(result);
-    }
-    
-    [Fact]
     public async Task GetByEmailAsync_ReturnsUserDto_WhenUserExists()
     {
         using var context = CreateContext();

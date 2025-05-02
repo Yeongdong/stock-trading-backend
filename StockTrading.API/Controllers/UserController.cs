@@ -29,7 +29,7 @@ public class UserController : ControllerBase
                 return Unauthorized();
             }
 
-            var user = await _userService.GetUserByEmail(email);
+            var user = await _userService.GetUserByEmailAsync(email);
             if (user == null)
             {
                 return NotFound();

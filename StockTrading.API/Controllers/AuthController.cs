@@ -27,7 +27,7 @@ public class AuthController : ControllerBase
         try
         {
             var payload = await ValidateGoogleToken(request.Credential);
-            var user = await _userService.GetOrCreateGoogleUser(payload);
+            var user = await _userService.GetOrCreateGoogleUserAsync(payload);
             var token = _jwtService.GenerateToken(user);
     
             return Ok(new GoogleLoginResponse(user, token));
@@ -37,50 +37,7 @@ public class AuthController : ControllerBase
             return BadRequest(ex.Message);
         }
     }
-
-    // [HttpGet("oauth2/callback/google")]
-    // public async Task<IActionResult> GoogleCallback()
-    // {
-    //     try
-    //     {
-    //         var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
-    //
-    //         Console.WriteLine($"Authentication succeeded: {authenticateResult.Succeeded}");
-    //
-    //         if (!authenticateResult.Succeeded)
-    //         {
-    //             Console.WriteLine($"Authentication failed: {authenticateResult.Failure?.Message}");
-    //             return BadRequest("Google authentication failed");
-    //         }
-    //
-    //         var email = authenticateResult.Principal.FindFirst(ClaimTypes.Email)?.Value;
-    //         var name = authenticateResult.Principal.FindFirst(ClaimTypes.Name)?.Value;
-    //
-    //         Console.WriteLine($"Retrieved email: {email}");
-    //         Console.WriteLine($"Retrieved name: {name}");
-    //
-    //         if (string.IsNullOrEmpty(email))
-    //         {
-    //             return BadRequest("Email not provided by Google");
-    //         }
-    //
-    //         var jwtToken = _jwtService.GenerateToken(email, name);
-    //         Console.WriteLine($"Generated JWT token: {jwtToken?.Substring(0, 20)}..."); // 토큰의 일부만 출력
-    //         Console.WriteLine(
-    //             $"Redirect URL: {_configuration["Frontend:Url"]}/oauth/callback?token={jwtToken?.Substring(0, 20)}...");
-    //
-    //         var redirectUrl = $"{_configuration["Frontend:Url"]}/oauth/callback?token={jwtToken}";
-    //         Console.WriteLine($"Redirecting to: {redirectUrl}");
-    //
-    //         return Redirect(redirectUrl);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         Console.WriteLine($"Exception in GoogleCallback: {ex}");
-    //         return StatusCode(500, "Internal server error during authentication");
-    //     }
-    // }
-
+    
     private async Task<GoogleJsonWebSignature.Payload> ValidateGoogleToken(string token)
     {
         try
@@ -97,12 +54,4 @@ public class AuthController : ControllerBase
             throw new Exception("Failed to validate Google token", ex);
         }
     }
-
-
-    // [HttpPost("refresh")]
-    // public async Task<ActionResult<AuthResponse>> RefreshToken([FromBody] string refreshToken)
-    // {
-    //     var response = await _authService.RefreshTokenAsync(refreshToken);
-    //     return Ok(response);
-    // }
 }

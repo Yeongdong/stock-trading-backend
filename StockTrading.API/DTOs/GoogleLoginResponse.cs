@@ -1,15 +1,15 @@
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.DataAccess.DTOs;
 
 namespace stock_trading_backend.DTOs;
 
 public class GoogleLoginResponse
 {
-    public UserDTO User { get; set; }
+    public UserDto User { get; set; }
     public string Token { get; set; }
 
-    public GoogleLoginResponse(User user, string token)
+    public GoogleLoginResponse(UserDto user, string token)
     {
-        User = new UserDTO(user);
+        User = user;
         Token = token;
     }
 }

@@ -17,8 +17,13 @@ public class UserRepository : IUserRepository
 
     public async Task<User> GetByGoogleIdAsync(string googleId)
     {
-        return await _context.Users
+        var user = await _context.Users
             .FirstOrDefaultAsync(u => u.GoogleId == googleId);
+        
+        if (user == null)
+            throw new ArgumentNullException();
+
+        return user;
     }
 
     public async Task<User> AddAsync(User user)
@@ -28,38 +33,15 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public async Task<User> GetByIdAsync(int id)
-    {
-        return await _context.Users
-            .FirstOrDefaultAsync(u => u.Id == id);
-    }
-
-    public async Task<UserDto> GetByEmailAsync(string email)
+    public async Task<User> GetByEmailAsync(string email)
     {
         var user = await _context.Users
             .Include(u => u.KisToken)
             .FirstOrDefaultAsync(u => u.Email == email);
 
         if (user == null)
-            throw new ArgumentNullException(); 
+            throw new ArgumentNullException();
 
-        return new UserDto
-        {
-            Id = user.Id,
-            Email = user.Email,
-            Name = user.Name,
-            AccountNumber = user.AccountNumber,
-            KisAppKey = user.KisAppKey,
-            KisAppSecret = user.KisAppSecret,
-            KisToken = user.KisToken == null
-                ? null
-                : new KisTokenDto
-                {
-                    Id = user.KisToken.Id,
-                    AccessToken = user.KisToken.AccessToken,
-                    ExpiresIn = user.KisToken.ExpiresIn,
-                    TokenType = user.KisToken.TokenType,
-                }
-        };
+        return user;
     }
 }
