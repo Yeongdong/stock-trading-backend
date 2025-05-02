@@ -40,6 +40,9 @@ public class UserRepository : IUserRepository
             .Include(u => u.KisToken)
             .FirstOrDefaultAsync(u => u.Email == email);
 
+        if (user == null)
+            throw new ArgumentNullException(); 
+
         return new UserDto
         {
             Id = user.Id,
@@ -59,37 +62,4 @@ public class UserRepository : IUserRepository
                 }
         };
     }
-
-    // public async Task<User> GetByEmailAsync(string email)
-    // {
-    //     // 쿼리 생성
-    //     var query = _context.Users
-    //         .Include(u => u.KisToken)
-    //         .Where(u => u.Email == email);
-    //
-    //     // 실제 SQL 쿼리 확인
-    //     var sql = query.ToQueryString();
-    //     Console.WriteLine($"Generated SQL Query: {sql}");
-    //
-    //     // 쿼리 실행
-    //     var user = await query.FirstOrDefaultAsync();
-    //
-    //     // 결과 로깅
-    //     Console.WriteLine($"User found: {user?.Email}");
-    //     Console.WriteLine($"KisToken loaded: {user?.KisToken != null}");
-    //
-    //     if (user?.KisToken == null)
-    //     {
-    //         // KisToken 직접 조회
-    //         var kisToken = await _context.KisTokens
-    //             .FirstOrDefaultAsync(t => t.UserId == user.Id);
-    //         Console.WriteLine($"Direct KisToken query - Token exists: {kisToken != null}");
-    //         if (kisToken != null)
-    //         {
-    //             Console.WriteLine($"Token Details - UserId: {kisToken.UserId}, ExpiresIn: {kisToken.ExpiresIn}");
-    //         }
-    //     }
-    //
-    //     return user;
-    // }
 }
