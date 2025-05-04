@@ -1,6 +1,7 @@
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using stock_trading_backend.DTOs;
+using stock_trading_backend.Interfaces;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Interfaces;
 
@@ -13,12 +14,15 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly IJwtService _jwtService;
     private readonly IUserService _userService;
+    private readonly IGoogleAuthValidator _googleAuthValidator;
 
-    public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService)
+    public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
+        IGoogleAuthValidator googleAuthValidator)
     {
         _configuration = configuration;
         _jwtService = jwtService;
         _userService = userService;
+        _googleAuthValidator = googleAuthValidator;
     }
 
     [HttpPost("google")]
@@ -26,32 +30,16 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var payload = await ValidateGoogleToken(request.Credential);
+            var payload = await _googleAuthValidator.ValidateAsync(request.Credential,
+                _configuration["Authentication:Google:ClientId"]);
             var user = await _userService.GetOrCreateGoogleUserAsync(payload);
             var token = _jwtService.GenerateToken(user);
-    
+
             return Ok(new GoogleLoginResponse(user, token));
         }
         catch (Exception ex)
         {
             return BadRequest(ex.Message);
-        }
-    }
-    
-    private async Task<GoogleJsonWebSignature.Payload> ValidateGoogleToken(string token)
-    {
-        try
-        {
-            var settings = new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = new[] { _configuration["Authentication:Google:ClientId"] }
-            };
-        
-            return await GoogleJsonWebSignature.ValidateAsync(token, settings);
-        }
-        catch(Exception ex)
-        {
-            throw new Exception("Failed to validate Google token", ex);
         }
     }
 }
