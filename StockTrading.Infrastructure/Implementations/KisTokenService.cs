@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Repositories;
@@ -71,12 +72,13 @@ public class KisTokenService : IKisTokenService
             {
                 grant_type = "client_credentials",
                 appkey = appKey,
-                appsecret = appSecret
+                secretkey = appSecret
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/oauth2/Approval", content);
+            var response = await _httpClient.PostAsJsonAsync($"{BASE_URL}/oauth2/Approval", content);
+            _logger.LogInformation(response.Content.ReadAsStringAsync().Result);
             response.EnsureSuccessStatusCode();
-
+            
             var result = await response.Content.ReadFromJsonAsync<WebSocketApprovalResponse>();
             await _userKisInfoRepository.SaveWebSocketTokenAsync(userId, result.ApprovalKey);
             _logger.LogInformation("웹토큰 저장 성공");
