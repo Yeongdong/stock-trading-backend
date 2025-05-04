@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
-using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Infrastructure.Implementations;
@@ -12,13 +12,13 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UserService> _logger;
-    private readonly ApplicationDbContext _dbContext;
+    private readonly IDbContextWrapper _dbContextWrapper;
 
-    public UserService(IUserRepository userRepository, ILogger<UserService> logger, ApplicationDbContext dbContext)
+    public UserService(IUserRepository userRepository, ILogger<UserService> logger, IDbContextWrapper dbContextWrapper)
     {
         _userRepository = userRepository;
         _logger = logger;
-        _dbContext = dbContext;
+        _dbContextWrapper = dbContextWrapper;
     }
 
     public async Task<UserDto> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
@@ -28,14 +28,14 @@ public class UserService : IUserService
         if (payload == null)
         {
             _logger.LogWarning("Google payload is null");
-            throw new ArgumentNullException(nameof(payload));
+            throw new NullReferenceException(nameof(payload));
         }
 
         var user = await _userRepository.GetByGoogleIdAsync(payload.Subject);
 
         if (user == null)
         {
-            using var transaction = await _dbContext.Database.BeginTransactionAsync();
+            await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
             try
             {
                 _logger.LogInformation("Creating new user for Google ID: {GoogleId}", payload.Subject);
@@ -48,7 +48,7 @@ public class UserService : IUserService
                     Role = "User",
                 };
                 user = await _userRepository.AddAsync(newUser);
-
+                
                 await transaction.CommitAsync();
                 _logger.LogInformation("New user created with ID: {UserId}", user.Id);
             }
@@ -80,7 +80,7 @@ public class UserService : IUserService
         try
         {
             var user = await _userRepository.GetByEmailAsync(email);
-        
+
             if (user == null)
             {
                 _logger.LogWarning("User not found with email: {Email}", email);
