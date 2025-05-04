@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
@@ -11,7 +12,7 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /**
  * KIS와의 통신을 담당하는 클래스
  */
-public class KisApiClient
+public class KisApiClient : IKisApiClient
 {
     private readonly HttpClient _httpClient;
     private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
