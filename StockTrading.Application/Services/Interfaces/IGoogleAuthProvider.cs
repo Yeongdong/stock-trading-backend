@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using stock_trading_backend;
+using StockTrading.DataAccess.DTOs;
 
 namespace StockTrading.DataAccess.Services.Interfaces;
 
