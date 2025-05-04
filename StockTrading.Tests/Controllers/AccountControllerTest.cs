@@ -46,27 +46,7 @@ public class AccountControllerTest
     [Fact]
     public async Task UpdateUserInfo_Success_ReturnsOkResult()
     {
-        // Arrange
-        var userInfoRequest = new UserInfoRequest
-        {
-            AppKey = "testAppKey",
-            AppSecret = "testAppSecret",
-            AccountNumber = "testAccountNumber"
-        };
-
-        var userInfo = new GoogleUserInfo
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-        };
-
-        var user = new UserDto
-        {
-            Id = 1,
-            Email = "test@example.com",
-            Name = "Test User"
-        };
-
+        var userInfoRequest = SetupUserInfo(out var userInfo, out var user);
         var tokenResponse = new TokenResponse
         {
             AccessToken = "access_token_value",
@@ -107,26 +87,7 @@ public class AccountControllerTest
     [Fact]
     public async Task UpdateUserInfo_HttpRequestException_ReturnsBadRequest()
     {
-        var userInfoRequest = new UserInfoRequest
-        {
-            AppKey = "testAppKey",
-            AppSecret = "testAppSecret",
-            AccountNumber = "testAccountNumber"
-        };
-
-        var userInfo = new GoogleUserInfo
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-        };
-
-        var user = new UserDto
-        {
-            Id = 1,
-            Email = "test@example.com",
-            Name = "Test User"
-        };
-
+        var userInfoRequest = SetupUserInfo(out var userInfo, out var user);
         var errorMessage = "API 연결 오류";
 
         _mockGoogleAuthProvider.Setup(x => x.GetUserInfoAsync(It.IsAny<ClaimsPrincipal>()))
@@ -158,26 +119,7 @@ public class AccountControllerTest
     [Fact]
     public async Task UpdateUserInfo_Exception_ReturnsInternalServerError()
     {
-        var userInfoRequest = new UserInfoRequest
-        {
-            AppKey = "testAppKey",
-            AppSecret = "testAppSecret",
-            AccountNumber = "testAccountNumber"
-        };
-
-        var userInfo = new GoogleUserInfo
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-        };
-
-        var user = new UserDto
-        {
-            Id = 1,
-            Email = "test@example.com",
-            Name = "Test User"
-        };
-
+        var userInfoRequest = SetupUserInfo(out var userInfo, out var user);
         var errorMessage = "내부 서버 오류";
 
         _mockGoogleAuthProvider.Setup(x => x.GetUserInfoAsync(It.IsAny<ClaimsPrincipal>()))
@@ -210,13 +152,7 @@ public class AccountControllerTest
     [Fact]
     public async Task UpdateUserInfo_GoogleAuthFails_ReturnsBadRequest()
     {
-        var userInfoRequest = new UserInfoRequest
-        {
-            AppKey = "testAppKey",
-            AppSecret = "testAppSecret",
-            AccountNumber = "testAccountNumber"
-        };
-
+        var userInfoRequest = SetupUserInfo();
         var errorMessage = "구글 인증 실패";
 
         _mockGoogleAuthProvider.Setup(x => x.GetUserInfoAsync(It.IsAny<ClaimsPrincipal>()))
@@ -231,19 +167,7 @@ public class AccountControllerTest
     [Fact]
     public async Task UpdateUserInfo_UserNotFound_ReturnsInternalServerError()
     {
-        var userInfoRequest = new UserInfoRequest
-        {
-            AppKey = "testAppKey",
-            AppSecret = "testAppSecret",
-            AccountNumber = "testAccountNumber"
-        };
-
-        var userInfo = new GoogleUserInfo
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-        };
-
+        var userInfoRequest = SetupUserInfo(out var userInfo);
         var errorMessage = "사용자를 찾을 수 없습니다";
 
         _mockGoogleAuthProvider.Setup(x => x.GetUserInfoAsync(It.IsAny<ClaimsPrincipal>()))
@@ -257,5 +181,57 @@ public class AccountControllerTest
         var statusCodeResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusCodeResult.StatusCode);
         Assert.Equal(errorMessage, statusCodeResult.Value);
+    }
+
+    private UserInfoRequest SetupUserInfo()
+    {
+        var userInfoRequest = new UserInfoRequest
+        {
+            AppKey = "testAppKey",
+            AppSecret = "testAppSecret",
+            AccountNumber = "testAccountNumber"
+        };
+        return userInfoRequest;
+    }
+
+    private UserInfoRequest SetupUserInfo(out GoogleUserInfo userInfo)
+    {
+        var userInfoRequest = new UserInfoRequest
+        {
+            AppKey = "testAppKey",
+            AppSecret = "testAppSecret",
+            AccountNumber = "testAccountNumber"
+        };
+
+        userInfo = new GoogleUserInfo
+        {
+            Email = "test@example.com",
+            Name = "Test User",
+        };
+        return userInfoRequest;
+    }
+
+    private UserInfoRequest SetupUserInfo(out GoogleUserInfo userInfo, out UserDto user)
+    {
+        var userInfoRequest = new UserInfoRequest
+        {
+            AppKey = "testAppKey",
+            AppSecret = "testAppSecret",
+            AccountNumber = "testAccountNumber"
+        };
+
+        userInfo = new GoogleUserInfo
+        {
+            Email = "test@example.com",
+            Name = "Test User",
+        };
+
+        user = new UserDto
+        {
+            Id = 1,
+            Email = "test@example.com",
+            Name = "Test User"
+        };
+        return userInfoRequest;
     }
 }
