@@ -2,7 +2,7 @@ using FluentAssertions;
 using JetBrains.Annotations;
 using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTrading.Tests.Entities;
+namespace StockTrading.Tests.Unit.Entities;
 
 [TestSubject(typeof(User))]
 public class UserTest

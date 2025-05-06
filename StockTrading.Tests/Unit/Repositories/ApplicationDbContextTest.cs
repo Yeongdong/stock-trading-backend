@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTrading.Tests.Repositories;
+namespace StockTrading.Tests.Unit.Repositories;
 
 [TestSubject(typeof(ApplicationDbContext))]
 public class ApplicationDbContextTest

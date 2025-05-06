@@ -11,7 +11,7 @@ using StockTrading.Infrastructure.Implementations;
 using StockTradingBackend.DataAccess.Exceptions.Authentication;
 using StockTradingBackend.DataAccess.Settings;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(JwtService))]
 public class JwtServiceTest

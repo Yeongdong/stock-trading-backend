@@ -9,7 +9,7 @@ using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 
-namespace StockTrading.Tests.Controllers;
+namespace StockTrading.Tests.Unit.Controllers;
 
 [TestSubject(typeof(StockController))]
 public class StockControllerTest

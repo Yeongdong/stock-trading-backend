@@ -11,7 +11,7 @@ using StockTrading.Infrastructure.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
 using static System.Net.HttpStatusCode;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(KisService))]
 public class KisServiceTest

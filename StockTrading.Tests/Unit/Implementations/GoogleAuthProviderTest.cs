@@ -2,7 +2,7 @@ using System.Security.Claims;
 using JetBrains.Annotations;
 using StockTrading.Infrastructure.Implementations;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(GoogleAuthProvider))]
 public class GoogleAuthProviderTest

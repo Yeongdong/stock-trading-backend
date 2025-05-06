@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTrading.Tests.Repositories;
+namespace StockTrading.Tests.Unit.Repositories;
 
 [TestSubject(typeof(UserKisInfoRepository))]
 public class UserKisInfoRepositoryTest

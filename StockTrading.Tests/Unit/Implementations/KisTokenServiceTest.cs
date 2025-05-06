@@ -10,7 +10,7 @@ using StockTrading.DataAccess.Repositories;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 using StockTrading.Infrastructure.Implementations;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(KisTokenService))]
 public class KisTokenServiceTest

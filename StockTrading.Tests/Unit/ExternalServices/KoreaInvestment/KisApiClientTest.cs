@@ -9,7 +9,7 @@ using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
-namespace StockTrading.Tests.ExternalServices.KoreaInvestment;
+namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
 [TestSubject(typeof(KisApiClient))]
 public class KisApiClientTest

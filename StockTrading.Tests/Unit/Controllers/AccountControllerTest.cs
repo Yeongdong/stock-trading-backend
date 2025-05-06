@@ -8,7 +8,7 @@ using stock_trading_backend.DTOs;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 
-namespace StockTrading.Tests.Controllers;
+namespace StockTrading.Tests.Unit.Controllers;
 
 [TestSubject(typeof(AccountController))]
 public class AccountControllerTest

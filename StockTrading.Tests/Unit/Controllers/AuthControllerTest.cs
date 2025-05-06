@@ -10,7 +10,7 @@ using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Interfaces;
 
-namespace StockTrading.Tests.Controllers;
+namespace StockTrading.Tests.Unit.Controllers;
 
 [TestSubject(typeof(AuthController))]
 public class AuthControllerTest

@@ -6,7 +6,7 @@ using Moq;
 using StockTrading.Infrastructure.Implementations;
 using StockTrading.Infrastructure.Repositories;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(DbContextWrapper))]
 public class DbContextWrapperTest

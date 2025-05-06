@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using StockTrading.Infrastructure.Implementations;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(DbTransactionWrapper))]
 public class DbTransactionWrapperTest

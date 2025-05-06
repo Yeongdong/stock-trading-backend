@@ -5,7 +5,7 @@ using StockTrading.DataAccess.DTOs;
 using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTrading.Tests.Repositories
+namespace StockTrading.Tests.Unit.Repositories
 {
     public class KisTokenRepositoryTests
     {

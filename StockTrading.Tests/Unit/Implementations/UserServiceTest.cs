@@ -7,7 +7,7 @@ using StockTrading.Infrastructure.Implementations;
 using StockTrading.Infrastructure.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTrading.Tests.Implementations;
+namespace StockTrading.Tests.Unit.Implementations;
 
 [TestSubject(typeof(UserService))]
 public class UserServiceTest
