@@ -21,6 +21,13 @@ public class KisTokenRepository: IKisTokenRepository
     {
         try
         {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                _logger.LogError($"사용자를 찾을 수 없습니다 - UserId: {userId}");
+                throw new KeyNotFoundException($"UserId {userId}에 해당하는 사용자를 찾을 수 없습니다.");
+            }
+            
             var existingToken = await _context.KisTokens
                 .FirstOrDefaultAsync(t => t.UserId == userId);
 
