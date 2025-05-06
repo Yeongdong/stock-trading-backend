@@ -12,7 +12,9 @@
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="8.2.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2025.1.0-eap1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -31,6 +33,16 @@
     <ProjectReference Include="..\StockTrading.Domain\StockTrading.Domain.csproj" />
     <ProjectReference Include="..\StockTrading.Application\StockTrading.Application.csproj" />
     <ProjectReference Include="..\StockTrading.Infrastructure\StockTrading.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Unit\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.Testing.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

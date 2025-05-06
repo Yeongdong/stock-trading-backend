@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Implementations;
+using StockTrading.Infrastructure.Interfaces;
 using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Interfaces;
 using StockTradingBackend.DataAccess.Settings;
-using AuthenticationService = StockTrading.Infrastructure.Implementations.AuthenticationService;
-using IAuthenticationService = StockTradingBackend.DataAccess.Interfaces.IAuthenticationService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,11 +26,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
 builder.Services.AddScoped<IKisService, KisService>();
+builder.Services.AddScoped<IKisTokenService, KisTokenService>();
+builder.Services.AddScoped<IKisTokenRepository, KisTokenRepository>();
+builder.Services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
+builder.Services.AddScoped<IDbContextWrapper, DbContextWrapper>();
+builder.Services.AddScoped<IKisApiClient, KisApiClient>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
 builder.Services.AddAuthentication(options =>
@@ -123,3 +127,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program
+{
+}
