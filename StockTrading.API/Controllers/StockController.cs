@@ -41,7 +41,7 @@ public class StockController : ControllerBase
     public async Task<ActionResult<StockOrderResponse>> PlaceOrder(StockOrderRequest request)
     {
         var user = await GetUser();
-        
+
         try
         {
             _logger.LogInformation("주문 시작: {@Request}", request); // 요청 로깅
@@ -60,11 +60,12 @@ public class StockController : ControllerBase
         var email = User.FindFirst(ClaimTypes.Email)?.Value;
 
         if (string.IsNullOrEmpty(email))
-        {
             throw new UnauthorizedAccessException();
-        }
 
         var user = await _userService.GetUserByEmailAsync(email);
+
+        if (user == null)
+            throw new UnauthorizedAccessException("사용자 정보를 찾을 수 없음");
         return user;
     }
 }
