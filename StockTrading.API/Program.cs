@@ -100,12 +100,12 @@ builder.Services.AddCors(options =>
 // KIS 서비스 등록
 builder.Services.AddHttpClient<KisApiClient>(client =>
 {
-    client.BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443");
+    client.BaseAddress = new Uri(builder.Configuration["KoreaInvestment:BaseUrl"]);
 });
 
 builder.Services.AddHttpClient<KisService>(client =>
 {
-    client.BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443");
+    client.BaseAddress = new Uri(builder.Configuration["KoreaInvestment:BaseUrl"]);
 });
 
 builder.Services.AddScoped<KisApiClient>();
