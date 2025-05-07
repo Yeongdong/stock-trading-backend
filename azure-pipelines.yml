@@ -74,5 +74,5 @@ stages:
             inputs:
               azureSubscription: 'stocktrading'
               appType: 'webApp'
-              appName: 'stocktrading'
+              appName: 'stocktrading-api'
               package: '$(Pipeline.Workspace)/WebApp/*.zip'
