@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.Infrastructure.ExternalServices.Interfaces;
@@ -15,12 +16,10 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 public class KisApiClient : IKisApiClient
 {
     private readonly HttpClient _httpClient;
-    private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
     public KisApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri(BASE_URL);
     }
 
     public async Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest request, UserDto user)
