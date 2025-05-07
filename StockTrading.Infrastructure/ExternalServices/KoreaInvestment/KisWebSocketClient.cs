@@ -2,13 +2,14 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 /*
  * WebSocket 연결, 메시지 송수신, 기본 인증 등 저수준 통신
  */
-public class KisWebSocketClient : IDisposable
+public class KisWebSocketClient : IKisWebSocketClient, IDisposable
 {
     private readonly ClientWebSocket _webSocket;
     private CancellationTokenSource _cancellationTokenSource;
