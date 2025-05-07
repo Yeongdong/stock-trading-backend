@@ -1,18 +1,19 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 /*
  * 종목 구독 관리
  */
-public class KisSubscriptionManager
+public class KisSubscriptionManager : IKisSubscriptionManager
 {
-    private readonly KisWebSocketClient _webSocketClient;
+    private readonly IKisWebSocketClient _webSocketClient;
     private readonly ILogger<KisSubscriptionManager> _logger;
     private readonly Dictionary<string, bool> _subscribedSymbols = new();
 
-    public KisSubscriptionManager(KisWebSocketClient webSocketClient, ILogger<KisSubscriptionManager> logger)
+    public KisSubscriptionManager(IKisWebSocketClient webSocketClient, ILogger<KisSubscriptionManager> logger)
     {
         _webSocketClient = webSocketClient;
         _logger = logger;

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
@@ -7,34 +8,35 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /*
  * 수신된 메시지 처리 및 파싱
  */
-public class KisRealTimeDataProcessor
+public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
 {
     private readonly ILogger<KisRealTimeDataProcessor> _logger;
-
+    
     // 이벤트를 통해 파싱된 실시간 데이터 전달
     public event EventHandler<StockTransaction> StockPriceReceived;
     public event EventHandler<object> TradeExecutionReceived;
-
+    
     public KisRealTimeDataProcessor(ILogger<KisRealTimeDataProcessor> logger)
     {
         _logger = logger;
     }
-
+    
     public void ProcessMessage(string messageJson)
     {
         try
         {
             _logger.LogDebug($"수신된 WebSocket 메시지: {messageJson}");
-
+            
             var jsonDoc = JsonDocument.Parse(messageJson);
             var root = jsonDoc.RootElement;
-
+            
             // 메시지 타입 확인
-            if (root.TryGetProperty("header", out var header) &&
+            if (root.TryGetProperty("header", out var header) && 
                 header.TryGetProperty("tr_id", out var trId))
             {
                 string trIdValue = trId.GetString();
-
+                _logger.LogInformation($"메시지 유형: {trIdValue}");
+                
                 switch (trIdValue)
                 {
                     case "H0STASP0":
@@ -46,11 +48,16 @@ public class KisRealTimeDataProcessor
                         ProcessTradeExecution(root);
                         break;
                     case "PINGPONG":
+                        // PING 메시지는 이벤트 발생 X (별도 처리)
                         break;
                     default:
                         _logger.LogWarning($"알 수 없는 메시지 타입: {trIdValue}");
                         break;
                 }
+            }
+            else
+            {
+                _logger.LogWarning("메시지에 tr_id가 없습니다.");
             }
         }
         catch (Exception ex)
@@ -58,7 +65,7 @@ public class KisRealTimeDataProcessor
             _logger.LogError(ex, "WebSocket 메시지 처리 오류");
         }
     }
-
+    
     private void ProcessStockPrice(JsonElement root)
     {
         try
@@ -97,18 +104,20 @@ public class KisRealTimeDataProcessor
             _logger.LogError(ex, "실시간 시세 처리 오류");
         }
     }
-
+    
     private void ProcessTradeExecution(JsonElement root)
     {
         try
         {
             if (root.TryGetProperty("body", out var body))
             {
+                _logger.LogInformation("체결 정보 처리 시작");
+                
                 // 체결 정보 처리
                 string orderId = body.GetProperty("odno").GetString();
                 string stockCode = body.GetProperty("pdno").GetString();
-                int quantity = int.Parse(body.GetProperty("execqty").GetString());
-                decimal price = decimal.Parse(body.GetProperty("execprc").GetString());
+                int quantity = int.Parse(body.GetProperty("cntg_qty").GetString());
+                decimal price = decimal.Parse(body.GetProperty("cntg_pric").GetString());
 
                 // 체결 정보 객체 생성
                 var executionData = new
@@ -124,20 +133,26 @@ public class KisRealTimeDataProcessor
                 OnTradeExecutionReceived(executionData);
                 _logger.LogInformation($"체결 정보 처리: 주문번호 {orderId}, 종목 {stockCode}");
             }
+            else
+            {
+                _logger.LogWarning("체결 메시지에 body가 없습니다.");
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "체결 정보 처리 오류");
         }
     }
-
+    
     protected virtual void OnStockPriceReceived(StockTransaction data)
     {
+        _logger.LogDebug("StockPriceReceived 이벤트 발생");
         StockPriceReceived?.Invoke(this, data);
     }
-
+    
     protected virtual void OnTradeExecutionReceived(object data)
     {
+        _logger.LogDebug("TradeExecutionReceived 이벤트 발생");
         TradeExecutionReceived?.Invoke(this, data);
     }
 }

@@ -1,23 +1,24 @@
 using Microsoft.Extensions.Logging;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 public class KisRealTimeService : IKisRealTimeService
 {
-    private readonly KisWebSocketClient _webSocketClient;
-    private readonly KisRealTimeDataProcessor _dataProcessor;
-    private readonly KisSubscriptionManager _subscriptionManager;
-    private readonly RealTimeDataBroadcaster _broadcaster;
+    private readonly IKisWebSocketClient _webSocketClient;
+    private readonly IKisRealTimeDataProcessor _dataProcessor;
+    private readonly IKisSubscriptionManager _subscriptionManager;
+    private readonly IRealTimeDataBroadcaster _broadcaster;
     private readonly ILogger<KisRealTimeService> _logger;
 
     public KisRealTimeService(
-        KisWebSocketClient webSocketClient,
-        KisRealTimeDataProcessor dataProcessor,
-        KisSubscriptionManager subscriptionManager,
-        RealTimeDataBroadcaster broadcaster,
+        IKisWebSocketClient webSocketClient,
+        IKisRealTimeDataProcessor dataProcessor,
+        IKisSubscriptionManager subscriptionManager,
+        IRealTimeDataBroadcaster broadcaster,
         ILogger<KisRealTimeService> logger)
     {
         _webSocketClient = webSocketClient;

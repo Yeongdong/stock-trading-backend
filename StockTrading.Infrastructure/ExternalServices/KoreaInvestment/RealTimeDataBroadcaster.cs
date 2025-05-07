@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
+using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
@@ -7,7 +8,7 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /*
  * SignalR을 통한 클라이언트 메시지 브로드캐스팅
  */
-public class RealTimeDataBroadcaster
+public class RealTimeDataBroadcaster : IRealTimeDataBroadcaster
 {
     private readonly IHubContext<StockHub> _hubContext;
     private readonly ILogger<RealTimeDataBroadcaster> _logger;
