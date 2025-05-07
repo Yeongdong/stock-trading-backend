@@ -9,52 +9,70 @@ variables:
   dotnetSdkVersion: '8.0.x'
   solutionFile: 'StockTrading.sln'
   apiProjectPath: 'StockTrading.API/StockTrading.API.csproj'
-  testProjectPattern: '**/StockTrading.Tests/*.csproj'
 
-steps:
-- task: UseDotNet@2
-  displayName: 'Install .NET SDK'
-  inputs:
-    packageType: 'sdk'
-    version: '$(dotnetSdkVersion)'
+stages:
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: Build
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotnetSdkVersion)'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Restore packages'
-  inputs:
-    command: 'restore'
-    projects: '$(solutionFile)'
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore packages'
+      inputs:
+        command: 'restore'
+        projects: '$(solutionFile)'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Build solution'
-  inputs:
-    command: 'build'
-    projects: '$(solutionFile)'
-    arguments: '--configuration $(buildConfiguration) --no-restore'
+    - task: DotNetCoreCLI@2
+      displayName: 'Build solution'
+      inputs:
+        command: 'build'
+        projects: '$(solutionFile)'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
 
-- task: DotNetCoreCLI@2
-  displayName: 'Run tests'
-  inputs:
-    command: 'test'
-    projects: '$(testProjectPattern)'
-    arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"'
+    - task: DotNetCoreCLI@2
+      displayName: 'Run tests'
+      inputs:
+        command: 'test'
+        projects: '**/*Tests/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build'
 
-# 선택 사항: 코드 커버리지 보고서 게시
-- task: PublishCodeCoverageResults@1
-  displayName: 'Publish code coverage report'
-  inputs:
-    codeCoverageTool: 'Cobertura'
-    summaryFileLocation: '$(Agent.TempDirectory)/**/coverage.cobertura.xml'
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish app'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '$(apiProjectPath)'
+        arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
 
-- task: DotNetCoreCLI@2
-  displayName: 'Publish API'
-  inputs:
-    command: 'publish'
-    projects: '$(apiProjectPath)'
-    arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
-    zipAfterPublish: true
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: 'WebApp'
 
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish artifacts'
-  inputs:
-    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: 'StockTradingAPI'
+- stage: Deploy
+  displayName: 'Deploy to Development'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployWebApp
+    displayName: 'Deploy Web App'
+    environment: 'Development'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App'
+            inputs:
+              azureSubscription: 'stocktrading'
+              appType: 'webApp'
+              appName: 'stocktrading'
+              package: '$(Pipeline.Workspace)/WebApp/*.zip'
