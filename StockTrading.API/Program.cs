@@ -24,6 +24,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddSingleton<KisWebSocketClient>();
+builder.Services.AddSingleton<KisRealTimeDataProcessor>();
+builder.Services.AddSingleton<RealTimeDataBroadcaster>();
+builder.Services.AddSingleton<KisSubscriptionManager>();
+builder.Services.AddSingleton<IKisRealTimeService, KisRealTimeService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -109,6 +114,7 @@ builder.Services.AddHttpClient<KisService>(client =>
 });
 
 builder.Services.AddScoped<KisApiClient>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -124,6 +130,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<StockHub>("/stockhub");
 app.MapControllers();
 
 app.Run();
