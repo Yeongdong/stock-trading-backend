@@ -7,8 +7,8 @@ pool:
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.0.x'
-  solutionFile: '**/*.sln'
-  apiProjectPath: '**/StockTrading.API.csproj'
+  solutionFile: 'StockTrading.sln'
+  apiProjectPath: 'StockTrading.API/StockTrading.API.csproj'
 
 stages:
 - stage: Build
@@ -16,21 +16,15 @@ stages:
   jobs:
   - job: Build
     steps:
-    - script: |
-        echo "Current directory: $(pwd)"
-        ls -la
-        find . -name "*.sln" -o -name "*.csproj"
-      displayName: 'List directory contents'
     - task: UseDotNet@2
       displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
         version: '$(dotnetSdkVersion)'
-
-    # create test setting file
+    
+    # 테스트 설정 파일 생성 및 복사
     - script: |
-        echo "Creating appsettings.Testing.json file..."
-        mkdir -p StockTrading.Tests
+        # 프로젝트 루트에 설정 파일 생성
         echo '{
           "Logging": {
             "LogLevel": {
@@ -56,10 +50,9 @@ stages:
           }
         }' > StockTrading.Tests/appsettings.Testing.json
         
-        echo "File created:"
-        ls -la StockTrading.Tests/appsettings.Testing.json
-        echo "File contents:"
-        cat StockTrading.Tests/appsettings.Testing.json
+        # 디렉토리 구조 확인
+        echo "Current directory structure:"
+        find . -name "StockTrading.Tests" -type d
       displayName: 'Create Test Settings File'
 
     - task: DotNetCoreCLI@2
@@ -75,6 +68,20 @@ stages:
         command: 'build'
         projects: '$(solutionFile)'
         arguments: '--configuration $(buildConfiguration) --no-restore'
+    
+    # 빌드 후 설정 파일 복사
+    - script: |
+        # 빌드 출력 디렉토리 구조 확인
+        echo "Build output directory structure:"
+        find $(Build.SourcesDirectory)/StockTrading.Tests/bin -type d
+        
+        # 테스트 파일 복사
+        mkdir -p $(Build.SourcesDirectory)/StockTrading.Tests/bin/$(buildConfiguration)/net8.0
+        cp StockTrading.Tests/appsettings.Testing.json $(Build.SourcesDirectory)/StockTrading.Tests/bin/$(buildConfiguration)/net8.0/
+        
+        # 복사된 파일 확인
+        ls -la $(Build.SourcesDirectory)/StockTrading.Tests/bin/$(buildConfiguration)/net8.0/
+      displayName: 'Copy settings to build output'
 
     - task: DotNetCoreCLI@2
       displayName: 'Run tests'
@@ -82,6 +89,7 @@ stages:
         command: 'test'
         projects: '**/*Tests/*.csproj'
         arguments: '--configuration $(buildConfiguration) --no-build'
+        testRunTitle: 'Running tests'
 
     - task: DotNetCoreCLI@2
       displayName: 'Publish app'
@@ -89,7 +97,7 @@ stages:
         command: 'publish'
         publishWebProjects: false
         projects: '$(apiProjectPath)'
-        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: true
 
     - task: PublishBuildArtifacts@1
