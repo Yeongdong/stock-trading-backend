@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StockTrading.Infrastructure.Repositories;
 using StockTradingBackend.DataAccess.Entities;
@@ -18,6 +19,13 @@ public class StockTradingWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((hostcontext, config) =>
+        {
+            var projectDir = Directory.GetCurrentDirectory();
+            config.AddJsonFile(Path.Combine(projectDir, "appsettings.Testing.json"), optional: false,
+                reloadOnChange: true);
+            config.AddEnvironmentVariables();
+        });
         builder.ConfigureServices(services =>
         {
             // 기존 DB 컨텍스트 제거
