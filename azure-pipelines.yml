@@ -7,8 +7,8 @@ pool:
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.0.x'
-  solutionFile: 'StockTrading.sln'
-  apiProjectPath: 'StockTrading.API/StockTrading.API.csproj'
+  solutionFile: '**/*.sln'  # 모든 위치에서 .sln 파일 검색
+  apiProjectPath: '**/StockTrading.API.csproj'  # 모든 위치에서 API 프로젝트 검색
 
 stages:
 - stage: Build
@@ -22,9 +22,19 @@ stages:
         packageType: 'sdk'
         version: '$(dotnetSdkVersion)'
     
-    # 테스트 설정 파일 생성 및 복사
+    # 프로젝트 구조 확인
     - script: |
-        # 프로젝트 루트에 설정 파일 생성
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+        echo "Looking for sln files:"
+        find . -name "*.sln"
+        echo "Looking for csproj files:"
+        find . -name "*.csproj"
+      displayName: 'Check Project Structure'
+    
+    # 테스트 설정 파일 생성
+    - script: |
         echo '{
           "Logging": {
             "LogLevel": {
@@ -49,10 +59,6 @@ stages:
             "DefaultConnection": "InMemory=true"
           }
         }' > StockTrading.Tests/appsettings.Testing.json
-        
-        # 디렉토리 구조 확인
-        echo "Current directory structure:"
-        find . -name "StockTrading.Tests" -type d
       displayName: 'Create Test Settings File'
 
     - task: DotNetCoreCLI@2
@@ -68,19 +74,16 @@ stages:
         command: 'build'
         projects: '$(solutionFile)'
         arguments: '--configuration $(buildConfiguration) --no-restore'
-    
+
     # 빌드 후 설정 파일 복사
     - script: |
-        # 빌드 출력 디렉토리 구조 확인
-        echo "Build output directory structure:"
-        find $(Build.SourcesDirectory)/StockTrading.Tests/bin -type d
+        # 빌드 출력 디렉토리 찾기
+        echo "Looking for test output directories:"
+        find . -path "*/bin/$(buildConfiguration)/*" -type d
         
-        # 테스트 파일 복사
-        mkdir -p $(Build.SourcesDirectory)/StockTrading.Tests/bin/$(buildConfiguration)/net8.0
-        cp StockTrading.Tests/appsettings.Testing.json $(Build.SourcesDirectory)/StockTrading.Tests/bin/$(buildConfiguration)/net8.0/
-        
-        # 복사된 파일 확인
-        ls -la $(Build.SourcesDirectory)/StockTrading.Tests/bin/$(buildConfiguration)/net8.0/
+        # 테스트 파일 복사 (여러 위치에 복사)
+        mkdir -p bin/$(buildConfiguration)/net8.0
+        find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \;
       displayName: 'Copy settings to build output'
 
     - task: DotNetCoreCLI@2
