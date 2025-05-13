@@ -48,7 +48,7 @@ ApplicationDbContextModelSnapshot.cs
 # 환경설정 파일
 appsettings.*.json
 !appsettings.json
-!appsettings.example.json
+!appsettings.Testing.json
 *.Development.json
 *.Production.json
 launchSettings.json
