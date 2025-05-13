@@ -27,13 +27,47 @@ stages:
         packageType: 'sdk'
         version: '$(dotnetSdkVersion)'
 
+    # create test setting file
+    - script: |
+        echo "Creating appsettings.Testing.json file..."
+        mkdir -p StockTrading.Tests
+        echo '{
+          "Logging": {
+            "LogLevel": {
+              "Default": "Information",
+              "Microsoft.AspNetCore": "Warning"
+            }
+          },
+          "JwtSettings": {
+            "Key": "super_secure_test_key_that_is_at_least_32_bytes_long_for_testing_purposes_only",
+            "Issuer": "test_issuer",
+            "Audience": "test_audience",
+            "AccessTokenExpirationMinutes": 30,
+            "RefreshTokenExpirationDays": 7
+          },
+          "Authentication": {
+            "Google": {
+              "ClientId": "test_client_id_for_integration_tests",
+              "ClientSecret": "test_client_secret_for_integration_tests"
+            }
+          },
+          "ConnectionStrings": {
+            "DefaultConnection": "InMemory=true"
+          }
+        }' > StockTrading.Tests/appsettings.Testing.json
+        
+        echo "File created:"
+        ls -la StockTrading.Tests/appsettings.Testing.json
+        echo "File contents:"
+        cat StockTrading.Tests/appsettings.Testing.json
+      displayName: 'Create Test Settings File'
+
     - task: DotNetCoreCLI@2
       displayName: 'Restore packages'
       inputs:
         command: 'restore'
         projects: '$(solutionFile)'
         feedsToUse: 'select'
-
 
     - task: DotNetCoreCLI@2
       displayName: 'Build solution'
