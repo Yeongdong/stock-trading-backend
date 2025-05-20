@@ -9,7 +9,6 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Implementations;
 using StockTrading.Infrastructure.Interfaces;
 using StockTrading.Infrastructure.Repositories;
-using StockTradingBackend.DataAccess.Interfaces;
 using StockTradingBackend.DataAccess.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -78,6 +77,11 @@ builder.Services.AddAuthentication(options =>
             {
                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                 logger.LogWarning("Authorization challenge triggered: {Error}", context.Error);
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                context.Token = context.Request.Cookies["auth_token"];
                 return Task.CompletedTask;
             }
         };

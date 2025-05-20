@@ -2,14 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.DataAccess.DTOs;
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Exceptions.Authentication;
-using StockTradingBackend.DataAccess.Interfaces;
 using StockTradingBackend.DataAccess.Settings;
 
 namespace StockTrading.Infrastructure.Implementations;

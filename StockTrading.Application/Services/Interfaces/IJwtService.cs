@@ -1,8 +1,6 @@
-using System.Security.Claims;
 using StockTrading.DataAccess.DTOs;
-using StockTradingBackend.DataAccess.Entities;
 
-namespace StockTradingBackend.DataAccess.Interfaces;
+namespace StockTrading.DataAccess.Services.Interfaces;
 
 public interface IJwtService
 {
