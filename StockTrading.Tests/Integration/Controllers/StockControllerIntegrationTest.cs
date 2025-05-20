@@ -6,7 +6,6 @@ using Moq;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.DTOs.OrderDTOs;
 using StockTrading.DataAccess.Services.Interfaces;
-using StockTradingBackend.DataAccess.Interfaces;
 
 namespace StockTrading.Tests.Integration.Controllers;
 

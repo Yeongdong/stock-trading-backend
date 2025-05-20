@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using StockTrading.DataAccess.DTOs;
-using StockTradingBackend.DataAccess.Interfaces;
+using StockTrading.DataAccess.Services.Interfaces;
 using static System.Net.HttpStatusCode;
 
 namespace StockTrading.Tests.Integration.Controllers;
