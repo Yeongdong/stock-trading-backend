@@ -5,7 +5,7 @@ using StockTrading.DataAccess.DTOs;
 using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
-namespace StockTrading.Tests.ExternalServices.KoreaInvestment;
+namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
 [TestSubject(typeof(KisRealTimeService))]
 public class KisRealTimeServiceTest

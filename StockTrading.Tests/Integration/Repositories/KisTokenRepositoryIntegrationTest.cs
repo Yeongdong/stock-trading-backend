@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Integration.Repositories;
@@ -11,14 +13,21 @@ public class KisTokenRepositoryIntegrationTest : IDisposable
     private readonly ApplicationDbContext _context;
     private readonly KisTokenRepository _repository;
     private readonly ILogger<KisTokenRepository> _logger;
+    private readonly Mock<IEncryptionService> _mockEncryptionService;
 
     public KisTokenRepositoryIntegrationTest()
     {
+        _mockEncryptionService = new Mock<IEncryptionService>();
+        _mockEncryptionService.Setup(s => s.Encrypt(It.IsAny<string>()))
+            .Returns<string>(input => input);
+        _mockEncryptionService.Setup(s => s.Decrypt(It.IsAny<string>()))
+            .Returns<string>(input => input);
+
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        _context = new ApplicationDbContext(options);
+        _context = new ApplicationDbContext(options, _mockEncryptionService.Object);
 
         _logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<KisTokenRepository>();
 
@@ -163,7 +172,7 @@ public class KisTokenRepositoryIntegrationTest : IDisposable
     private class TestDbContextWithSaveError : ApplicationDbContext
     {
         public TestDbContextWithSaveError(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
+            : base(options, Mock.Of<IEncryptionService>())
         {
             Users.Add(new User
             {

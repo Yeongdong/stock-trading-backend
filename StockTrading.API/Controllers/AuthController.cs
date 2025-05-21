@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using stock_trading_backend.DTOs;
-using stock_trading_backend.Interfaces;
+using stock_trading_backend.Validator.Interfaces;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Exceptions.Authentication;
 using StockTradingBackend.DataAccess.Settings;

@@ -1,12 +1,13 @@
 using Google.Apis.Auth;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;
 using stock_trading_backend.controllers;
 using stock_trading_backend.DTOs;
-using stock_trading_backend.Interfaces;
+using stock_trading_backend.Validator.Interfaces;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Settings;
@@ -51,32 +52,42 @@ public class AuthControllerTest
     [Fact]
     public async Task GoogleLogin_Success_ReturnsOkResult()
     {
-        var googleLoginRequest = SetupGoogleLoginRequest(out var payload, out var user);
-        var token = "jwt-token-value";
+            var httpContext = new DefaultHttpContext();
 
-        _mockGoogleAuthValidator.Setup(x => x.ValidateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-            .ReturnsAsync(payload);
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
 
-        _mockUserService.Setup(x => x.GetOrCreateGoogleUserAsync(It.IsAny<GoogleJsonWebSignature.Payload>()))
-            .ReturnsAsync(user);
+            var googleLoginRequest = SetupGoogleLoginRequest(out var payload, out var user);
+            var token = "jwt-token-value";
+            
+            _mockGoogleAuthValidator.Setup(x => x.ValidateAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>()))
+                .ReturnsAsync(payload);
 
-        _mockJwtService.Setup(x => x.GenerateToken(It.IsAny<UserDto>()))
-            .Returns(token);
+            _mockUserService.Setup(x => x.GetOrCreateGoogleUserAsync(It.IsAny<GoogleJsonWebSignature.Payload>()))
+                .ReturnsAsync(user);
 
-        var result = await _controller.GoogleLogin(googleLoginRequest);
+            _mockJwtService.Setup(x => x.GenerateToken(It.IsAny<UserDto>()))
+                .Returns(token);
 
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var response = Assert.IsType<GoogleLoginResponse>(okResult.Value);
+            var result = await _controller.GoogleLogin(googleLoginRequest);
 
-        Assert.Equal(user.Email, response.User.Email);
-        Assert.Equal(token, response.Token);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var responseValue = okResult.Value;
 
-        _mockGoogleAuthValidator.Verify(x => x.ValidateAsync(
-            googleLoginRequest.Credential,
-            "test-client-id"
-        ), Times.Once);
+            var propertyInfo = responseValue?.GetType().GetProperty("User");
+            Assert.NotNull(propertyInfo);
+            var userValue = propertyInfo.GetValue(responseValue);
+            Assert.Equal(user, userValue);
+
+            _mockGoogleAuthValidator.Verify(x => x.ValidateAsync(
+                googleLoginRequest.Credential,
+                "test-client-id"
+            ), Times.Once);
+            _mockJwtService.Verify(x => x.GenerateToken(It.IsAny<UserDto>()), Times.Once);
     }
 
     [Fact]

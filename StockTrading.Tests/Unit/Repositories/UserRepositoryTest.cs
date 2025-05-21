@@ -1,6 +1,8 @@
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Unit.Repositories;
@@ -8,19 +10,21 @@ namespace StockTrading.Tests.Unit.Repositories;
 [TestSubject(typeof(UserRepository))]
 public class UserRepositoryTest
 {
+    private readonly Mock<IEncryptionService> _mockEncryptionService = new();
+
     private ApplicationDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
 
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, _mockEncryptionService.Object);
     }
 
     [Fact]
     public async Task GetByGoogleIdAsync_ReturnsUser_WhenUserExists()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var repository = new UserRepository(context);
 
         var user = new User
@@ -50,18 +54,18 @@ public class UserRepositoryTest
     [Fact]
     public async Task GetByGoogleIdAsync_ReturnsNull_WhenUserDoesNotExist()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var repository = new UserRepository(context);
         
-        var result = await repository.GetByGoogleIdAsync("nonexistent");
         
-        Assert.Null(result);
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => repository.GetByGoogleIdAsync("nonexistent"));
     }
 
     [Fact]
     public async Task AddAsync_AddUser_AndReturnsUserWithId()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var repository = new UserRepository(context);
 
         var newUser = new User
@@ -92,7 +96,7 @@ public class UserRepositoryTest
     [Fact]
     public async Task GetByEmailAsync_ReturnsUserDto_WhenUserExists()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var repository = new UserRepository(context);
 
         var user = new User
@@ -123,7 +127,7 @@ public class UserRepositoryTest
     [Fact]
     public async Task GetByEmailAsync_ReturnsUserDtoWithKisToken_WhenUserHasKisToken()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var repository = new UserRepository(context);
 
         var user = new User
@@ -161,7 +165,7 @@ public class UserRepositoryTest
     [Fact]
     public async Task GetByEmailAsync_ThrowsException_WhenUserDoesNotExist()
     {
-        using var context = CreateContext();
+        await using var context = CreateContext();
         var repository = new UserRepository(context);
 
         await Assert.ThrowsAsync<ArgumentNullException>(

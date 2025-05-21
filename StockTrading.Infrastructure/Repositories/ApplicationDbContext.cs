@@ -1,14 +1,16 @@
 using Microsoft.EntityFrameworkCore;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Infrastructure.Repositories;
 
 public class ApplicationDbContext : DbContext
 {
-    public ApplicationDbContext(DbContextOptions options) : base(options)
+    private readonly IEncryptionService _encryptionService;
+
+    public ApplicationDbContext(DbContextOptions options, IEncryptionService encryptionService) : base(options)
     {
+        _encryptionService = encryptionService;
     }
 
     public DbSet<User> Users { get; set; } = null!;
@@ -57,16 +59,25 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.KisAppKey)
                 .HasColumnName("kis_app_key")
-                .IsRequired(false);
+                .IsRequired(false)
+                .HasConversion(
+                    v => _encryptionService.Encrypt(v),
+                    v => _encryptionService.Decrypt(v));
 
             entity.Property(e => e.KisAppSecret)
                 .HasColumnName("kis_app_secret")
-                .IsRequired(false);
-            
+                .IsRequired(false)
+                .HasConversion(
+                    v => _encryptionService.Encrypt(v),
+                    v => _encryptionService.Decrypt(v));
+
             entity.Property(e => e.AccountNumber)
                 .HasColumnName("account_number")
-                .IsRequired(false);
-
+                .IsRequired(false)
+                .HasConversion(
+                    v => _encryptionService.Encrypt(v),
+                    v => _encryptionService.Decrypt(v));
+            
             entity.HasIndex(e => e.GoogleId)
                 .HasDatabaseName("ix_users_google_id");
 
@@ -74,7 +85,7 @@ public class ApplicationDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("ix_users_email");
         });
-        
+
         modelBuilder.Entity<KisToken>(entity =>
         {
             entity.ToTable("kis_tokens");

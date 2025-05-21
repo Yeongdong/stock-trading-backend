@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Integration.Repositories
@@ -8,14 +10,21 @@ namespace StockTrading.Tests.Integration.Repositories
     {
         private readonly ApplicationDbContext _context;
         private readonly UserRepository _repository;
+        private readonly Mock<IEncryptionService> _mockEncryptionService;
 
         public UserRepositoryIntegrationTest()
         {
+            _mockEncryptionService = new Mock<IEncryptionService>();
+            _mockEncryptionService.Setup(s => s.Encrypt(It.IsAny<string>()))
+                .Returns<string>(input => input);
+            _mockEncryptionService.Setup(s => s.Decrypt(It.IsAny<string>()))
+                .Returns<string>(input => input);
+
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            _context = new ApplicationDbContext(options);
+            _context = new ApplicationDbContext(options, _mockEncryptionService.Object);
             _repository = new UserRepository(_context);
         }
 

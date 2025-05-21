@@ -10,6 +10,8 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Implementations;
 using StockTrading.Infrastructure.Interfaces;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
+using StockTrading.Infrastructure.Security.Options;
 using StockTradingBackend.DataAccess.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,8 +22,14 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<ApplicationDbContext>(provider =>
+{
+    var options = provider.GetRequiredService<DbContextOptions<ApplicationDbContext>>();
+    var encryptionService = provider.GetRequiredService<IEncryptionService>();
+    return new ApplicationDbContext(options, encryptionService);
+});
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddSingleton<KisWebSocketClient>();
@@ -41,6 +49,10 @@ builder.Services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
 builder.Services.AddScoped<IDbContextWrapper, DbContextWrapper>();
 builder.Services.AddScoped<IKisApiClient, KisApiClient>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
+// 암호화 서비스 등록
+builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
+builder.Services.AddSingleton<IEncryptionService, AesEncryptionService>();
 
 builder.Services.AddAuthentication(options =>
     {

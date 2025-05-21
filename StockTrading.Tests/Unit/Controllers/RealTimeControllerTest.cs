@@ -7,7 +7,7 @@ using stock_trading_backend.Controllers;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 
-namespace StockTrading.Tests.Controllers;
+namespace StockTrading.Tests.Unit.Controllers;
 
 [TestSubject(typeof(RealTimeController))]
 public class RealTimeControllerTest

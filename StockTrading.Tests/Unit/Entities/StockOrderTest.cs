@@ -11,7 +11,7 @@ public class StockOrderTest
     public void StockOrder_Constructor_ShouldInitializePropertiesCorrectly()
     {
         string stockCode = "005930";
-        string tradeType = "Buy";
+        string tradeType = "VTTC0802U";
         string orderType = "Limit";
         int quantity = 10;
         decimal price = 70_000;

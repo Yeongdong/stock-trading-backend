@@ -3,7 +3,7 @@ using Moq;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
-namespace StockTrading.Tests.ExternalServices.KoreaInvestment
+namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
 {
     public class KisRealTimeDataProcessorTest
     {

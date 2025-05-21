@@ -2,7 +2,9 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Unit.Repositories;
@@ -11,10 +13,12 @@ namespace StockTrading.Tests.Unit.Repositories;
 public class UserKisInfoRepositoryTest
 {
     private readonly ILogger<KisTokenRepository> _logger;
+    private readonly Mock<IEncryptionService> _mockEncryptionService;
 
     public UserKisInfoRepositoryTest()
     {
         _logger = new NullLogger<KisTokenRepository>();
+        _mockEncryptionService = new Mock<IEncryptionService>();
     }
 
     private ApplicationDbContext CreateContext()
@@ -23,7 +27,7 @@ public class UserKisInfoRepositoryTest
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         
-        return new ApplicationDbContext(options);
+        return new ApplicationDbContext(options, _mockEncryptionService.Object);
     }
     
     [Fact]
@@ -213,7 +217,7 @@ public class UserKisInfoRepositoryTest
     {
         public TestDbContextWithSaveError(string dbName) : base(new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: dbName) 
-                .Options)
+                .Options, Mock.Of<IEncryptionService>())
         {
             Users.Add(new User 
             { 

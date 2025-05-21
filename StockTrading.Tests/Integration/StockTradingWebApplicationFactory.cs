@@ -3,8 +3,15 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
+using StockTradingBackend.DataAccess.Settings;
+using System.Text;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using StockTrading.Infrastructure.Security.Options;
 
 namespace StockTrading.Tests.Integration;
 
@@ -19,63 +26,69 @@ public class StockTradingWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureAppConfiguration((hostcontext, config) =>
+        builder.ConfigureAppConfiguration((hostContext, config) =>
         {
             var projectDir = Directory.GetCurrentDirectory();
-            config.AddJsonFile(Path.Combine(projectDir, "appsettings.Testing.json"), optional: false,
-                reloadOnChange: true);
+            config.AddJsonFile(Path.Combine(projectDir, "appsettings.Testing.json"), optional: false);
             config.AddEnvironmentVariables();
         });
+
         builder.ConfigureServices(services =>
         {
-            // 기존 DB 컨텍스트 제거
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+            // 기존 DB 제거 후 InMemory DB로 교체
+            var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+            if (descriptor != null) services.Remove(descriptor);
 
-            if (descriptor != null)
-                services.Remove(descriptor);
-
-            // EF Core 관련 서비스 제거
-            var efCoreServices = services.Where(d =>
-                d.ServiceType.FullName != null &&
-                (d.ServiceType.FullName.Contains("EntityFrameworkCore") ||
-                 d.ServiceType.FullName.Contains("Npgsql"))).ToList();
-
-            foreach (var service in efCoreServices)
-                services.Remove(service);
-
-            // InMemory DB 사용
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseInMemoryDatabase("IntegrationTestDb"));
 
-            // 테스트 데이터 초기화
+            // DB 초기화
             using (var scope = services.BuildServiceProvider().CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 db.Database.EnsureCreated();
 
-                if (!db.Users.Any())
+                db.Users.Add(new User
                 {
-                    db.Users.Add(new User
-                    {
-                        Id = 1,
-                        Email = "test@example.com",
-                        Name = "Test User",
-                        GoogleId = "test_google_id",
-                        Role = "User",
-                        CreatedAt = DateTime.UtcNow,
-                        KisAppKey = "test_app_key",
-                        KisAppSecret = "test_app_secret",
-                        AccountNumber = "test_account_number"
-                    });
-                    db.SaveChanges();
-                }
+                    Id = 1,
+                    Email = "test@example.com",
+                    Name = "Test User",
+                    GoogleId = "test_google_id",
+                    Role = "User",
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                db.SaveChanges();
             }
 
-            foreach (var configureServices in _serviceConfigurations)
+            // Antiforgery 설정 완화
+            services.Configure<Microsoft.AspNetCore.Antiforgery.AntiforgeryOptions>(options =>
             {
-                configureServices(services);
-            }
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            });
+
+            // JwtSettings 설정 주입
+            var jwtSettingsDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IOptions<JwtSettings>));
+            if (jwtSettingsDescriptor != null) services.Remove(jwtSettingsDescriptor);
+
+            services.Configure<JwtSettings>(options =>
+            {
+                options.Key = "abcdefghijklmnopqrstuvwxyz123456"; // 32자 이상
+                options.Issuer = "test_issuer";
+                options.Audience = "test_audience";
+                options.AccessTokenExpirationMinutes = 30;
+                options.RefreshTokenExpirationDays = 7;
+            });
+
+            // 사용자 정의 서비스 구성
+            foreach (var configure in _serviceConfigurations)
+                configure(services);
         });
+    }
+
+    protected override void ConfigureClient(HttpClient client)
+    {
+        base.ConfigureClient(client);
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", "antiforgery-token-for-testing");
     }
 }

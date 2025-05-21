@@ -4,7 +4,7 @@ using Moq;
 using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
-namespace StockTrading.Tests.ExternalServices.KoreaInvestment;
+namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
 [TestSubject(typeof(KisSubscriptionManager))]
 public class KisSubscriptionManagerTest

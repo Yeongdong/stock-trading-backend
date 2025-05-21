@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
 using StockTrading.Infrastructure.Implementations;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 
 namespace StockTrading.Tests.Unit.Implementations;
 
@@ -16,8 +17,9 @@ public class DbContextWrapperTest
     public async Task BeginTransactionAsync_ShouldReturnDbTransactionWrapper()
     {
         var mockTransaction = new Mock<IDbContextTransaction>();
+        var mockEncryptionService = new Mock<IEncryptionService>();
             
-        var mockDbContext = new Mock<ApplicationDbContext>(new DbContextOptions<ApplicationDbContext>());
+        var mockDbContext = new Mock<ApplicationDbContext>(new DbContextOptions<ApplicationDbContext>(), mockEncryptionService.Object);
         var mockDatabase = new Mock<DatabaseFacade>(mockDbContext.Object);
             
         mockDbContext.Setup(c => c.Database).Returns(mockDatabase.Object);

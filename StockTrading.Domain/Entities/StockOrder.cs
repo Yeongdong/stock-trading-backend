@@ -46,7 +46,6 @@ public class StockOrder
             throw new ArgumentException("거래 유형은 필수입니다.", nameof(tradeType));
         }
         
-        // 거래 유형 검증 (Buy 또는 Sell만 허용)
         if (tradeType != "VTTC0802U" && tradeType != "VTTC0801U")
         {
             throw new ArgumentException("거래 유형은 'VTTC0802U' 또는 'VTTC0801U'이어야 합니다.", nameof(tradeType));

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Security.Encryption;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Unit.Repositories
@@ -10,10 +11,12 @@ namespace StockTrading.Tests.Unit.Repositories
     public class KisTokenRepositoryTests
     {
         private readonly Mock<ILogger<KisTokenRepository>> _loggerMock;
+        private readonly Mock<IEncryptionService> _mockEncryptionService;
 
         public KisTokenRepositoryTests()
         {
             _loggerMock = new Mock<ILogger<KisTokenRepository>>();
+            _mockEncryptionService = new Mock<IEncryptionService>();
         }
 
         private ApplicationDbContext CreateContext()
@@ -22,7 +25,7 @@ namespace StockTrading.Tests.Unit.Repositories
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            return new ApplicationDbContext(options);
+            return new ApplicationDbContext(options, _mockEncryptionService.Object);
         }
 
         [Fact]

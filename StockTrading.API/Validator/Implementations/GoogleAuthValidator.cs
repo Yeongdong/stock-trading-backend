@@ -1,5 +1,5 @@
 using Google.Apis.Auth;
-using stock_trading_backend.Interfaces;
+using stock_trading_backend.Validator.Interfaces;
 
 namespace stock_trading_backend.Validator.Implementations;
 
