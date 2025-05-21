@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using stock_trading_backend.DTOs;
 using stock_trading_backend.Interfaces;
 using StockTrading.DataAccess.Services.Interfaces;
+using StockTradingBackend.DataAccess.Exceptions.Authentication;
 using StockTradingBackend.DataAccess.Settings;
 
 namespace stock_trading_backend.controllers;
@@ -59,6 +61,49 @@ public class AuthController : ControllerBase
         });
 
         return Ok(new { Message = "로그아웃 성공" });
+    }
+    
+    [HttpGet("check")]
+    public async Task<IActionResult> CheckAuth()
+    {
+        try
+        {
+            if (!Request.Cookies.TryGetValue("auth_token", out var token))
+            {
+                return Unauthorized(new { Message = "인증되지 않음" });
+            }
+
+            var principal = _jwtService.ValidateToken(token);
+            if (principal == null)
+            {
+                return Unauthorized(new { Message = "유효하지 않은 토큰" });
+            }
+
+            var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized(new { Message = "이메일 정보 없음" });
+            }
+
+            var user = await _userService.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                return Unauthorized(new { Message = "사용자 정보 없음" });
+            }
+
+            return Ok(new { 
+                IsAuthenticated = true,
+                User = user
+            });
+        }
+        catch (TokenValidationException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "인증 확인 중 오류 발생", Error = ex.Message });
+        }
     }
 
     private void SetAuthCookie(string token)
