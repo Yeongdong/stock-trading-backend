@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.DataAccess.Repositories;
@@ -104,6 +105,21 @@ builder.Services.AddCors(options =>
                 .AllowAnyHeader()
                 .AllowCredentials();
         });
+});
+
+// CSRF 보호 설정
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.Name = "XSRF-TOKEN";
+    options.Cookie.HttpOnly = false;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.HeaderName = "X-XSRF-TOKEN";
+});
+
+// 자동 검증 필터 추가
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
 
 // KIS 서비스 등록
