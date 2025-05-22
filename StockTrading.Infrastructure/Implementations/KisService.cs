@@ -25,6 +25,7 @@ public class KisService : IKisService
         _dbContextWrapper = dbContextWrapper;
         _orderRepository = orderRepository;
         _kisTokenService = kisTokenService;
+
         _logger = logger;
     }
 
@@ -82,11 +83,6 @@ public class KisService : IKisService
     {
         _logger.LogInformation($"토큰 및 사용자 정보 업데이트 시작: 사용자 {userId}");
 
-        if (string.IsNullOrEmpty(appKey) || string.IsNullOrEmpty(appSecret) || string.IsNullOrEmpty(accountNumber))
-        {
-            throw new ArgumentException("API 키, 시크릿, 계좌번호는 필수 항목입니다.");
-        }
-
         await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
         try
         {
@@ -102,6 +98,11 @@ public class KisService : IKisService
             _logger.LogInformation($"토큰 및 사용자 정보 업데이트 완료: 사용자 {userId}");
 
             return tokenResponse;
+        }
+        catch (ArgumentException)
+        {
+            await transaction.RollbackAsync();
+            throw;
         }
         catch (HttpRequestException ex)
         {

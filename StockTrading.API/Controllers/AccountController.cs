@@ -24,6 +24,11 @@ public class AccountController : ControllerBase
     [HttpPost("userInfo")]
     public async Task<IActionResult> UpdateUserInfo([FromBody] UserInfoRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         try
         {
             var userInfo = await _googleAuthProvider.GetUserInfoAsync(User);
@@ -33,6 +38,10 @@ public class AccountController : ControllerBase
                 request.AccountNumber);
 
             return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (HttpRequestException ex)
         {
