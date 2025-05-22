@@ -5,6 +5,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using StockTrading.Infrastructure.Implementations;
+using StockTrading.Infrastructure.Interfaces;
 using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
 
@@ -33,7 +35,19 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     /// <summary>
     /// 테스트 데이터 팩토리
     /// </summary>
-    public TestDataFactory TestDataFactory => _testDataFactory;
+    public TestDataFactory TestDataFactory
+    {
+        get
+        {
+            if (_testDataFactory == null)
+            {
+                using var scope = Services.CreateScope();
+                _testDataFactory = scope.ServiceProvider.GetRequiredService<TestDataFactory>();
+            }
+
+            return _testDataFactory;
+        }
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -43,16 +57,46 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     }
 
     /// <summary>
+    /// 테스트 프로젝트의 실제 경로를 찾는 메서드
+    /// </summary>
+    private static string GetTestProjectPath()
+    {
+        var currentDirectory = Directory.GetCurrentDirectory();
+        var projectDirectory = currentDirectory;
+
+        while (projectDirectory != null &&
+               !File.Exists(Path.Combine(projectDirectory, "StockTrading.Tests.csproj")))
+        {
+            projectDirectory = Directory.GetParent(projectDirectory)?.FullName;
+        }
+
+        if (projectDirectory == null)
+        {
+            throw new DirectoryNotFoundException(
+                $"StockTrading.Tests 프로젝트 디렉토리를 찾을 수 없습니다. 현재 경로: {currentDirectory}");
+        }
+
+        return projectDirectory;
+    }
+
+    /// <summary>
     /// 테스트용 설정 구성
     /// </summary>
     private void ConfigureTestConfiguration(IWebHostBuilder builder)
     {
         builder.ConfigureAppConfiguration((context, config) =>
         {
-            config.AddJsonFile(IntegrationTestConstants.TestConfigFileName, optional: false);
+            config.Sources.Clear();
+
+            var testProjectPath = GetTestProjectPath();
+            var testConfigPath = Path.Combine(testProjectPath, "appsettings.Testing.json");
+
+            config
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+                .AddJsonFile(testConfigPath, optional: false, reloadOnChange: false)
+                .AddEnvironmentVariables();
 
             _testConfiguration = config.Build();
-            _testDataFactory = new TestDataFactory(_testConfiguration);
         });
     }
 
@@ -66,6 +110,22 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
             ReplaceDbContext(services);
             RegisterMockEncryptionService(services);
             RegisterMockHttpClient(services);
+
+            services.AddScoped<TestDataFactory>();
+            services.AddScoped<IDbContextWrapper, DbContextWrapper>();
+        });
+
+        builder.ConfigureServices(services =>
+        {
+            services.AddScoped(provider =>
+            {
+                if (_testDataFactory == null)
+                {
+                    _testDataFactory = ActivatorUtilities.CreateInstance<TestDataFactory>(provider);
+                }
+
+                return _testDataFactory;
+            });
         });
     }
 
@@ -74,10 +134,14 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     /// </summary>
     private void ReplaceDbContext(IServiceCollection services)
     {
-        // 기존 DbContext 제거
-        var descriptor = services.SingleOrDefault(
-            d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-        if (descriptor != null)
+        // EF Core 관련 모든 서비스 제거
+        var descriptorsToRemove = services
+            .Where(d => d.ServiceType.Name.Contains("DbContext") ||
+                        d.ServiceType == typeof(ApplicationDbContext) ||
+                        (d.ImplementationType != null && d.ImplementationType == typeof(ApplicationDbContext)))
+            .ToList();
+
+        foreach (var descriptor in descriptorsToRemove)
         {
             services.Remove(descriptor);
         }
@@ -86,7 +150,7 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
         services.AddDbContext<ApplicationDbContext>(options =>
         {
             options.UseInMemoryDatabase(_databaseName);
-            options.EnableSensitiveDataLogging(); // 테스트에서는 민감한 데이터 로깅 허용
+            options.EnableSensitiveDataLogging();
             options.ConfigureWarnings(w =>
                 w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
         });

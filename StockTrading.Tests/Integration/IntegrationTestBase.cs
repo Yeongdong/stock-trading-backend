@@ -29,10 +29,11 @@ public abstract class IntegrationTestBase : IClassFixture<IntegrationTestWebAppl
         _serviceScope = Factory.Services.CreateScope();
         var serviceProvider = _serviceScope.ServiceProvider;
 
+        TestDataFactory = serviceProvider.GetRequiredService<TestDataFactory>();
+
         DatabaseManager = CreateDatabaseManager(serviceProvider);
         HttpClientHelper = CreateHttpClientHelper(serviceProvider);
         AuthenticationHelper = CreateAuthenticationHelper(serviceProvider);
-        TestDataFactory = Factory.TestDataFactory;
 
         Logger = CreateLogger();
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using StockTrading.DataAccess.DTOs;
 using StockTrading.Infrastructure.Repositories;
 using StockTrading.Tests.Integration.Interfaces;
 using StockTradingBackend.DataAccess.Entities;
@@ -270,6 +271,53 @@ public class DatabaseManager : IDatabaseManager
         catch (Exception ex) when (!(ex is InvalidOperationException))
         {
             _logger.LogError(ex, "테스트 사용자 조회 중 오류 발생");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 사용자가 데이터베이스에 존재하는지 확인하고 없으면 생성
+    /// </summary>
+    public async Task<User> EnsureUserExistsAsync(UserDto userDto)
+    {
+        try
+        {
+            _logger.LogDebug("사용자 존재 확인 또는 생성: {Email}", userDto.Email);
+
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            var existingUser = await context.Users
+                .Include(u => u.KisToken)
+                .FirstOrDefaultAsync(u => u.Email == userDto.Email);
+
+            if (existingUser != null)
+            {
+                _logger.LogDebug("기존 사용자 반환: {UserId}", existingUser.Id);
+                return existingUser;
+            }
+
+            var newUser = new User
+            {
+                Email = userDto.Email,
+                Name = userDto.Name,
+                GoogleId = $"google_{Guid.NewGuid():N}",
+                Role = "User",
+                CreatedAt = DateTime.UtcNow,
+                KisAppKey = userDto.KisAppKey,
+                KisAppSecret = userDto.KisAppSecret,
+                AccountNumber = userDto.AccountNumber
+            };
+
+            context.Users.Add(newUser);
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation("새 사용자 생성 완료: {UserId}, {Email}", newUser.Id, newUser.Email);
+            return newUser;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "사용자 생성 또는 조회 중 오류 발생: {Email}", userDto.Email);
             throw;
         }
     }

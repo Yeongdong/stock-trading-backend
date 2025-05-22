@@ -124,6 +124,27 @@ public abstract class AuthenticatedTestBase : IntegrationTestBase
             throw;
         }
     }
+    
+    protected virtual async Task SwitchToExistingUserAsync(UserDto user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        try
+        {
+            Logger.LogDebug("기존 사용자로 변경: {Email}", user.Email);
+
+            var dbUser = await DatabaseManager.EnsureUserExistsAsync(user);
+        
+            await SwitchToUserAsync(MapUserToDto(dbUser));
+
+            Logger.LogInformation("기존 사용자로 변경 완료: {Email}", user.Email);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "기존 사용자로 변경 중 오류 발생: {Email}", user.Email);
+            throw;
+        }
+    }
 
     /// <summary>
     /// 특정 역할(Role)로 인증 변경

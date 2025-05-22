@@ -1,3 +1,4 @@
+using StockTrading.DataAccess.DTOs;
 using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Integration.Interfaces;
@@ -58,4 +59,6 @@ public interface IDatabaseManager
     /// 시드 데이터로 생성된 기본 사용자 반환
     /// </summary>
     Task<User> GetTestUserAsync();
+
+    Task<User> EnsureUserExistsAsync(UserDto user);
 }
