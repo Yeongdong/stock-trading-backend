@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\StockTrading.Application\StockTrading.Application.csproj" />
-      <ProjectReference Include="..\StockTrading.Common\StockTrading.Common.csproj" />
       <ProjectReference Include="..\StockTrading.Domain\StockTrading.Domain.csproj" />
     </ItemGroup>
 

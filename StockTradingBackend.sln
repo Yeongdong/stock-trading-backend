@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockTrading.API", "StockTrading.API\StockTrading.API.csproj", "{A76F5C4A-00E9-4806-9FE3-66D62036833F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockTrading.Domain", "StockTrading.Domain\StockTrading.Domain.csproj", "{CE3B33B5-F9AE-48E6-BBC1-03FCFAFE7014}"
@@ -8,8 +8,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockTrading.Application", "StockTrading.Application\StockTrading.Application.csproj", "{ECFDFFBA-5CBF-4486-8C82-BDE0688B392F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockTrading.Infrastructure", "StockTrading.Infrastructure\StockTrading.Infrastructure.csproj", "{77FCEE4A-3313-4D10-A213-81B7BE4BABE0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockTrading.Common", "StockTrading.Common\StockTrading.Common.csproj", "{561C4869-BFF9-456E-B1F6-B4BD4079E6CC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockTrading.Tests", "StockTrading.Tests\StockTrading.Tests.csproj", "{FA3433E1-AE74-41DC-A86F-48037C62E761}"
 EndProject
@@ -35,10 +33,6 @@ Global
 		{77FCEE4A-3313-4D10-A213-81B7BE4BABE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77FCEE4A-3313-4D10-A213-81B7BE4BABE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77FCEE4A-3313-4D10-A213-81B7BE4BABE0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{561C4869-BFF9-456E-B1F6-B4BD4079E6CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{561C4869-BFF9-456E-B1F6-B4BD4079E6CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{561C4869-BFF9-456E-B1F6-B4BD4079E6CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{561C4869-BFF9-456E-B1F6-B4BD4079E6CC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FA3433E1-AE74-41DC-A86F-48037C62E761}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FA3433E1-AE74-41DC-A86F-48037C62E761}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA3433E1-AE74-41DC-A86F-48037C62E761}.Release|Any CPU.ActiveCfg = Release|Any CPU
