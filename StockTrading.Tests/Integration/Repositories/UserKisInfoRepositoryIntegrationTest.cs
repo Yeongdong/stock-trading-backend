@@ -129,7 +129,9 @@ public class UserKisInfoRepositoryIntegrationTest
     [Fact]
     public async Task UpdateUserKisInfo_ShouldPersistChanges()
     {
-        string dbName = "PersistChangesTestDb";
+        string dbName = $"PersistChangesTestDb_{Guid.NewGuid()}";
+    
+        // 첫 번째 컨텍스트: 사용자 생성 및 업데이트
         using var context1 = CreateContext(dbName);
         var logger1 = LoggerFactory.Create(builder => builder.AddConsole())
             .CreateLogger<KisTokenRepository>();
@@ -152,9 +154,13 @@ public class UserKisInfoRepositoryIntegrationTest
         string appSecret = "transaction_app_secret";
         string accountNumber = "98765432109876";
 
+        // 업데이트 수행
         await repository1.UpdateUserKisInfo(userId, appKey, appSecret, accountNumber);
+    
+        // 첫 번째 컨텍스트를 명시적으로 dispose
+        await context1.DisposeAsync();
 
-        // 새 컨텍스트를 생성하여 변경 사항이 DB에 저장되었는지 확인
+        // 두 번째 컨텍스트: 변경 사항이 실제로 저장되었는지 확인
         using var context2 = CreateContext(dbName);
         var updatedUser = await context2.Users.FindAsync(userId);
 
@@ -167,8 +173,9 @@ public class UserKisInfoRepositoryIntegrationTest
     [Fact]
     public async Task UpdateUserKisInfo_MultipleConcurrentUpdates_ShouldUpdateUser()
     {
-        string dbName = "ConcurrentUpdatesTestDb";
+        string dbName = $"ConcurrentUpdatesTestDb_{Guid.NewGuid()}";
 
+        // 첫 번째 업데이트
         using var context1 = CreateContext(dbName);
         var logger1 = LoggerFactory.Create(builder => builder.AddConsole())
             .CreateLogger<KisTokenRepository>();
@@ -185,26 +192,28 @@ public class UserKisInfoRepositoryIntegrationTest
 
         context1.Users.Add(user);
         await context1.SaveChangesAsync();
-
         int userId = user.Id;
 
-        // 두 번째 컨텍스트 생성 (다른 클라이언트 시뮬레이션)
+        // 첫 번째 업데이트 수행
+        await repository1.UpdateUserKisInfo(userId, "app_key_1", "app_secret_1", "account_1");
+    
+        // context1을 dispose하여 변경사항이 확실히 저장되도록 함
+        await context1.DisposeAsync();
+
+        // 두 번째 업데이트 (새로운 컨텍스트)
         using var context2 = CreateContext(dbName);
         var logger2 = LoggerFactory.Create(builder => builder.AddConsole())
             .CreateLogger<KisTokenRepository>();
         var repository2 = new UserKisInfoRepository(context2, logger2);
 
-        // 두 리포지토리에서 순차적으로 업데이트 수행
-        await repository1.UpdateUserKisInfo(userId, "app_key_1", "app_secret_1", "account_1");
         await repository2.UpdateUserKisInfo(userId, "app_key_2", "app_secret_2", "account_2");
+        await context2.DisposeAsync();
 
-        // 새 컨텍스트로 확인
+        // 검증용 새로운 컨텍스트
         using var context3 = CreateContext(dbName);
         var finalUser = await context3.Users.FindAsync(userId);
 
         Assert.NotNull(finalUser);
-
-        // 마지막 값으로 업데이트되어 있어야 함
         Assert.Equal("app_key_2", finalUser.KisAppKey);
         Assert.Equal("app_secret_2", finalUser.KisAppSecret);
         Assert.Equal("account_2", finalUser.AccountNumber);

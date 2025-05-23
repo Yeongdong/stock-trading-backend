@@ -1,7 +1,11 @@
+using Google.Apis.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Moq;
+using stock_trading_backend.Validator.Interfaces;
 using StockTrading.Infrastructure.Repositories;
 
 namespace StockTrading.Tests.Integration.Configuration;
@@ -23,6 +27,7 @@ public static class TestServicesConfigurator
         ConfigureDatabaseServices(services);
         ConfigureSecurityServices(services);
         ConfigureHttpClientServices(services, testConfiguration);
+        ConfigureMockServices(services, testConfiguration);
         ConfigureBusinessServices(services);
     }
 
@@ -53,7 +58,7 @@ public static class TestServicesConfigurator
             options.UseInMemoryDatabase(SharedDatabaseName);
             options.EnableSensitiveDataLogging();
             options.ConfigureWarnings(w =>
-                w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning));
+                w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
         });
     }
 
@@ -76,6 +81,79 @@ public static class TestServicesConfigurator
     {
         services.AddHttpClient();
         HttpClientConfigurator.RegisterKisHttpClients(services, testConfiguration, KIS_BASE_URL);
+    }
+
+    /// <summary>
+    /// Mock 서비스 설정
+    /// </summary>
+    private static void ConfigureMockServices(IServiceCollection services, IConfiguration testConfiguration)
+    {
+        // 기존 GoogleAuthValidator 서비스 제거
+        var existingValidator = services.SingleOrDefault(d => d.ServiceType == typeof(IGoogleAuthValidator));
+        if (existingValidator != null)
+            services.Remove(existingValidator);
+
+        // Mock GoogleAuthValidator 등록
+        services.AddSingleton<IGoogleAuthValidator>(provider =>
+        {
+            var mockValidator = new Mock<IGoogleAuthValidator>();
+            ConfigureGoogleAuthValidatorMock(mockValidator, testConfiguration);
+            return mockValidator.Object;
+        });
+    }
+
+    /// <summary>
+    /// GoogleAuthValidator Mock 설정
+    /// </summary>
+    private static void ConfigureGoogleAuthValidatorMock(Mock<IGoogleAuthValidator> mockValidator,
+        IConfiguration testConfiguration)
+    {
+        // 유효한 페이로드 생성
+        var validPayload = new GoogleJsonWebSignature.Payload
+        {
+            Subject = testConfiguration["TestData:User:GoogleId"] ?? "test_google_id_123",
+            Email = testConfiguration["TestData:User:Email"] ?? "test@example.com",
+            Name = testConfiguration["TestData:User:Name"] ?? "Test User",
+            Issuer = "https://accounts.google.com",
+            Audience = testConfiguration["Authentication:Google:ClientId"] ?? "test_google_client_id",
+            ExpirationTimeSeconds = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds(),
+            IssuedAtTimeSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+        };
+
+        // 유효한 토큰 패턴 설정
+        mockValidator
+            .Setup(v => v.ValidateAsync(
+                It.Is<string>(token =>
+                    !string.IsNullOrEmpty(token) &&
+                    token.Contains('.') &&
+                    !token.StartsWith("invalid_") &&
+                    !token.StartsWith("expired_") &&
+                    token != "malformed_token"
+                ),
+                It.IsAny<string>()))
+            .ReturnsAsync(validPayload);
+
+        // 잘못된 토큰 패턴 설정
+        mockValidator
+            .Setup(v => v.ValidateAsync(
+                It.Is<string>(token =>
+                    string.IsNullOrEmpty(token) ||
+                    token.StartsWith("invalid_") ||
+                    token.StartsWith("expired_") ||
+                    token == "malformed_token" ||
+                    !token.Contains('.')
+                ),
+                It.IsAny<string>()))
+            .ThrowsAsync(new InvalidJwtException("Invalid JWT token"));
+
+        // 특정 에러 시나리오
+        mockValidator
+            .Setup(v => v.ValidateAsync("network_error_token", It.IsAny<string>()))
+            .ThrowsAsync(new HttpRequestException("Network error"));
+
+        mockValidator
+            .Setup(v => v.ValidateAsync("google_service_error", It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("Google service unavailable"));
     }
 
     /// <summary>
