@@ -196,38 +196,130 @@ public class StockControllerTest
     }
 
     [Fact]
-    public async Task GetUser_WithoutClaims_ThrowsUnauthorizedAccessException()
+    public async Task GetBalance_WithoutClaims_ReturnsUnauthorized()
     {
-        // 클레임이 없는 상황을 만들기 위해 새로운 HttpContext를 설정
+        // Arrange - 클레임이 없는 상황을 만들기 위해 새로운 HttpContext를 설정
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
         };
-    
-        // GetBalance 메서드를 호출하면 내부적으로 GetUser 메서드가 호출되며,
-        // GetUser 메서드는 UnauthorizedAccessException을 발생시킴
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            async () => await _controller.GetBalance());
+
+        // Act
+        var result = await _controller.GetBalance();
+
+        // Assert
+        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result.Result);
+        Assert.Equal("사용자 인증 정보가 유효하지 않습니다.", unauthorizedResult.Value);
     }
-    
+
     [Fact]
-    public async Task GetUser_WithNullUserService_ThrowsUnauthorizedAccessException()
+    public async Task GetBalance_WithNullUserService_ReturnsNotFound()
     {
+        // Arrange
         var claims = new[] { new Claim(ClaimTypes.Email, _testUser.Email) };
         var identity = new ClaimsIdentity(claims);
         var claimsPrincipal = new ClaimsPrincipal(identity);
-    
+
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext { User = claimsPrincipal }
         };
-    
+
         _mockUserService
             .Setup(x => x.GetUserByEmailAsync(_testUser.Email))
             .ReturnsAsync((UserDto)null);
-    
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            async () => await _controller.GetBalance());
-        Assert.Equal("사용자 정보를 찾을 수 없음", exception.Message);
+
+        // Act
+        var result = await _controller.GetBalance();
+
+        // Assert
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
+        Assert.Equal("사용자 정보를 찾을 수 없습니다.", notFoundResult.Value);
+    }
+
+    [Fact]
+    public async Task PlaceOrder_WithoutClaims_ReturnsUnauthorized()
+    {
+        // Arrange
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
+        };
+
+        var orderRequest = new StockOrderRequest
+        {
+            tr_id = "VTTC0802U",
+            PDNO = "005930",
+            ORD_DVSN = "00",
+            ORD_QTY = "10",
+            ORD_UNPR = "70000"
+        };
+
+        // Act
+        var result = await _controller.PlaceOrder(orderRequest);
+
+        // Assert
+        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result.Result);
+        Assert.Equal("사용자 인증 정보가 유효하지 않습니다.", unauthorizedResult.Value);
+    }
+
+    [Fact]
+    public async Task PlaceOrder_WithNullUserService_ReturnsNotFound()
+    {
+        // Arrange
+        var claims = new[] { new Claim(ClaimTypes.Email, _testUser.Email) };
+        var identity = new ClaimsIdentity(claims);
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+        };
+
+        _mockUserService
+            .Setup(x => x.GetUserByEmailAsync(_testUser.Email))
+            .ReturnsAsync((UserDto)null);
+
+        var orderRequest = new StockOrderRequest
+        {
+            tr_id = "VTTC0802U",
+            PDNO = "005930",
+            ORD_DVSN = "00",
+            ORD_QTY = "10",
+            ORD_UNPR = "70000"
+        };
+
+        // Act
+        var result = await _controller.PlaceOrder(orderRequest);
+
+        // Assert
+        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
+        Assert.Equal("사용자 정보를 찾을 수 없습니다.", notFoundResult.Value);
+    }
+
+    [Fact]
+    public async Task GetBalance_WhenUserServiceThrowsException_ReturnsInternalServerError()
+    {
+        // Arrange
+        var claims = new[] { new Claim(ClaimTypes.Email, _testUser.Email) };
+        var identity = new ClaimsIdentity(claims);
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = claimsPrincipal }
+        };
+
+        _mockUserService
+            .Setup(x => x.GetUserByEmailAsync(_testUser.Email))
+            .ThrowsAsync(new Exception("Database connection failed"));
+
+        // Act
+        var result = await _controller.GetBalance();
+
+        // Assert
+        var statusCodeResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
+        Assert.Equal("사용자 정보 조회 실패", statusCodeResult.Value);
     }
 }
