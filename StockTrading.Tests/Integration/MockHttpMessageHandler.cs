@@ -22,8 +22,10 @@ public class MockHttpMessageHandler : HttpMessageHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
+
         if (IsKisApiRequest(request))
             return Task.FromResult(CreateMockKisResponse(request));
+
         return Task.FromResult(CreateDefaultSuccessResponse());
     }
 
@@ -32,7 +34,15 @@ public class MockHttpMessageHandler : HttpMessageHandler
     /// </summary>
     private static bool IsKisApiRequest(HttpRequestMessage request)
     {
-        return request.RequestUri?.Host.Contains(KisApiHostIdentifier) == true;
+        var host = request.RequestUri?.Host;
+        var url = request.RequestUri?.ToString();
+
+        bool isKis = host?.Contains(KisApiHostIdentifier) == true ||
+                     host?.Contains("koreainvestment") == true ||
+                     host?.Contains("openapi") == true ||
+                     url?.Contains("oauth2") == true;
+
+        return isKis;
     }
 
     /// <summary>
@@ -42,7 +52,7 @@ public class MockHttpMessageHandler : HttpMessageHandler
     {
         return new HttpResponseMessage(OK)
         {
-            Content = new StringContent(DefaultSuccessMessage)
+            Content = new StringContent(DefaultSuccessMessage, UTF8, "application/json")
         };
     }
 
@@ -59,8 +69,22 @@ public class MockHttpMessageHandler : HttpMessageHandler
             var path when path.Contains("/oauth2/Approval") => CreateApprovalResponse(),
             var path when path.Contains("/inquire-balance") => CreateBalanceResponse(),
             var path when path.Contains("/order-cash") => CreateOrderResponse(),
-            _ => CreateDefaultSuccessResponse()
+            _ => CreateDefaultKisResponse()
         };
+    }
+
+    /// <summary>
+    /// 기본 KIS 응답 생성
+    /// </summary>
+    private HttpResponseMessage CreateDefaultKisResponse()
+    {
+        var response = new
+        {
+            access_token = "mock_access_token_default",
+            token_type = "Bearer",
+            expires_in = 86400
+        };
+        return CreateJsonResponse(response);
     }
 
     /// <summary>

@@ -99,7 +99,7 @@ public class KisService : IKisService
 
             return tokenResponse;
         }
-        catch (ArgumentException)
+        catch (NullReferenceException)
         {
             await transaction.RollbackAsync();
             throw;

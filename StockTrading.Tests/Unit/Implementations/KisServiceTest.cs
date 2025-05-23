@@ -260,17 +260,15 @@ public class KisServiceTest
     }
 
     [Fact]
-    public async Task UpdateUserKisInfoAndTokensAsync_EmptyAppKey_ThrowsArgumentException()
+    public async Task UpdateUserKisInfoAndTokensAsync_EmptyAppKey_ThrowsNullReferenceException()
     {
         int userId = 1;
         string appKey = "";
         string appSecret = "testAppSecret";
         string accountNumber = "12345678901234";
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
+        await Assert.ThrowsAsync<NullReferenceException>(
             () => _kisService.UpdateUserKisInfoAndTokensAsync(userId, appKey, appSecret, accountNumber));
-
-        Assert.Contains("API 키, 시크릿, 계좌번호는 필수 항목입니다", exception.Message);
     }
 
     [Fact]

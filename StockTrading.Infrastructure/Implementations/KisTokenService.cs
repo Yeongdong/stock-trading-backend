@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Repositories;
@@ -16,13 +15,16 @@ public class KisTokenService : IKisTokenService
     private readonly ILogger<KisTokenService> _logger;
     private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
-    public KisTokenService(HttpClient httpClient, IKisTokenRepository kisTokenRepository,
-        IUserKisInfoRepository userKisInfoRepository, ILogger<KisTokenService> logger)
+    public KisTokenService(
+        IHttpClientFactory httpClientFactory,
+        IKisTokenRepository kisTokenRepository,
+        IUserKisInfoRepository userKisInfoRepository,
+        ILogger<KisTokenService> logger)
     {
-        _httpClient = httpClient;
         _kisTokenRepository = kisTokenRepository;
         _userKisInfoRepository = userKisInfoRepository;
         _logger = logger;
+        _httpClient = httpClientFactory.CreateClient(nameof(KisTokenService));
         _httpClient.BaseAddress = new Uri(BASE_URL);
     }
 
@@ -37,9 +39,8 @@ public class KisTokenService : IKisTokenService
                 appsecret = appSecret
             };
 
-            var response = await _httpClient.PostAsJsonAsync($"{BASE_URL}/oauth2/tokenP", bodyData);
+            var response = await _httpClient.PostAsJsonAsync("/oauth2/tokenP", bodyData);
             var responseContent = await response.Content.ReadAsStringAsync();
-
             _logger.LogInformation($"Response Content: {responseContent}");
 
             if (!response.IsSuccessStatusCode)
@@ -75,14 +76,14 @@ public class KisTokenService : IKisTokenService
                 secretkey = appSecret
             };
 
-            var response = await _httpClient.PostAsJsonAsync($"{BASE_URL}/oauth2/Approval", content);
+            var response = await _httpClient.PostAsJsonAsync("/oauth2/Approval", content);
             _logger.LogInformation(response.Content.ReadAsStringAsync().Result);
             response.EnsureSuccessStatusCode();
-            
+
             var result = await response.Content.ReadFromJsonAsync<WebSocketApprovalResponse>();
             await _userKisInfoRepository.SaveWebSocketTokenAsync(userId, result.ApprovalKey);
             _logger.LogInformation("웹토큰 저장 성공");
-            
+
             return result.ApprovalKey;
         }
         catch (Exception ex)

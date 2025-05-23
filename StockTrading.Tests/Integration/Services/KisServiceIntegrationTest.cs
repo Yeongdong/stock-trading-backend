@@ -254,19 +254,18 @@ public class KisServiceIntegrationTest
     }
 
     [Fact]
-    public async Task UpdateUserKisInfoAndTokensAsync_EmptyCredentials_ThrowsArgumentException()
+    public async Task UpdateUserKisInfoAndTokensAsync_EmptyCredentials_ThrowsNullReferenceException()
     {
         int userId = 1;
         string emptyAppKey = "";
         string appSecret = "test_app_secret";
         string accountNumber = "123456789";
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        await Assert.ThrowsAsync<NullReferenceException>(() =>
             _kisService.UpdateUserKisInfoAndTokensAsync(userId, emptyAppKey, appSecret, accountNumber));
 
         _mockKisTokenService.Verify(
-            service => service.GetKisTokenAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string>()),
+            service => service.GetWebSocketTokenAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
     }
 

@@ -18,23 +18,28 @@ public class KisTokenServiceTest
     private readonly Mock<IKisTokenRepository> _mockKisTokenRepository;
     private readonly Mock<IUserKisInfoRepository> _mockUserKisInfoRepository;
     private readonly Mock<ILogger<KisTokenService>> _mockLogger;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly HttpClient _httpClient;
     private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
     private readonly KisTokenService _kisTokenService;
+    private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
     public KisTokenServiceTest()
     {
         _mockKisTokenRepository = new Mock<IKisTokenRepository>();
         _mockUserKisInfoRepository = new Mock<IUserKisInfoRepository>();
         _mockLogger = new Mock<ILogger<KisTokenService>>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
 
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
         _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
         {
-            BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443")
+            BaseAddress = new Uri(BASE_URL)
         };
-
-        _kisTokenService = new KisTokenService(_httpClient, _mockKisTokenRepository.Object,
+        _mockHttpClientFactory
+            .Setup(f => f.CreateClient(nameof(KisTokenService)))
+            .Returns(_httpClient);
+        _kisTokenService = new KisTokenService(_mockHttpClientFactory.Object, _mockKisTokenRepository.Object,
             _mockUserKisInfoRepository.Object, _mockLogger.Object);
     }
 

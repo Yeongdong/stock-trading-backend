@@ -1,10 +1,14 @@
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Implementations;
 using StockTrading.Infrastructure.Interfaces;
 using StockTrading.Infrastructure.Repositories;
@@ -21,6 +25,7 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     private readonly string _databaseName;
     private IConfiguration _testConfiguration;
     private TestDataFactory _testDataFactory;
+    private const string BASE_URL = "https://openapivts.koreainvestment.com:29443";
 
     public IntegrationTestWebApplicationFactory()
     {
@@ -71,10 +76,8 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
         }
 
         if (projectDirectory == null)
-        {
             throw new DirectoryNotFoundException(
                 $"StockTrading.Tests 프로젝트 디렉토리를 찾을 수 없습니다. 현재 경로: {currentDirectory}");
-        }
 
         return projectDirectory;
     }
@@ -109,7 +112,9 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
         {
             ReplaceDbContext(services);
             RegisterMockEncryptionService(services);
-            RegisterMockHttpClient(services);
+            DisableAntiforgeryForTesting(services);
+            ReplaceHttpClientServices(services);
+            RegisterBusinessServices(services);
 
             services.AddScoped<TestDataFactory>();
             services.AddScoped<IDbContextWrapper, DbContextWrapper>();
@@ -117,15 +122,160 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
 
         builder.ConfigureServices(services =>
         {
-            services.AddScoped(provider =>
-            {
-                if (_testDataFactory == null)
-                {
-                    _testDataFactory = ActivatorUtilities.CreateInstance<TestDataFactory>(provider);
-                }
+            OverrideHttpClientServices(services);
 
-                return _testDataFactory;
+            services.AddScoped(provider => _testDataFactory);
+        });
+    }
+
+    /// <summary>
+    /// 비즈니스 로직 서비스들 등록
+    /// </summary>
+    private static void RegisterBusinessServices(IServiceCollection services)
+    {
+
+        // Repository 서비스들
+        services.AddScoped<StockTrading.DataAccess.Repositories.IUserRepository, UserRepository>();
+        services.AddScoped<StockTrading.DataAccess.Repositories.IOrderRepository, OrderRepository>();
+        services.AddScoped<StockTrading.DataAccess.Repositories.IKisTokenRepository, KisTokenRepository>();
+        services.AddScoped<StockTrading.DataAccess.Repositories.IUserKisInfoRepository, UserKisInfoRepository>();
+
+        // Application Service들
+        services.AddScoped<StockTrading.DataAccess.Services.Interfaces.IJwtService, JwtService>();
+        services.AddScoped<StockTrading.DataAccess.Services.Interfaces.IUserService, UserService>();
+        services.AddScoped<StockTrading.DataAccess.Services.Interfaces.IGoogleAuthProvider, GoogleAuthProvider>();
+        services.AddScoped<StockTrading.DataAccess.Services.Interfaces.IKisService, KisService>();
+        services.AddScoped<StockTrading.DataAccess.Services.Interfaces.IKisTokenService, KisTokenService>();
+
+        // External API Client들
+        services.AddScoped<StockTrading.Infrastructure.ExternalServices.Interfaces.IKisApiClient, KisApiClient>();
+
+        // Infrastructure 서비스들
+        services.AddScoped<IDbContextWrapper, DbContextWrapper>();
+
+    }
+
+    /// <summary>
+    /// HttpClient 관련 서비스들을 모두 Mock으로 교체
+    /// </summary>
+    private void ReplaceHttpClientServices(IServiceCollection services)
+    {
+
+        services.AddHttpClient();
+
+        // KisTokenService용 Named HttpClient 등록
+        services.AddHttpClient(nameof(KisTokenService), client =>
+            {
+                client.BaseAddress = new Uri(BASE_URL);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                return new MockHttpMessageHandler(_testConfiguration);
             });
+
+        // KisApiClient용 Named HttpClient 등록
+        services.AddHttpClient(nameof(KisApiClient), client =>
+            {
+                client.BaseAddress = new Uri(BASE_URL);
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new MockHttpMessageHandler(_testConfiguration));
+
+    }
+
+    /// <summary>
+    /// HttpClient 관련 서비스들만 제거 (비즈니스 로직 서비스는 보존)
+    /// </summary>
+    private static void RemoveOnlyHttpClientServices(IServiceCollection services)
+    {
+        // HttpClient 관련 서비스만 제거
+        var httpServiceTypesToRemove = new[]
+        {
+            typeof(HttpClient),
+            typeof(IHttpClientFactory)
+        };
+
+        foreach (var serviceType in httpServiceTypesToRemove)
+        {
+            var descriptorsToRemove = services
+                .Where(d => d.ServiceType == serviceType ||
+                            (d.ServiceType.Name.Contains("HttpClient") &&
+                             !d.ServiceType.Name.Contains("Service") &&
+                             !d.ServiceType.Name.Contains("Repository")))
+                .ToList();
+
+            foreach (var descriptor in descriptorsToRemove)
+            {
+                services.Remove(descriptor);
+                Console.WriteLine($"[Factory] HttpClient 관련 서비스 제거됨: {descriptor.ServiceType.Name}");
+            }
+        }
+    }
+
+    private void OverrideHttpClientServices(IServiceCollection services)
+    {
+        // 1. 기존 HttpClient 관련 서비스들 모두 제거
+        var httpClientDescriptors = services
+            .Where(d => d.ServiceType.Name.Contains("HttpClient") ||
+                        d.ServiceType == typeof(HttpClient) ||
+                        d.ServiceType == typeof(IHttpClientFactory) ||
+                        d.ImplementationType?.Name.Contains("HttpClient") == true)
+            .ToList();
+
+        foreach (var descriptor in httpClientDescriptors)
+        {
+            services.Remove(descriptor);
+        }
+
+        // 2. HttpClientFactory 재등록
+        services.AddHttpClient();
+
+        // 3. 특정 서비스들을 Mock HttpClient로 교체
+        services.AddHttpClient<KisTokenService>(client =>
+            {
+                client.BaseAddress = new Uri(BASE_URL);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                return new MockHttpMessageHandler(_testConfiguration);
+            });
+
+        // 4. KisApiClient도 Mock으로 교체
+        services.AddHttpClient<KisApiClient>(client =>
+            {
+                client.BaseAddress = new Uri(BASE_URL);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new MockHttpMessageHandler(_testConfiguration));
+
+    }
+
+    /// <summary>
+    /// 테스트 환경에서 CSRF 검증 완전 비활성화
+    /// </summary>
+    private static void DisableAntiforgeryForTesting(IServiceCollection services)
+    {
+        var mvcBuilder = services.AddMvc(options =>
+        {
+            // 모든 CSRF 관련 필터 제거
+            for (int i = options.Filters.Count - 1; i >= 0; i--)
+            {
+                var filter = options.Filters[i];
+                if (filter is AutoValidateAntiforgeryTokenAttribute ||
+                    (filter is ServiceFilterAttribute serviceFilter &&
+                     serviceFilter.ServiceType ==
+                     typeof(AutoValidateAntiforgeryTokenAttribute)))
+                {
+                    options.Filters.RemoveAt(i);
+                }
+            }
+        });
+
+        // 테스트용 Antiforgery 설정 (완화된 설정)
+        services.Configure<AntiforgeryOptions>(options =>
+        {
+            options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            options.Cookie.SameSite = SameSiteMode.None;
         });
     }
 
@@ -186,17 +336,21 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     /// </summary>
     private void RegisterMockHttpClient(IServiceCollection services)
     {
+
         // 기존 HttpClient 제거
         var httpClientDescriptor = services.SingleOrDefault(
             d => d.ServiceType == typeof(HttpClient));
         if (httpClientDescriptor != null)
-        {
             services.Remove(httpClientDescriptor);
-        }
 
         // 테스트용 HttpClient 등록 (실제 외부 API 호출 방지)
         services.AddHttpClient("TestClient")
             .ConfigurePrimaryHttpMessageHandler(() => new MockHttpMessageHandler(_testConfiguration));
+
+        // KisTokenService용 HttpClient도 Mock으로 설정
+        services.AddHttpClient<KisTokenService>()
+            .ConfigurePrimaryHttpMessageHandler(() => new MockHttpMessageHandler(_testConfiguration));
+
     }
 
     /// <summary>
@@ -216,10 +370,7 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
     /// </summary>
     private async Task SeedTestDataAsync(ApplicationDbContext context)
     {
-        if (context.Users.Any())
-        {
-            return;
-        }
+        if (context.Users.Any()) return;
 
         try
         {
