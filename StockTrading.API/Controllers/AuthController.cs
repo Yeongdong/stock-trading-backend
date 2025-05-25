@@ -18,7 +18,7 @@ public class AuthController : ControllerBase
     private readonly IUserService _userService;
     private readonly IGoogleAuthValidator _googleAuthValidator;
     private readonly JwtSettings _jwtSettings;
-
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
         IGoogleAuthValidator googleAuthValidator, IOptions<JwtSettings> jwtSettings)
@@ -31,6 +31,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("google")]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         try
@@ -46,7 +47,8 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            _logger.LogError(ex, "Google 로그인 처리 중 오류 발생");
+            return BadRequest("로그인 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -62,7 +64,7 @@ public class AuthController : ControllerBase
 
         return Ok(new { Message = "로그아웃 성공" });
     }
-    
+
     [HttpGet("check")]
     public async Task<IActionResult> CheckAuth()
     {
@@ -91,18 +93,21 @@ public class AuthController : ControllerBase
                 return Unauthorized(new { Message = "사용자 정보 없음" });
             }
 
-            return Ok(new { 
+            return Ok(new
+            {
                 IsAuthenticated = true,
                 User = user
             });
         }
         catch (TokenValidationException ex)
         {
+            _logger.LogWarning(ex, "토큰 검증 실패");
             return Unauthorized(new { Message = ex.Message });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { Message = "인증 확인 중 오류 발생", Error = ex.Message });
+            _logger.LogWarning(ex, "토큰 검증 실패");
+            return Unauthorized(new { Message = ex.Message });
         }
     }
 
@@ -112,8 +117,9 @@ public class AuthController : ControllerBase
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes)
+            SameSite = SameSiteMode.None, // Cross-origin 허용
+            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+            Path = "/"
         };
 
         Response.Cookies.Append("auth_token", token, cookieOptions);

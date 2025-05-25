@@ -2,6 +2,7 @@ using System.Security.Claims;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using stock_trading_backend.Controllers;
 using StockTrading.DataAccess.DTOs;
@@ -13,12 +14,14 @@ namespace StockTrading.Tests.Unit.Controllers;
 public class UserControllerTest
 {
     private readonly Mock<IUserService> _mockUserService;
+    private readonly Mock<ILogger<UserController>> _mockLogger;
     private readonly UserController _controller;
 
     public UserControllerTest()
     {
         _mockUserService = new Mock<IUserService>();
-        _controller = new UserController(_mockUserService.Object);
+        _mockLogger = new Mock<ILogger<UserController>>();
+        _controller = new UserController(_mockUserService.Object, _mockLogger.Object);
     }
 
     private void SetupUserContext(string email = null)
@@ -67,46 +70,46 @@ public class UserControllerTest
         Assert.Equal(testUser.Name, returnedUser.Name);
         _mockUserService.Verify(service => service.GetUserByEmailAsync(testEmail), Times.Once);
     }
-    
+
     [Fact]
     public async Task GetCurrentUser_WithoutEmail_ReturnsUnauthorized()
     {
         SetupUserContext(); // 이메일 없이 설정
-    
+
         var result = await _controller.GetCurrentUser();
-    
+
         Assert.IsType<UnauthorizedResult>(result);
         _mockUserService.Verify(service => service.GetUserByEmailAsync(It.IsAny<string>()), Times.Never);
     }
-    
+
     [Fact]
     public async Task GetCurrentUser_UserNotFound_ReturnsNotFound()
     {
         var testEmail = "nonexistent@test.com";
-    
+
         SetupUserContext(testEmail);
         _mockUserService
             .Setup(service => service.GetUserByEmailAsync(testEmail))
             .ReturnsAsync((UserDto)null);
-    
+
         var result = await _controller.GetCurrentUser();
-    
+
         Assert.IsType<NotFoundResult>(result);
         _mockUserService.Verify(service => service.GetUserByEmailAsync(testEmail), Times.Once);
     }
-    
+
     [Fact]
     public async Task GetCurrentUser_ServiceThrowsException_ReturnsInternalServerError()
     {
         var testEmail = "test@example.com";
-    
+
         SetupUserContext(testEmail);
         _mockUserService
             .Setup(service => service.GetUserByEmailAsync(testEmail))
             .ThrowsAsync(new Exception("Test exception"));
-    
+
         var result = await _controller.GetCurrentUser();
-    
+
         var statusCodeResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusCodeResult.StatusCode);
         Assert.Equal("Internal server error", statusCodeResult.Value);

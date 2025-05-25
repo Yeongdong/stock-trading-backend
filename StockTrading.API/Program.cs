@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -115,7 +116,13 @@ static void ConfigureSecurity(IServiceCollection services, IConfiguration config
     services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
 
     // 암호화 서비스 등록
-    services.Configure<EncryptionOptions>(configuration.GetSection("Encryption"));
+    // 환경변수가 있으면 우선 사용
+    services.Configure<EncryptionOptions>(options =>
+    {
+        var config = configuration.GetSection("Encryption");
+        options.Key = Environment.GetEnvironmentVariable("ENCRYPTION:KEY") ?? config["Key"];
+        options.IV = Environment.GetEnvironmentVariable("ENCRYPTION:IV") ?? config["IV"];
+    });
     services.AddSingleton<IEncryptionService, AesEncryptionService>();
 }
 
@@ -147,7 +154,6 @@ static void ConfigureAuthentication(IServiceCollection services, IConfiguration 
             {
                 OnMessageReceived = context =>
                 {
-                    // 쿠키에서 토큰 읽기
                     context.Token = context.Request.Cookies["auth_token"];
                     return Task.CompletedTask;
                 },
@@ -234,9 +240,15 @@ static void ConfigureRealTimeServices(IServiceCollection services)
 {
     // 실시간 서비스
     services.AddSingleton<KisWebSocketClient>();
+    services.AddSingleton<IKisWebSocketClient>(provider => provider.GetRequiredService<KisWebSocketClient>());
     services.AddSingleton<KisRealTimeDataProcessor>();
+    services.AddSingleton<IKisRealTimeDataProcessor>(
+        provider => provider.GetRequiredService<KisRealTimeDataProcessor>());
     services.AddSingleton<RealTimeDataBroadcaster>();
+    services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
     services.AddSingleton<KisSubscriptionManager>();
+    services.AddSingleton<IKisSubscriptionManager>(provider => provider.GetRequiredService<KisSubscriptionManager>());
+    services.AddScoped<IKisRealTimeService, KisRealTimeService>();
 
     // 실시간 서비스는 사용자별 격리를 위해 Scoped
     services.AddScoped<IKisRealTimeService, KisRealTimeService>();
@@ -260,9 +272,11 @@ static void ConfigureCors(IServiceCollection services, IConfiguration configurat
         // 개발 환경용 정책
         options.AddPolicy("Development", builder =>
         {
-            builder.AllowAnyOrigin()
+            builder.WithOrigins(frontendUrl)
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
         });
     });
 }
@@ -369,6 +383,17 @@ static void ConfigureMiddleware(WebApplication app)
         });
         logger.LogInformation("운영 환경: 보안 헤더 적용됨");
     }
+
+
+    app.Use(async (context, next) =>
+    {
+        logger.LogInformation("Request: {Method} {Path}",
+            context.Request.Method,
+            context.Request.Path);
+        await next();
+        logger.LogInformation("Response: {StatusCode}", context.Response.StatusCode);
+    });
+
 
     // 3. CORS (인증 전에 위치해야 함)
     if (app.Environment.IsDevelopment())

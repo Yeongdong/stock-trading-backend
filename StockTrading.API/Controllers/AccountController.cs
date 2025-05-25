@@ -12,16 +12,19 @@ public class AccountController : ControllerBase
     private readonly IKisService _kisService;
     private readonly IUserService _userService;
     private readonly IGoogleAuthProvider _googleAuthProvider;
+    private readonly ILogger<AccountController> _logger;
 
-    public AccountController(IKisService kisService, IUserService userService, IGoogleAuthProvider googleAuthProvider)
+    public AccountController(IKisService kisService, IUserService userService, IGoogleAuthProvider googleAuthProvider, ILogger<AccountController> logger)
     {
         _kisService = kisService;
         _userService = userService;
         _googleAuthProvider = googleAuthProvider;
+        _logger = logger;
     }
 
     [Authorize]
     [HttpPost("userInfo")]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> UpdateUserInfo([FromBody] UserInfoRequest request)
     {
         if (!ModelState.IsValid)
@@ -41,14 +44,17 @@ public class AccountController : ControllerBase
         }
         catch (ArgumentException ex)
         {
+            _logger.LogError(ex, "ArgumentException 발생");
             return BadRequest(ex.Message);
         }
         catch (HttpRequestException ex)
         {
+            _logger.LogError(ex, "HttpRequestException 발생");
             return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Exception 발생");
             return StatusCode(500, ex.Message);
         }
     }

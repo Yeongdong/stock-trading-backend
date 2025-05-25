@@ -2,6 +2,7 @@ using System.Security.Claims;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using stock_trading_backend.Controllers;
 using stock_trading_backend.DTOs;
@@ -17,6 +18,7 @@ public class AccountControllerTest
     private readonly Mock<IKisService> _mockKisService;
     private readonly Mock<IUserService> _mockUserService;
     private readonly Mock<IGoogleAuthProvider> _mockGoogleAuthProvider;
+    private readonly Mock<ILogger<AccountController>> _mockLogger;
     private readonly AccountController _controller;
 
     public AccountControllerTest()
@@ -28,7 +30,8 @@ public class AccountControllerTest
         _controller = new AccountController(
             _mockKisService.Object,
             _mockUserService.Object,
-            _mockGoogleAuthProvider.Object
+            _mockGoogleAuthProvider.Object,
+            _mockLogger.Object
         );
 
         // 인증된 사용자 시뮬레이션
