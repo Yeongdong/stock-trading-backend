@@ -18,6 +18,7 @@ public class UserRepository : IUserRepository
     public async Task<User> GetByGoogleIdAsync(string googleId)
     {
         var user = await _context.Users
+            .Include(u => u.KisToken)
             .FirstOrDefaultAsync(u => u.GoogleId == googleId);
         
         if (user == null)
