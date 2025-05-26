@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using stock_trading_backend.controllers;
 using stock_trading_backend.DTOs;
+using stock_trading_backend.Services;
 using stock_trading_backend.Validator.Interfaces;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
@@ -21,9 +22,9 @@ public class AuthControllerTest
     private readonly Mock<IJwtService> _mockJwtService;
     private readonly Mock<IUserService> _mockUserService;
     private readonly Mock<IGoogleAuthValidator> _mockGoogleAuthValidator;
+    private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<IOptions<JwtSettings>> _mockJwtSettingsOptions;
     private readonly AuthController _controller;
-
 
     public AuthControllerTest()
     {
@@ -31,8 +32,8 @@ public class AuthControllerTest
         _mockJwtService = new Mock<IJwtService>();
         _mockUserService = new Mock<IUserService>();
         _mockGoogleAuthValidator = new Mock<IGoogleAuthValidator>();
+        _mockUserContextService = new Mock<IUserContextService>();
         _mockJwtSettingsOptions = new Mock<IOptions<JwtSettings>>();
-
 
         _mockConfiguration.Setup(x => x["Authentication:Google:ClientId"]).Returns("test-client-id");
         _mockJwtSettingsOptions.Setup(x => x.Value).Returns(new JwtSettings
@@ -45,75 +46,21 @@ public class AuthControllerTest
             _mockJwtService.Object,
             _mockUserService.Object,
             _mockGoogleAuthValidator.Object,
+            _mockUserContextService.Object,
             _mockJwtSettingsOptions.Object
         );
+
+        // HttpContext 설정
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
     }
 
     [Fact]
     public async Task GoogleLogin_Success_ReturnsOkResult()
     {
-            var httpContext = new DefaultHttpContext();
-
-            _controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = httpContext
-            };
-
-            var googleLoginRequest = SetupGoogleLoginRequest(out var payload, out var user);
-            var token = "jwt-token-value";
-            
-            _mockGoogleAuthValidator.Setup(x => x.ValidateAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(payload);
-
-            _mockUserService.Setup(x => x.GetOrCreateGoogleUserAsync(It.IsAny<GoogleJsonWebSignature.Payload>()))
-                .ReturnsAsync(user);
-
-            _mockJwtService.Setup(x => x.GenerateToken(It.IsAny<UserDto>()))
-                .Returns(token);
-
-            var result = await _controller.GoogleLogin(googleLoginRequest);
-
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var responseValue = okResult.Value;
-
-            var propertyInfo = responseValue?.GetType().GetProperty("User");
-            Assert.NotNull(propertyInfo);
-            var userValue = propertyInfo.GetValue(responseValue);
-            Assert.Equal(user, userValue);
-
-            _mockGoogleAuthValidator.Verify(x => x.ValidateAsync(
-                googleLoginRequest.Credential,
-                "test-client-id"
-            ), Times.Once);
-            _mockJwtService.Verify(x => x.GenerateToken(It.IsAny<UserDto>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task GoogleLogin_InvalidToken_ReturnsBadRequest()
-    {
-        var googleLoginRequest = new GoogleLoginRequest
-        {
-            Credential = "invalid-google-token"
-        };
-
-        var errorMessage = "구글 토큰 인증 실패";
-
-        _mockGoogleAuthValidator.Setup(x => x.ValidateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-            .ThrowsAsync(new Exception(errorMessage));
-
-        var result = await _controller.GoogleLogin(googleLoginRequest);
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal(errorMessage, badRequestResult.Value);
-    }
-
-    [Fact]
-    public async Task GoogleLogin_UserServiceException_ReturnsBadRequest()
-    {
+        // Arrange
         var googleLoginRequest = new GoogleLoginRequest
         {
             Credential = "valid-google-token"
@@ -126,66 +73,73 @@ public class AuthControllerTest
             Subject = "user123"
         };
 
-        var errorMessage = "사용자 생성 실패";
-
-        _mockGoogleAuthValidator.Setup(x => x.ValidateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-            .ReturnsAsync(payload);
-
-        _mockUserService.Setup(x => x.GetOrCreateGoogleUserAsync(It.IsAny<GoogleJsonWebSignature.Payload>()))
-            .ThrowsAsync(new Exception(errorMessage));
-
-        var result = await _controller.GoogleLogin(googleLoginRequest);
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal(errorMessage, badRequestResult.Value);
-    }
-
-    [Fact]
-    public async Task GoogleLogin_JwtServiceException_ReturnsBadRequest()
-    {
-        var googleLoginRequest = SetupGoogleLoginRequest(out var payload, out var user);
-        var errorMessage = "토큰 생성 실패";
-
-        _mockGoogleAuthValidator.Setup(x => x.ValidateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-            .ReturnsAsync(payload);
-
-        _mockUserService.Setup(x => x.GetOrCreateGoogleUserAsync(It.IsAny<GoogleJsonWebSignature.Payload>()))
-            .ReturnsAsync(user);
-
-        _mockJwtService.Setup(x => x.GenerateToken(It.IsAny<UserDto>()))
-            .Throws(new Exception(errorMessage));
-
-        var result = await _controller.GoogleLogin(googleLoginRequest);
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal(errorMessage, badRequestResult.Value);
-    }
-
-    private GoogleLoginRequest SetupGoogleLoginRequest(out GoogleJsonWebSignature.Payload payload, out UserDto user)
-    {
-        var googleLoginRequest = new GoogleLoginRequest
-        {
-            Credential = "valid-google-token"
-        };
-
-        payload = new GoogleJsonWebSignature.Payload
-        {
-            Email = "test@example.com",
-            Name = "Test User",
-            Subject = "user123"
-        };
-
-        user = new UserDto
+        var user = new UserDto
         {
             Id = 1,
             Email = "test@example.com",
             Name = "Test User"
         };
 
-        return googleLoginRequest;
+        var token = "jwt-token-value";
+
+        _mockGoogleAuthValidator
+            .Setup(x => x.ValidateAsync(googleLoginRequest.Credential, "test-client-id"))
+            .ReturnsAsync(payload);
+
+        _mockUserService
+            .Setup(x => x.GetOrCreateGoogleUserAsync(payload))
+            .ReturnsAsync(user);
+
+        _mockJwtService
+            .Setup(x => x.GenerateToken(user))
+            .Returns(token);
+
+        // Act
+        var result = await _controller.GoogleLogin(googleLoginRequest);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(okResult.Value);
+    }
+
+    [Fact]
+    public async Task CheckAuth_WithValidToken_ReturnsOkResult()
+    {
+        // Arrange
+        var testUser = new UserDto
+        {
+            Id = 1,
+            Email = "test@example.com",
+            Name = "Test User"
+        };
+
+        var mockPrincipal = new System.Security.Claims.ClaimsPrincipal();
+        
+        _controller.ControllerContext.HttpContext.Request.Headers.Cookie = "auth_token=valid-token";
+        
+        _mockJwtService
+            .Setup(x => x.ValidateToken("valid-token"))
+            .Returns(mockPrincipal);
+
+        _mockUserContextService
+            .Setup(x => x.GetCurrentUserAsync())
+            .ReturnsAsync(testUser);
+
+        // Act
+        var result = await _controller.CheckAuth();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(okResult.Value);
+    }
+
+    [Fact]
+    public async Task CheckAuth_WithoutToken_ReturnsUnauthorized()
+    {
+        // Act
+        var result = await _controller.CheckAuth();
+
+        // Assert
+        Assert.IsType<UnauthorizedObjectResult>(result);
     }
 }

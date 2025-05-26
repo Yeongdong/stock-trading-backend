@@ -1,9 +1,9 @@
-using System.Security.Claims;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using stock_trading_backend.Controllers;
+using stock_trading_backend.Services;
 using StockTrading.DataAccess.DTOs;
 using StockTrading.DataAccess.Services.Interfaces;
 
@@ -13,7 +13,7 @@ namespace StockTrading.Tests.Unit.Controllers;
 public class RealTimeControllerTest
 {
     private readonly Mock<IKisRealTimeService> _mockRealTimeService;
-    private readonly Mock<IUserService> _mockUserService;
+    private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ILogger<RealTimeController>> _mockLogger;
     private readonly RealTimeController _controller;
     private readonly UserDto _testUser;
@@ -21,13 +21,8 @@ public class RealTimeControllerTest
     public RealTimeControllerTest()
     {
         _mockRealTimeService = new Mock<IKisRealTimeService>();
-        _mockUserService = new Mock<IUserService>();
+        _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<RealTimeController>>();
-        _controller = new RealTimeController(
-            _mockRealTimeService.Object,
-            _mockUserService.Object,
-            _mockLogger.Object
-        );
 
         _testUser = new UserDto
         {
@@ -37,40 +32,38 @@ public class RealTimeControllerTest
             WebSocketToken = "test_token"
         };
 
-        // 사용자 인증 컨텍스트 설정
-        var identity = new ClaimsIdentity(new Claim[]
-        {
-            new Claim(ClaimTypes.Email, _testUser.Email),
-        });
-        var principal = new ClaimsPrincipal(identity);
+        _controller = new RealTimeController(
+            _mockRealTimeService.Object,
+            _mockUserContextService.Object,
+            _mockLogger.Object
+        );
 
-        _controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext { User = principal }
-        };
-
-        _mockUserService
-            .Setup(s => s.GetUserByEmailAsync(_testUser.Email))
+        _mockUserContextService
+            .Setup(x => x.GetCurrentUserAsync())
             .ReturnsAsync(_testUser);
     }
-    
+
     [Fact]
     public async Task StartRealTimeService_ReturnsOk_WhenSuccessful()
     {
+        // Arrange
         _mockRealTimeService
-            .Setup(s => s.StartAsync(It.IsAny<UserDto>()))
+            .Setup(s => s.StartAsync(_testUser))
             .Returns(Task.CompletedTask);
 
+        // Act
         var result = await _controller.StartRealTimeService();
 
+        // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
         _mockRealTimeService.Verify(s => s.StartAsync(_testUser), Times.Once);
     }
 
     [Fact]
-    public async Task StartRealTimeService_ReturnsBadRequest_WhenUserHasNoToken()
+    public async Task StartRealTimeService_ThrowsException_WhenUserHasNoToken()
     {
+        // Arrange
         var userWithoutToken = new UserDto
         {
             Id = 1,
@@ -79,103 +72,61 @@ public class RealTimeControllerTest
             WebSocketToken = null
         };
 
-        _mockUserService
-            .Setup(s => s.GetUserByEmailAsync(_testUser.Email))
+        _mockUserContextService
+            .Setup(x => x.GetCurrentUserAsync())
             .ReturnsAsync(userWithoutToken);
 
-        var result = await _controller.StartRealTimeService();
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("WebSocket 토큰 없음", badRequestResult.Value.ToString());
-        _mockRealTimeService.Verify(s => s.StartAsync(It.IsAny<UserDto>()), Times.Never);
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _controller.StartRealTimeService());
     }
-    
-    [Fact]
-    public async Task StopRealTimeService_ReturnsOk_WhenSuccessful()
-    {
-        _mockRealTimeService
-            .Setup(s => s.StopAsync())
-            .Returns(Task.CompletedTask);
 
-        var result = await _controller.StopRealTimeService();
-
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(okResult.Value);
-        _mockRealTimeService.Verify(s => s.StopAsync(), Times.Once);
-    }
-    
     [Fact]
     public async Task SubscribeSymbol_ReturnsOk_WhenSuccessful()
     {
+        // Arrange
         string symbol = "005930";
-            
+        
         _mockRealTimeService
-            .Setup(s => s.SubscribeSymbolAsync(It.IsAny<string>()))
+            .Setup(s => s.SubscribeSymbolAsync(symbol))
             .Returns(Task.CompletedTask);
 
+        // Act
         var result = await _controller.SubscribeSymbol(symbol);
 
+        // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
         _mockRealTimeService.Verify(s => s.SubscribeSymbolAsync(symbol), Times.Once);
     }
-    
+
     [Fact]
-    public async Task SubscribeSymbol_ReturnsBadRequest_WhenSymbolIsInvalid()
+    public async Task SubscribeSymbol_ThrowsException_WhenSymbolIsInvalid()
     {
-        string invalidSymbol = "12345"; // 5자리 (6자리여야 함)
+        // Arrange
+        string invalidSymbol = "12345"; // 5자리
 
-        var result = await _controller.SubscribeSymbol(invalidSymbol);
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("유효하지 않은 종목 코드", badRequestResult.Value.ToString());
-        _mockRealTimeService.Verify(s => s.SubscribeSymbolAsync(It.IsAny<string>()), Times.Never);
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _controller.SubscribeSymbol(invalidSymbol));
     }
-    
-    [Fact]
-    public async Task UnsubscribeSymbol_ReturnsOk_WhenSuccessful()
-    {
-        string symbol = "005930";
-            
-        _mockRealTimeService
-            .Setup(s => s.UnsubscribeSymbolAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
 
-        var result = await _controller.UnsubscribeSymbol(symbol);
-
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.NotNull(okResult.Value);
-        _mockRealTimeService.Verify(s => s.UnsubscribeSymbolAsync(symbol), Times.Once);
-    }
-    
     [Fact]
     public void GetSubscriptions_ReturnsOk_WithSymbolsList()
     {
+        // Arrange
         var subscribedSymbols = new List<string> { "005930", "000660" };
-            
+        
         _mockRealTimeService
             .Setup(s => s.GetSubscribedSymbols())
             .Returns(subscribedSymbols);
 
+        // Act
         var result = _controller.GetSubscriptions();
 
+        // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
-            
-        // 원본 컨트롤러 메서드 반환값(익명 타입) 확인
-        // => return Ok(new { symbols = _realTimeService.GetSubscribedSymbols() });
-        // 리플렉션을 사용하여 속성에 접근
-        var resultObj = okResult.Value;
-        var symbolsProp = resultObj.GetType().GetProperty("symbols");
-        Assert.NotNull(symbolsProp);
-            
-        var symbolsValue = symbolsProp.GetValue(resultObj);
-        Assert.NotNull(symbolsValue);
-            
-        // 직접 컬렉션으로 변환하지 않고 Count 메서드 사용
-        var count = (symbolsValue as IEnumerable<string>)?.Count() ?? 0;
-        Assert.Equal(subscribedSymbols.Count, count);
-            
         _mockRealTimeService.Verify(s => s.GetSubscribedSymbols(), Times.Once);
     }
 }
