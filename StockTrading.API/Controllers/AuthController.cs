@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using stock_trading_backend.DTOs;
+using stock_trading_backend.Services;
 using stock_trading_backend.Validator.Interfaces;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTradingBackend.DataAccess.Exceptions.Authentication;
@@ -17,39 +18,33 @@ public class AuthController : ControllerBase
     private readonly IJwtService _jwtService;
     private readonly IUserService _userService;
     private readonly IGoogleAuthValidator _googleAuthValidator;
+    private readonly IUserContextService _userContextService;
     private readonly JwtSettings _jwtSettings;
-    private readonly ILogger<AuthController> _logger;
 
     public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
-        IGoogleAuthValidator googleAuthValidator, IOptions<JwtSettings> jwtSettings)
+        IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService,
+        IOptions<JwtSettings> jwtSettings)
     {
         _configuration = configuration;
         _jwtService = jwtService;
         _userService = userService;
         _googleAuthValidator = googleAuthValidator;
+        _userContextService = userContextService;
         _jwtSettings = jwtSettings.Value;
     }
 
     [HttpPost("google")]
-    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
-        try
-        {
-            var payload = await _googleAuthValidator.ValidateAsync(request.Credential,
-                _configuration["Authentication:Google:ClientId"]);
-            var user = await _userService.GetOrCreateGoogleUserAsync(payload);
-            var token = _jwtService.GenerateToken(user);
+        var payload = await _googleAuthValidator.ValidateAsync(
+            request.Credential,
+            _configuration["Authentication:Google:ClientId"]);
 
-            SetAuthCookie(token);
+        var user = await _userService.GetOrCreateGoogleUserAsync(payload);
+        var token = _jwtService.GenerateToken(user);
 
-            return Ok(new { User = user });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Google 로그인 처리 중 오류 발생");
-            return BadRequest("로그인 처리 중 오류가 발생했습니다.");
-        }
+        SetAuthCookie(token);
+        return Ok(new { User = user });
     }
 
     [HttpPost("logout")]
@@ -68,47 +63,19 @@ public class AuthController : ControllerBase
     [HttpGet("check")]
     public async Task<IActionResult> CheckAuth()
     {
-        try
+        if (!Request.Cookies.TryGetValue("auth_token", out var token))
         {
-            if (!Request.Cookies.TryGetValue("auth_token", out var token))
-            {
-                return Unauthorized(new { Message = "인증되지 않음" });
-            }
-
-            var principal = _jwtService.ValidateToken(token);
-            if (principal == null)
-            {
-                return Unauthorized(new { Message = "유효하지 않은 토큰" });
-            }
-
-            var email = principal.FindFirst(ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(email))
-            {
-                return Unauthorized(new { Message = "이메일 정보 없음" });
-            }
-
-            var user = await _userService.GetUserByEmailAsync(email);
-            if (user == null)
-            {
-                return Unauthorized(new { Message = "사용자 정보 없음" });
-            }
-
-            return Ok(new
-            {
-                IsAuthenticated = true,
-                User = user
-            });
+            return Unauthorized(new { Message = "인증되지 않음" });
         }
-        catch (TokenValidationException ex)
+
+        var principal = _jwtService.ValidateToken(token);
+        var user = await _userContextService.GetCurrentUserAsync();
+
+        return Ok(new
         {
-            _logger.LogWarning(ex, "토큰 검증 실패");
-            return Unauthorized(new { Message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "토큰 검증 실패");
-            return Unauthorized(new { Message = ex.Message });
-        }
+            IsAuthenticated = true,
+            User = user
+        });
     }
 
     private void SetAuthCookie(string token)
@@ -117,7 +84,7 @@ public class AuthController : ControllerBase
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.None, // Cross-origin 허용
+            SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
             Path = "/"
         };

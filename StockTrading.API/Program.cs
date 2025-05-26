@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using stock_trading_backend.Middleware;
+using stock_trading_backend.Services;
 using StockTrading.DataAccess.Repositories;
 using StockTrading.DataAccess.Services.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.Interfaces;
@@ -231,6 +233,7 @@ static void ConfigureBusinessServices(IServiceCollection services)
     // Infrastructure 계층
     services.AddScoped<IKisApiClient, KisApiClient>();
     services.AddScoped<IDbContextWrapper, DbContextWrapper>();
+    services.AddScoped<IUserContextService, UserContextService>();
 
     // Validator 계층
     services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
@@ -316,28 +319,7 @@ static void ConfigureMiddleware(WebApplication app)
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
 
     // 1. 전역 예외 처리 (가장 먼저)
-    if (!app.Environment.IsDevelopment())
-    {
-        app.UseExceptionHandler(errorApp =>
-        {
-            errorApp.Run(async context =>
-            {
-                var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-                var feature = context.Features.Get<IExceptionHandlerFeature>();
-
-                if (feature?.Error != null)
-                {
-                    logger.LogError(feature.Error, "전역 예외 발생: {Message}", feature.Error.Message);
-
-                    context.Response.StatusCode = 500;
-                    context.Response.ContentType = "application/json";
-
-                    var response = new { error = "내부 서버 오류가 발생했습니다." };
-                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(response));
-                }
-            });
-        });
-    }
+    app.UseMiddleware<ExceptionMiddleware>();
 
     // 2. 개발 환경별 설정
     if (app.Environment.IsDevelopment())
