@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.DataAccess.DTOs;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Domain.Entities;
+using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
-using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Unit.Repositories
 {

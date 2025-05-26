@@ -1,6 +1,6 @@
-using StockTrading.DataAccess.DTOs;
+using StockTrading.Application.DTOs.Common;
 
-namespace StockTrading.DataAccess.Repositories;
+namespace StockTrading.Application.Repositories;
 
 public interface IKisTokenRepository
 {

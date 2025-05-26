@@ -1,6 +1,6 @@
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.Domain.Entities;
 
-namespace StockTrading.DataAccess.Repositories;
+namespace StockTrading.Application.Repositories;
 
 public interface IUserRepository
 {

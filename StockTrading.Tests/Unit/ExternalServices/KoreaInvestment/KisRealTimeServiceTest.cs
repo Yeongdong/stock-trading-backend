@@ -1,8 +1,8 @@
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.Services;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;

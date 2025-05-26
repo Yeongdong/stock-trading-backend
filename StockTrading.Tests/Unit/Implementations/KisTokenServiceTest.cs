@@ -5,10 +5,10 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.Repositories;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
-using StockTrading.Infrastructure.Implementations;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.Repositories;
+using StockTrading.Infrastructure.Services;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

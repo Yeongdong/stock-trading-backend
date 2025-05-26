@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;
-using stock_trading_backend.controllers;
-using stock_trading_backend.DTOs;
-using stock_trading_backend.Services;
-using stock_trading_backend.Validator.Interfaces;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.Services.Interfaces;
-using StockTradingBackend.DataAccess.Settings;
+using StockTrading.API.Controllers;
+using StockTrading.API.DTOs.Requests;
+using StockTrading.API.Services;
+using StockTrading.API.Validator.Interfaces;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.Services;
+using StockTrading.Domain.Settings;
 
 namespace StockTrading.Tests.Unit.Controllers;
 

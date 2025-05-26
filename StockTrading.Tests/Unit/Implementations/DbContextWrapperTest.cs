@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
-using StockTrading.Infrastructure.Implementations;
-using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Security.Encryption;
+using StockTrading.Infrastructure.Services;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

@@ -1,9 +1,11 @@
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using StockTrading.Domain.Entities;
+using StockTrading.Infrastructure.Persistence.Contexts;
+using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
-using StockTradingBackend.DataAccess.Entities;
 
 namespace StockTrading.Tests.Unit.Repositories;
 

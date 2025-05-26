@@ -1,24 +1,22 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using stock_trading_backend.Middleware;
-using stock_trading_backend.Services;
-using StockTrading.DataAccess.Repositories;
-using StockTrading.DataAccess.Services.Interfaces;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
-using StockTrading.Infrastructure.Implementations;
-using StockTrading.Infrastructure.Interfaces;
 using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
 using StockTrading.Infrastructure.Security.Options;
-using StockTradingBackend.DataAccess.Settings;
-using stock_trading_backend.Validator.Implementations;
-using stock_trading_backend.Validator.Interfaces;
+using StockTrading.API.Middleware;
+using StockTrading.API.Services;
+using StockTrading.API.Validator.Implementations;
+using StockTrading.API.Validator.Interfaces;
+using StockTrading.Application.Repositories;
+using StockTrading.Application.Services;
+using StockTrading.Domain.Settings;
+using StockTrading.Infrastructure.Persistence.Contexts;
+using StockTrading.Infrastructure.Persistence.Repositories;
+using StockTrading.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -223,16 +221,17 @@ static void ConfigureBusinessServices(IServiceCollection services)
     services.AddScoped<IKisTokenRepository, KisTokenRepository>();
     services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
 
-    // Application 서비스 계층
-    services.AddScoped<IJwtService, JwtService>();
-    services.AddScoped<IUserService, UserService>();
-    services.AddScoped<IGoogleAuthProvider, GoogleAuthProvider>();
-    services.AddScoped<IKisService, KisService>();
-    services.AddScoped<IKisTokenService, KisTokenService>();
-
     // Infrastructure 계층
     services.AddScoped<IKisApiClient, KisApiClient>();
     services.AddScoped<IDbContextWrapper, DbContextWrapper>();
+    
+    // Application 서비스 계층
+    services.AddScoped<IJwtService, JwtService>();
+    services.AddScoped<IUserService, UserService>();
+    services.AddScoped<IKisService, KisService>();
+    services.AddScoped<IKisTokenService, KisTokenService>();
+    
+    // API 계층
     services.AddScoped<IUserContextService, UserContextService>();
 
     // Validator 계층

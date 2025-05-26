@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
-using StockTrading.Infrastructure.Implementations;
+using StockTrading.Infrastructure.Services;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

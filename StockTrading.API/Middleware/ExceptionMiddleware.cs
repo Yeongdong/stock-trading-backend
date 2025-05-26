@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-namespace stock_trading_backend.Middleware;
+namespace StockTrading.API.Middleware;
 
 public class ExceptionMiddleware
 {

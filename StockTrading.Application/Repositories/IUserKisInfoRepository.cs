@@ -1,4 +1,4 @@
-namespace StockTrading.DataAccess.Repositories;
+namespace StockTrading.Application.Repositories;
 
 public interface IUserKisInfoRepository
 {

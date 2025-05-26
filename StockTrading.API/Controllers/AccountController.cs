@@ -1,10 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using stock_trading_backend.DTOs;
-using stock_trading_backend.Services;
-using StockTrading.DataAccess.Services.Interfaces;
+using StockTrading.API.DTOs.Requests;
+using StockTrading.API.Services;
+using StockTrading.Application.Services;
 
-namespace stock_trading_backend.Controllers;
+namespace StockTrading.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

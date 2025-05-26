@@ -1,6 +1,6 @@
-using StockTrading.DataAccess.DTOs;
+using StockTrading.Application.DTOs.Common;
 
-namespace stock_trading_backend.Services;
+namespace StockTrading.API.Services;
 
 public interface IUserContextService
 {

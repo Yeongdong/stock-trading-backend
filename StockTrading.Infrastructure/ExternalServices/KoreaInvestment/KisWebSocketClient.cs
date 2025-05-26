@@ -2,7 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
+using StockTrading.Application.Services;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 

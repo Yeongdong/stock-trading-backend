@@ -1,4 +1,4 @@
-namespace StockTradingBackend.DataAccess.Exceptions.Authentication;
+namespace StockTrading.Domain.Exceptions.Authentication;
 
 public class TokenValidationException : Exception
 {

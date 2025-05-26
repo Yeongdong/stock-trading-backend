@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace StockTradingBackend.DataAccess.Enums;
+namespace StockTrading.Domain.Enums;
 
 public enum OrderType
 {

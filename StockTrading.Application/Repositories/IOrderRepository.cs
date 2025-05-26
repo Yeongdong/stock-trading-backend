@@ -1,7 +1,7 @@
-using StockTrading.DataAccess.DTOs;
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Domain.Entities;
 
-namespace StockTrading.DataAccess.Repositories;
+namespace StockTrading.Application.Repositories;
 
 public interface IOrderRepository
 {

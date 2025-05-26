@@ -1,4 +1,4 @@
-namespace StockTradingBackend.DataAccess.Settings;
+namespace StockTrading.Domain.Settings;
 
 public class JwtSettings
 {

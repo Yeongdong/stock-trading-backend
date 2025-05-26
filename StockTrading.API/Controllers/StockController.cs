@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using stock_trading_backend.Services;
-using StockTrading.DataAccess.DTOs.OrderDTOs;
-using StockTrading.DataAccess.Services.Interfaces;
+using StockTrading.API.Services;
+using StockTrading.Application.DTOs.Orders;
+using StockTrading.Application.Services;
 
-namespace stock_trading_backend.Controllers;
+namespace StockTrading.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

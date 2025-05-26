@@ -1,14 +1,13 @@
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.DTOs.OrderDTOs;
-using StockTrading.DataAccess.Repositories;
-using StockTrading.DataAccess.Services.Interfaces;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
-using StockTrading.Infrastructure.Implementations;
-using StockTrading.Infrastructure.Interfaces;
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Orders;
+using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.Repositories;
+using StockTrading.Application.Services;
+using StockTrading.Domain.Entities;
+using StockTrading.Infrastructure.Services;
 using static System.Net.HttpStatusCode;
 
 namespace StockTrading.Tests.Unit.Implementations;

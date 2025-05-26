@@ -1,4 +1,4 @@
-namespace StockTradingBackend.DataAccess.Entities;
+namespace StockTrading.Domain.Entities;
 
 public class KisToken
 {

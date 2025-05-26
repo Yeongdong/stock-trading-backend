@@ -1,7 +1,7 @@
 using Google.Apis.Auth;
-using stock_trading_backend.Validator.Interfaces;
+using StockTrading.API.Validator.Interfaces;
 
-namespace stock_trading_backend.Validator.Implementations;
+namespace StockTrading.API.Validator.Implementations;
 
 public class GoogleAuthValidator : IGoogleAuthValidator
 {

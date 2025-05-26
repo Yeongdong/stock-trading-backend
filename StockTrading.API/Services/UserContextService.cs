@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.Services.Interfaces;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.Services;
 
-namespace stock_trading_backend.Services;
+namespace StockTrading.API.Services;
 
 public class UserContextService: IUserContextService
 {

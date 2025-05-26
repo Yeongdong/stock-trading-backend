@@ -53,7 +53,7 @@ public class AesEncryptionService : IEncryptionService
 
             using var memoryStream = new MemoryStream(buffer);
             using var cryptoStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
-            using var streamReader = new StreamReader(memoryStream);
+            using var streamReader = new StreamReader(cryptoStream);
 
             return streamReader.ReadToEnd();
         }

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 
-namespace stock_trading_backend.Controllers;
+namespace StockTrading.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

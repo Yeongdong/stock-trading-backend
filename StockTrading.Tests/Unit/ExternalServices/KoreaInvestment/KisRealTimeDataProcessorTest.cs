@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
+using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
 {

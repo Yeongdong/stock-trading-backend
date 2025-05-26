@@ -3,10 +3,11 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.DTOs.OrderDTOs;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.Orders;
+using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.Services;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 

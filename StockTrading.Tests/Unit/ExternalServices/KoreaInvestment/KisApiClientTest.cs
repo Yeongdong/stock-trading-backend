@@ -4,10 +4,10 @@ using System.Text.Json;
 using JetBrains.Annotations;
 using Moq;
 using Moq.Protected;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.DTOs.OrderDTOs;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.Orders;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 

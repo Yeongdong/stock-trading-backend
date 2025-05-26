@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
+using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.Services;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 

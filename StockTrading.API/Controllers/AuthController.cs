@@ -1,17 +1,16 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using stock_trading_backend.DTOs;
-using stock_trading_backend.Services;
-using stock_trading_backend.Validator.Interfaces;
-using StockTrading.DataAccess.Services.Interfaces;
-using StockTradingBackend.DataAccess.Exceptions.Authentication;
-using StockTradingBackend.DataAccess.Settings;
+using StockTrading.API.DTOs.Requests;
+using StockTrading.API.Services;
+using StockTrading.API.Validator.Interfaces;
+using StockTrading.Application.Services;
+using StockTrading.Domain.Settings;
 
-namespace stock_trading_backend.controllers;
+namespace StockTrading.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[IgnoreAntiforgeryToken]
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;

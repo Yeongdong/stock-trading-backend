@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.DataAccess.DTOs;
-using StockTrading.DataAccess.Services.Interfaces;
-using StockTrading.Infrastructure.ExternalServices.Interfaces;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Models;
+using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.Services;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 

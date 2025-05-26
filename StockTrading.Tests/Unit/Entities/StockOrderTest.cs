@@ -1,6 +1,6 @@
 using FluentAssertions;
 using JetBrains.Annotations;
-using StockTradingBackend.DataAccess.Entities;
+using StockTrading.Domain.Entities;
 
 namespace StockTrading.Tests.Unit.Entities;
 
