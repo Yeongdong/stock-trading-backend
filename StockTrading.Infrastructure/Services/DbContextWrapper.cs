@@ -15,6 +15,6 @@ public class DbContextWrapper : IDbContextWrapper
     public async Task<IDbTransactionWrapper> BeginTransactionAsync()
     {
         var transaction = await _dbContext.Database.BeginTransactionAsync();
-        return new DbTransactionWrapper(transaction);
+        return new AutoRollbackTransactionWrapper(transaction);
     }
 }

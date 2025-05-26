@@ -75,8 +75,8 @@ public class StockControllerTest
             tr_id = "VTTC0802U",
             PDNO = "005930",
             ORD_DVSN = "00",
-            ORD_QTY = "10",
-            ORD_UNPR = "70000"
+            ORD_QTY = 10,
+            ORD_UNPR = 70000
         };
 
         var expectedResponse = new StockOrderResponse
@@ -97,5 +97,27 @@ public class StockControllerTest
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnValue = Assert.IsType<StockOrderResponse>(okResult.Value);
         Assert.Equal(expectedResponse, returnValue);
+    }
+
+    [Fact]
+    public async Task PlaceOrder_InvalidModel_ReturnsBadRequest()
+    {
+        // Arrange
+        var invalidOrder = new StockOrderRequest
+        {
+            // 필수 필드들을 비워둠
+            PDNO = "12345", // 잘못된 형식 (5자리)
+            ORD_QTY = 0, // 0은 유효하지 않음
+            ORD_UNPR = -100 // 음수는 유효하지 않음
+        };
+
+        _controller.ModelState.AddModelError("PDNO", "종목코드는 6자리 숫자여야 합니다.");
+        _controller.ModelState.AddModelError("ORD_QTY", "주문수량은 1 이상이어야 합니다.");
+
+        // Act
+        var result = await _controller.PlaceOrder(invalidOrder);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 }

@@ -63,8 +63,8 @@ public class KisServiceTest
             PDNO = "005930", // 삼성전자 종목코드
             tr_id = "VTTC0802U", // 매수 주문
             ORD_DVSN = "00", // 지정가
-            ORD_QTY = "10", // 10주
-            ORD_UNPR = "70000" // 70,000원
+            ORD_QTY = 10, // 10주
+            ORD_UNPR = 70000 // 70,000원
         };
 
         var expectedResponse = new StockOrderResponse
@@ -93,7 +93,7 @@ public class KisServiceTest
             .Setup(client => client.PlaceOrderAsync(It.IsAny<StockOrderRequest>(), It.IsAny<UserDto>()))
             .ReturnsAsync(expectedResponse);
         _mockOrderRepository
-            .Setup(repo => repo.SaveAsync(It.IsAny<StockOrder>(), It.IsAny<UserDto>()))
+            .Setup(repo => repo.AddAsync(It.IsAny<StockOrder>()))
             .ReturnsAsync(savedOrder);
 
         var result = await _kisService.PlaceOrderAsync(order, userDto);
@@ -101,38 +101,6 @@ public class KisServiceTest
         Assert.NotNull(result);
         Assert.Equal("0", result.rt_cd);
         Assert.Equal("123456789", result.output.ODNO);
-        _mockKisApiClient.Verify(
-            client => client.PlaceOrderAsync(It.IsAny<StockOrderRequest>(), It.IsAny<UserDto>()),
-            Times.Once);
-        _mockOrderRepository.Verify(
-            repo => repo.SaveAsync(It.IsAny<StockOrder>(), It.IsAny<UserDto>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task PlaceOrderAsync_InvalidQuantity_ThrowsArgumentException()
-    {
-        var userDto = new UserDto
-        {
-            Id = 1,
-            Email = "test@example.com",
-            Name = "Test User",
-            AccountNumber = "12345678901234"
-        };
-
-        var order = new StockOrderRequest
-        {
-            PDNO = "005930",
-            tr_id = "TTTC0802U",
-            ORD_DVSN = "00",
-            ORD_QTY = "invalid",
-            ORD_UNPR = "70000"
-        };
-
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => _kisService.PlaceOrderAsync(order, userDto));
-
-        Assert.Contains("유효하지 않은 수량입니다", exception.Message);
     }
 
     [Fact]

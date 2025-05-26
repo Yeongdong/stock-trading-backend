@@ -32,6 +32,11 @@ public class StockController : ControllerBase
     [HttpPost("order")]
     public async Task<IActionResult> PlaceOrder(StockOrderRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var user = await _userContextService.GetCurrentUserAsync();
 
         _logger.LogInformation("주문 시작: 사용자 {UserId}, 종목 {StockCode}", user.Id, request.PDNO);

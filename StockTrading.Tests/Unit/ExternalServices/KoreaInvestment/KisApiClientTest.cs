@@ -87,8 +87,8 @@ public class KisApiClientTest
             tr_id = "TTTC0802U", // 매수 주문
             PDNO = "005930", // 삼성전자
             ORD_DVSN = "00", // 지정가
-            ORD_QTY = "10", // 10주
-            ORD_UNPR = "70000" // 70,000원
+            ORD_QTY = 10, // 10주
+            ORD_UNPR = 70000 // 70,000원
         };
 
         var result = await _kisApiClient.PlaceOrderAsync(orderRequest, _testUser);
@@ -138,8 +138,8 @@ public class KisApiClientTest
             tr_id = "TTTC0802U",
             PDNO = "005930",
             ORD_DVSN = "00",
-            ORD_QTY = "10",
-            ORD_UNPR = "70000"
+            ORD_QTY = 10,
+            ORD_UNPR = 70000
         };
         
         var exception = await Assert.ThrowsAsync<Exception>(() => 

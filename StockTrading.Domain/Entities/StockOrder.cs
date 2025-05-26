@@ -2,12 +2,19 @@ namespace StockTrading.Domain.Entities;
 
 public class StockOrder
 {
+    public int Id { get; set; }
     public string StockCode { get; private set; }
     public string TradeType { get; private set; }
     public string OrderType { get; private set; }
     public int Quantity { get; private set; }
     public decimal Price { get; private set; }
+    public int UserId { get; private set; }
     public User User { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+
+    public StockOrder()
+    {
+    }
 
     public StockOrder(string stockCode, string tradeType, string orderType, int quantity, decimal price, User user)
     {
@@ -24,6 +31,8 @@ public class StockOrder
         Quantity = quantity;
         Price = price;
         User = user;
+        UserId = user.Id;
+        CreatedAt = DateTime.UtcNow;
     }
 
     private void ValidateStockCode(string stockCode)

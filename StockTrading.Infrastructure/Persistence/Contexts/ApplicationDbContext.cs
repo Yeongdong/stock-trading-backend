@@ -77,7 +77,7 @@ public class ApplicationDbContext : DbContext
                 .HasConversion(
                     v => _encryptionService.Encrypt(v),
                     v => _encryptionService.Decrypt(v));
-            
+
             entity.HasIndex(e => e.GoogleId)
                 .HasDatabaseName("ix_users_google_id");
 
@@ -105,6 +105,50 @@ public class ApplicationDbContext : DbContext
                 .WithOne(e => e.KisToken)
                 .HasForeignKey<KisToken>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        modelBuilder.Entity<StockOrder>(entity =>
+        {
+            entity.ToTable("stock_orders");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .UseIdentityAlwaysColumn();
+
+            entity.Property(e => e.StockCode)
+                .HasColumnName("stock_code")
+                .IsRequired()
+                .HasMaxLength(6);
+
+            entity.Property(e => e.TradeType)
+                .HasColumnName("trade_type")
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.OrderType)
+                .HasColumnName("order_type")
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.Quantity)
+                .HasColumnName("quantity")
+                .IsRequired();
+
+            entity.Property(e => e.Price)
+                .HasColumnName("price")
+                .IsRequired()
+                .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

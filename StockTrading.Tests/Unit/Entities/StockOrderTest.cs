@@ -12,7 +12,7 @@ public class StockOrderTest
     {
         string stockCode = "005930";
         string tradeType = "VTTC0802U";
-        string orderType = "Limit";
+        string orderType = "00";
         int quantity = 10;
         decimal price = 70_000;
         var user = new User
@@ -26,6 +26,7 @@ public class StockOrderTest
         };
         
         var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, user);
+        
         stockOrder.StockCode.Should().Be(stockCode);
         stockOrder.TradeType.Should().Be(tradeType);
         stockOrder.OrderType.Should().Be(orderType);

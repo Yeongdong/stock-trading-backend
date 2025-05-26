@@ -218,9 +218,8 @@ static void ConfigureBusinessServices(IServiceCollection services)
     // Repository 계층
     services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IOrderRepository, OrderRepository>();
-    services.AddScoped<IKisTokenRepository, KisTokenRepository>();
-    services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
-
+    services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+    
     // Infrastructure 계층
     services.AddScoped<IKisApiClient, KisApiClient>();
     services.AddScoped<IDbContextWrapper, DbContextWrapper>();

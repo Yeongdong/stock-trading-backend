@@ -1,21 +1,34 @@
-using StockTrading.Application.DTOs.Common;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using StockTrading.Application.Repositories;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
 
 namespace StockTrading.Infrastructure.Persistence.Repositories;
 
-public class OrderRepository: IOrderRepository
+public class OrderRepository : BaseRepository<StockOrder, int>, IOrderRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public OrderRepository(ApplicationDbContext context)
+    public OrderRepository(ApplicationDbContext context, ILogger<OrderRepository> logger)
+        : base(context, logger)
     {
-        _context = context;
     }
 
-    public async Task<StockOrder> SaveAsync(StockOrder order, UserDto user)
+    public async Task<List<StockOrder>> GetByUserIdAsync(int userId)
     {
-        throw new NotImplementedException();
+        return await DbSet
+            .Where(o => o.UserId == userId)
+            .OrderByDescending(o => o.Id)
+            .ToListAsync();
+    }
+
+    public async Task<List<StockOrder>> GetByStockCodeAsync(string stockCode)
+    {
+        Logger.LogDebug("종목별 주문 내역 조회: {StockCode}", stockCode);
+
+        return await DbSet
+            .Where(o => o.StockCode == stockCode)
+            .Include(o => o.User)
+            .OrderByDescending(o => o.Id)
+            .ToListAsync();
     }
 }

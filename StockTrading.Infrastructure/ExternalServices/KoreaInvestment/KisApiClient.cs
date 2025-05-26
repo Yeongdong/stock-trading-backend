@@ -33,8 +33,8 @@ public class KisApiClient : IKisApiClient
                 ACNT_PRDT_CD = "01",
                 PDNO = request.PDNO,
                 ORD_DVSN = request.ORD_DVSN,
-                ORD_QTY = request.ORD_QTY,
-                ORD_UNPR = request.ORD_UNPR,
+                ORD_QTY = request.ORD_QTY.ToString(),
+                ORD_UNPR = request.ORD_UNPR.ToString(),
             };
 
             var content = new StringContent(
@@ -92,7 +92,7 @@ public class KisApiClient : IKisApiClient
         var request = new HttpRequestMessage(HttpMethod.Get,
             $"uapi/domestic-stock/v1/trading/inquire-balance?{queryString}");
 
-        SetRequiredHeaders(request,"VTTC8434R", user);
+        SetRequiredHeaders(request, "VTTC8434R", user);
 
         var response = await _httpClient.SendAsync(request);
         var apiResponse = await response.Content.ReadFromJsonAsync<StockBalanceOutput>();

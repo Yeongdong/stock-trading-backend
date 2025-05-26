@@ -1,9 +1,9 @@
-using StockTrading.Application.DTOs.Common;
 using StockTrading.Domain.Entities;
 
 namespace StockTrading.Application.Repositories;
 
-public interface IOrderRepository
+public interface IOrderRepository : IBaseRepository<StockOrder, int>
 {
-    Task<StockOrder> SaveAsync(StockOrder order, UserDto user);
+    Task<List<StockOrder>> GetByUserIdAsync(int userId);
+    Task<List<StockOrder>> GetByStockCodeAsync(string stockCode);
 }

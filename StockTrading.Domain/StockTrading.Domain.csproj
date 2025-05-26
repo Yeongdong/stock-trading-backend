@@ -7,4 +7,8 @@
         <RootNamespace>StockTrading.Domain</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Compile Remove="Exceptions\EntityNotFoundException.cs" />
+    </ItemGroup>
+
 </Project>

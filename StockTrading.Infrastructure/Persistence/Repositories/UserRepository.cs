@@ -1,47 +1,34 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using StockTrading.Application.Repositories;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
 
 namespace StockTrading.Infrastructure.Persistence.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository : BaseRepository<User, int>, IUserRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public UserRepository(ApplicationDbContext context)
+    public UserRepository(ApplicationDbContext context, ILogger<UserRepository> logger) 
+        : base(context, logger)
     {
-        _context = context;
     }
 
-    public async Task<User> GetByGoogleIdAsync(string googleId)
+    public async Task<User?> GetByGoogleIdAsync(string googleId)
     {
-        var user = await _context.Users
+        return await DbSet
             .Include(u => u.KisToken)
             .FirstOrDefaultAsync(u => u.GoogleId == googleId);
-        
-        if (user == null)
-            throw new ArgumentNullException();
-
-        return user;
     }
 
-    public async Task<User> AddAsync(User user)
+    public async Task<User?> GetByEmailAsync(string email)
     {
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-        return user;
+        return await DbSet.FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<User> GetByEmailAsync(string email)
+    public async Task<User?> GetByEmailWithTokenAsync(string email)
     {
-        var user = await _context.Users
+        return await DbSet
             .Include(u => u.KisToken)
             .FirstOrDefaultAsync(u => u.Email == email);
-
-        if (user == null)
-            throw new ArgumentNullException();
-
-        return user;
     }
 }
