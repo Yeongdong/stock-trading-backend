@@ -7,18 +7,16 @@ namespace StockTrading.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AccountController : ControllerBase
+public class AccountController : BaseController
 {
     private readonly IKisService _kisService;
-    private readonly IUserContextService _userContextService;
 
-    public AccountController(IKisService kisService, IUserContextService userContextService)
+    public AccountController(IKisService kisService, IUserContextService userContextService) : base(userContextService)
     {
         _kisService = kisService;
-        _userContextService = userContextService;
     }
 
-      [HttpPost("userInfo")]
+    [HttpPost("userInfo")]
     public async Task<IActionResult> UpdateUserInfo([FromBody] UserInfoRequest request)
     {
         if (!ModelState.IsValid)
@@ -26,11 +24,11 @@ public class AccountController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var user = await _userContextService.GetCurrentUserAsync();
-        
+        var user = await GetCurrentUserAsync();
+
         var result = await _kisService.UpdateUserKisInfoAndTokensAsync(
-            user.Id, 
-            request.AppKey, 
+            user.Id,
+            request.AppKey,
             request.AppSecret,
             request.AccountNumber);
 

@@ -5,26 +5,23 @@ using StockTrading.Application.Services;
 
 namespace StockTrading.API.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
-public class StockController : ControllerBase
+public class StockController : BaseController
 {
     private readonly IKisService _kisService;
-    private readonly IUserContextService _userContextService;
     private readonly ILogger<StockController> _logger;
 
     public StockController(IKisService kisService, IUserContextService userContextService,
-        ILogger<StockController> logger)
+        ILogger<StockController> logger) : base(userContextService)
     {
         _kisService = kisService;
-        _userContextService = userContextService;
         _logger = logger;
     }
 
     [HttpGet("balance")]
     public async Task<IActionResult> GetBalance()
     {
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
         var balance = await _kisService.GetStockBalanceAsync(user);
         return Ok(balance);
     }
@@ -36,8 +33,8 @@ public class StockController : ControllerBase
         {
             return BadRequest(ModelState);
         }
-        
-        var user = await _userContextService.GetCurrentUserAsync();
+
+        var user = await GetCurrentUserAsync();
 
         _logger.LogInformation("주문 시작: 사용자 {UserId}, 종목 {StockCode}", user.Id, request.PDNO);
 

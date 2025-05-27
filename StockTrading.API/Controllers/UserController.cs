@@ -1,26 +1,21 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
 
 namespace StockTrading.API.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
-[Authorize]
 [IgnoreAntiforgeryToken]
-public class UserController : ControllerBase
+public class UserController : BaseController
 {
-    private readonly IUserContextService _userContextService;
-
     public UserController(IUserContextService userContextService)
+        : base(userContextService)
     {
-        _userContextService = userContextService;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
         return Ok(user);
     }
 }

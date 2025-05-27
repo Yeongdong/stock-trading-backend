@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using StockTrading.API.DTOs.Requests;
@@ -8,31 +9,28 @@ using StockTrading.Domain.Settings;
 
 namespace StockTrading.API.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
 [IgnoreAntiforgeryToken]
-public class AuthController : ControllerBase
+public class AuthController : BaseController
 {
     private readonly IConfiguration _configuration;
     private readonly IJwtService _jwtService;
     private readonly IUserService _userService;
     private readonly IGoogleAuthValidator _googleAuthValidator;
-    private readonly IUserContextService _userContextService;
     private readonly JwtSettings _jwtSettings;
 
     public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
-        IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService,
-        IOptions<JwtSettings> jwtSettings)
+        IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService, IOptions<JwtSettings> jwtSettings): base(userContextService)
     {
         _configuration = configuration;
         _jwtService = jwtService;
         _userService = userService;
         _googleAuthValidator = googleAuthValidator;
-        _userContextService = userContextService;
         _jwtSettings = jwtSettings.Value;
     }
 
     [HttpPost("google")]
+    [AllowAnonymous]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         var payload = await _googleAuthValidator.ValidateAsync(
@@ -68,7 +66,7 @@ public class AuthController : ControllerBase
         }
 
         var principal = _jwtService.ValidateToken(token);
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
 
         return Ok(new
         {

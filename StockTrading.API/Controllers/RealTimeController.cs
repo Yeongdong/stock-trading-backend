@@ -1,24 +1,19 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
 using StockTrading.Application.Services;
 
 namespace StockTrading.API.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
-[Authorize]
-public class RealTimeController : ControllerBase
+public class RealTimeController : BaseController
 {
     private readonly IKisRealTimeService _realTimeService;
-    private readonly IUserContextService _userContextService;
     private readonly ILogger<RealTimeController> _logger;
 
     public RealTimeController(IKisRealTimeService realTimeService, IUserContextService userContextService,
-        ILogger<RealTimeController> logger)
+        ILogger<RealTimeController> logger) : base(userContextService)
     {
         _realTimeService = realTimeService;
-        _userContextService = userContextService;
         _logger = logger;
     }
 
@@ -28,7 +23,7 @@ public class RealTimeController : ControllerBase
     [HttpPost("start")]
     public async Task<IActionResult> StartRealTimeService()
     {
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
 
         if (string.IsNullOrEmpty(user.WebSocketToken))
         {
@@ -47,7 +42,7 @@ public class RealTimeController : ControllerBase
     [HttpPost("stop")]
     public async Task<IActionResult> StopRealTimeService()
     {
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
 
         await _realTimeService.StopAsync();
 
@@ -66,7 +61,7 @@ public class RealTimeController : ControllerBase
             throw new ArgumentException("유효하지 않은 종목 코드. 6자리 코드 필요");
         }
 
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
 
         await _realTimeService.SubscribeSymbolAsync(symbol);
 
@@ -85,7 +80,7 @@ public class RealTimeController : ControllerBase
             throw new ArgumentException("유효하지 않은 종목 코드. 6자리 코드 필요");
         }
 
-        var user = await _userContextService.GetCurrentUserAsync();
+        var user = await GetCurrentUserAsync();
 
         await _realTimeService.UnsubscribeSymbolAsync(symbol);
 
