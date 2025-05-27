@@ -37,44 +37,28 @@ public class KisRealTimeService : IKisRealTimeService
         _dataProcessor.ProcessMessage(message);
     }
 
-    private async void OnStockPriceReceived(object sender, StockTransaction data)
+    private void OnStockPriceReceived(object sender, StockTransaction data)
     {
-        await _broadcaster.BroadcastStockPriceAsync(data);
+        // fire-and-forget 처리
+        _ = Task.Run(async () => { await _broadcaster.BroadcastStockPriceAsync(data); });
     }
 
     private async void OnTradeExecutionReceived(object sender, object data)
     {
-        await _broadcaster.BroadcastTradeExecutionAsync(data);
+        _ = Task.Run(async () => { await _broadcaster.BroadcastTradeExecutionAsync(data); });
     }
 
     public async Task StartAsync()
     {
-        try
-        {
-            await _webSocketClient.ConnectAsync("ws://ops.koreainvestment.com:31000");
-            _logger.LogInformation("실시간 서비스 시작");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "실시간 서비스 시작 실패");
-            throw;
-        }
+        await _webSocketClient.ConnectAsync("ws://ops.koreainvestment.com:31000");
+        _logger.LogInformation("실시간 서비스 시작");
     }
 
     public async Task StartAsync(UserDto user)
     {
-        try
-        {
-            await StartAsync();
-            await _webSocketClient.AuthenticateAsync(user.WebSocketToken);
-            _logger.LogInformation($"사용자 {user.Id} 인증 완료");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"사용자 {user.Id} 인증 실패");
-            await StopAsync();
-            throw;
-        }
+        await StartAsync();
+        await _webSocketClient.AuthenticateAsync(user.WebSocketToken);
+        _logger.LogInformation($"사용자 {user.Id} 인증 완료");
     }
 
     public async Task SubscribeSymbolAsync(string symbol)
@@ -94,36 +78,8 @@ public class KisRealTimeService : IKisRealTimeService
 
     public async Task StopAsync()
     {
-        try
-        {
-            await _subscriptionManager.UnsubscribeAllAsync();
-            await _webSocketClient.DisconnectAsync();
-            _logger.LogInformation("실시간 서비스 종료");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "실시간 서비스 종료 실패");
-            throw;
-        }
-    }
-
-    public void Dispose()
-    {
-        try
-        {
-            // 이벤트 구독 해제
-            _webSocketClient.MessageReceived -= OnWebSocketMessageReceived;
-            _dataProcessor.StockPriceReceived -= OnStockPriceReceived;
-            _dataProcessor.TradeExecutionReceived -= OnTradeExecutionReceived;
-
-            // 리소스 해제
-            _webSocketClient.Dispose();
-
-            _logger.LogInformation("실시간 서비스 리소스 해제");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "실시간 서비스 리소스 해제 중 오류 발생");
-        }
+        await _subscriptionManager.UnsubscribeAllAsync();
+        await _webSocketClient.DisconnectAsync();
+        _logger.LogInformation("실시간 서비스 종료");
     }
 }

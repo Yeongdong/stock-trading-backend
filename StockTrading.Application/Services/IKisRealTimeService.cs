@@ -5,7 +5,6 @@ namespace StockTrading.Application.Services;
 public interface IKisRealTimeService
 {
     // 서비스 시작/중지
-    Task StartAsync();
     Task StartAsync(UserDto user);
     Task StopAsync();
 
