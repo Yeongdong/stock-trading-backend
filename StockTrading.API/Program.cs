@@ -209,7 +209,7 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
 
     // 타입 기반 등록 유지
     services.AddHttpClient<KisApiClient>();
-    services.AddHttpClient<KisService>();
+    services.AddHttpClient<KisOrderService>();
 }
 
 static void ConfigureBusinessServices(IServiceCollection services)
@@ -227,7 +227,8 @@ static void ConfigureBusinessServices(IServiceCollection services)
     // Application 서비스 계층
     services.AddScoped<IJwtService, JwtService>();
     services.AddScoped<IUserService, UserService>();
-    services.AddScoped<IKisService, KisService>();
+    services.AddScoped<IKisOrderService, KisOrderService>();
+    services.AddScoped<IKisBalanceService, KisBalanceService>();
     services.AddScoped<IKisTokenService, KisTokenService>();
     
     // API 계층

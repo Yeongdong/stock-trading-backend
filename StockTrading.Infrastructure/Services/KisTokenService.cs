@@ -4,6 +4,7 @@ using StockTrading.Application.DTOs.Common;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
+using StockTrading.Infrastructure.Services.Helpers;
 
 namespace StockTrading.Infrastructure.Services;
 
@@ -12,13 +13,17 @@ public class KisTokenService : IKisTokenService
     private readonly HttpClient _httpClient;
     private readonly IKisTokenRepository _kisTokenRepository;
     private readonly IUserKisInfoRepository _userKisInfoRepository;
+    private readonly IDbContextWrapper _dbContextWrapper;
     private readonly ILogger<KisTokenService> _logger;
 
+
     public KisTokenService(IHttpClientFactory httpClientFactory, IKisTokenRepository kisTokenRepository,
-        IUserKisInfoRepository userKisInfoRepository, ILogger<KisTokenService> logger)
+        IUserKisInfoRepository userKisInfoRepository, IDbContextWrapper dbContextWrapper,
+        ILogger<KisTokenService> logger)
     {
         _kisTokenRepository = kisTokenRepository;
         _userKisInfoRepository = userKisInfoRepository;
+        _dbContextWrapper = dbContextWrapper;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient(nameof(KisTokenService));
     }
@@ -77,5 +82,21 @@ public class KisTokenService : IKisTokenService
         _logger.LogInformation("WebSocket 토큰 저장 완료: {UserId}", userId);
 
         return result.ApprovalKey;
+    }
+
+    public async Task<TokenResponse> UpdateUserKisInfoAndTokensAsync(int userId, string appKey, string appSecret,
+        string accountNumber)
+    {
+        KisValidationHelper.ValidateTokenRequest(userId, appKey, appSecret, accountNumber);
+
+        _logger.LogInformation("KIS 정보 및 토큰 업데이트 시작: 사용자 {UserId}", userId);
+
+        await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
+
+        var tokenResponse = await GetKisTokenAsync(userId, appKey, appSecret, accountNumber);
+        await GetWebSocketTokenAsync(userId, appKey, appSecret);
+        await transaction.CommitAsync();
+
+        return tokenResponse;
     }
 }

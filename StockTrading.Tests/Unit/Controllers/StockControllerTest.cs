@@ -14,7 +14,8 @@ namespace StockTrading.Tests.Unit.Controllers;
 [TestSubject(typeof(StockController))]
 public class StockControllerTest
 {
-    private readonly Mock<IKisService> _mockKisService;
+    private readonly Mock<IKisOrderService> _mockKisOrderService;
+    private readonly Mock<IKisBalanceService> _mockKisBalanceService;
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ILogger<StockController>> _mockLogger;
     private readonly StockController _controller;
@@ -22,7 +23,8 @@ public class StockControllerTest
 
     public StockControllerTest()
     {
-        _mockKisService = new Mock<IKisService>();
+        _mockKisOrderService = new Mock<IKisOrderService>();
+        _mockKisBalanceService = new Mock<IKisBalanceService>();
         _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<StockController>>();
 
@@ -34,7 +36,8 @@ public class StockControllerTest
         };
 
         _controller = new StockController(
-            _mockKisService.Object,
+            _mockKisOrderService.Object,
+            _mockKisBalanceService.Object,
             _mockUserContextService.Object,
             _mockLogger.Object);
 
@@ -53,7 +56,7 @@ public class StockControllerTest
             Summary = new Summary()
         };
 
-        _mockKisService
+        _mockKisBalanceService
             .Setup(x => x.GetStockBalanceAsync(_testUser))
             .ReturnsAsync(expectedBalance);
 
@@ -86,7 +89,7 @@ public class StockControllerTest
             output = new OrderOutput { ODNO = "123456" }
         };
 
-        _mockKisService
+        _mockKisOrderService
             .Setup(x => x.PlaceOrderAsync(orderRequest, _testUser))
             .ReturnsAsync(expectedResponse);
 

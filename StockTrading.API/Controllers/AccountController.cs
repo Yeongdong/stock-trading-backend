@@ -9,11 +9,11 @@ namespace StockTrading.API.Controllers;
 [Route("api/[controller]")]
 public class AccountController : BaseController
 {
-    private readonly IKisService _kisService;
+    private readonly IKisTokenService _kisTokenService;
 
-    public AccountController(IKisService kisService, IUserContextService userContextService) : base(userContextService)
+    public AccountController(IKisTokenService kisTokenService, IUserContextService userContextService) : base(userContextService)
     {
-        _kisService = kisService;
+        _kisTokenService = kisTokenService;
     }
 
     [HttpPost("userInfo")]
@@ -26,7 +26,7 @@ public class AccountController : BaseController
 
         var user = await GetCurrentUserAsync();
 
-        var result = await _kisService.UpdateUserKisInfoAndTokensAsync(
+        var result = await _kisTokenService.UpdateUserKisInfoAndTokensAsync(
             user.Id,
             request.AppKey,
             request.AppSecret,

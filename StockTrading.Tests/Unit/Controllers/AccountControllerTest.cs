@@ -12,14 +12,14 @@ namespace StockTrading.Tests.Unit.Controllers;
 [TestSubject(typeof(AccountController))]
 public class AccountControllerTest
 {
-    private readonly Mock<IKisService> _mockKisService;
+    private readonly Mock<IKisTokenService> _mockKisTokenService;
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly AccountController _controller;
     private readonly UserDto _testUser;
 
     public AccountControllerTest()
     {
-        _mockKisService = new Mock<IKisService>();
+        _mockKisTokenService = new Mock<IKisTokenService>();
         _mockUserContextService = new Mock<IUserContextService>();
 
         _testUser = new UserDto
@@ -30,7 +30,7 @@ public class AccountControllerTest
         };
 
         _controller = new AccountController(
-            _mockKisService.Object,
+            _mockKisTokenService.Object,
             _mockUserContextService.Object);
 
         _mockUserContextService
@@ -56,7 +56,7 @@ public class AccountControllerTest
             ExpiresIn = 86400
         };
 
-        _mockKisService
+        _mockKisTokenService
             .Setup(x => x.UpdateUserKisInfoAndTokensAsync(
                 _testUser.Id,
                 userInfoRequest.AppKey,

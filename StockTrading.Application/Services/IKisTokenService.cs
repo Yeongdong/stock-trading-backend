@@ -6,4 +6,6 @@ public interface IKisTokenService
 {
     Task<TokenResponse> GetKisTokenAsync(int userId, string appKey, string appSecret, string accountNumber);
     Task<string> GetWebSocketTokenAsync(int userId, string appKey, string appSecret);
+    Task<TokenResponse> UpdateUserKisInfoAndTokensAsync(int userId, string appKey, string appSecret,
+        string accountNumber);
 }
