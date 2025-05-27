@@ -38,7 +38,7 @@ ConfigureAuthentication(builder.Services, builder.Configuration);
 ConfigureHttpClients(builder.Services, builder.Configuration);
 
 // 6. 비즈니스 서비스 등록
-ConfigureBusinessServices(builder.Services);
+ConfigureBusinessServices(builder.Services, builder.Configuration);
 
 // 7. 실시간 서비스 등록
 ConfigureRealTimeServices(builder.Services);
@@ -212,30 +212,33 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
     services.AddHttpClient<KisOrderService>();
 }
 
-static void ConfigureBusinessServices(IServiceCollection services)
+static void ConfigureBusinessServices(IServiceCollection services, IConfiguration configuration)
 {
     // Repository 계층
     services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<IKisTokenRepository, KisTokenRepository>();
     services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
-    
+
     // Infrastructure 계층
     services.AddScoped<IKisApiClient, KisApiClient>();
     services.AddScoped<IDbContextWrapper, DbContextWrapper>();
-    
+
     // Application 서비스 계층
     services.AddScoped<IJwtService, JwtService>();
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IKisOrderService, KisOrderService>();
     services.AddScoped<IKisBalanceService, KisBalanceService>();
     services.AddScoped<IKisTokenService, KisTokenService>();
-    
+
     // API 계층
     services.AddScoped<IUserContextService, UserContextService>();
 
     // Validator 계층
     services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
+
+    // 설정 등록
+    services.Configure<KisApiSettings>(configuration.GetSection(KisApiSettings.SectionName));
 }
 
 static void ConfigureRealTimeServices(IServiceCollection services)

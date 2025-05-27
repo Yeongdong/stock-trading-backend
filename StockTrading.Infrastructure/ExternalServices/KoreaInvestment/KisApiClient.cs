@@ -2,12 +2,13 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using StockTrading.Application.DTOs.Common;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.Orders;
 using StockTrading.Application.DTOs.Stocks;
 using StockTrading.Application.Services;
+using StockTrading.Domain.Settings;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -17,57 +18,46 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 public class KisApiClient : IKisApiClient
 {
     private readonly HttpClient _httpClient;
+    private readonly KisApiSettings _settings;
 
-    public KisApiClient(HttpClient httpClient)
+    public KisApiClient(HttpClient httpClient, IOptions<KisApiSettings> settings)
     {
         _httpClient = httpClient;
+        _settings = settings.Value;
     }
 
     public async Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest request, UserDto user)
     {
-        try
+        var kisRequest = new StockOrderRequestToKis
         {
-            var kisRequest = new StockOrderRequestToKis
-            {
-                CANO = user.AccountNumber,
-                ACNT_PRDT_CD = "01",
-                PDNO = request.PDNO,
-                ORD_DVSN = request.ORD_DVSN,
-                ORD_QTY = request.ORD_QTY.ToString(),
-                ORD_UNPR = request.ORD_UNPR.ToString(),
-            };
+            CANO = user.AccountNumber,
+            ACNT_PRDT_CD = "01",
+            PDNO = request.PDNO,
+            ORD_DVSN = request.ORD_DVSN,
+            ORD_QTY = request.ORD_QTY.ToString(),
+            ORD_UNPR = request.ORD_UNPR.ToString(),
+        };
 
-            var content = new StringContent(
-                JsonSerializer.Serialize(kisRequest),
-                Encoding.UTF8,
-                "application/json"
-            );
+        var content = new StringContent(
+            JsonSerializer.Serialize(kisRequest),
+            Encoding.UTF8,
+            "application/json"
+        );
 
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/uapi/domestic-stock/v1/trading/order-cash");
-            SetRequiredHeaders(httpRequest, request.tr_id, user);
-            httpRequest.Content = content;
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.OrderPath);
+        SetRequiredHeaders(httpRequest, request.tr_id, user);
+        httpRequest.Content = content;
 
-            var response = await _httpClient.SendAsync(httpRequest);
-            response.EnsureSuccessStatusCode();
+        var response = await _httpClient.SendAsync(httpRequest);
+        response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var orderResponse = JsonSerializer.Deserialize<StockOrderResponse>(responseContent);
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var orderResponse = JsonSerializer.Deserialize<StockOrderResponse>(responseContent);
 
-            if (orderResponse.rt_cd != "0")
-            {
-                throw new Exception($"주문 실패: {orderResponse.msg}");
-            }
+        if (orderResponse.rt_cd != "0")
+            throw new Exception($"주문 실패: {orderResponse.msg}");
 
-            return orderResponse;
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("API 요청 중 오류 발생", ex);
-        }
-        catch (JsonException ex)
-        {
-            throw new Exception("응답 데이터 처리 중 오류 발생", ex);
-        }
+        return orderResponse;
     }
 
     public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
@@ -75,14 +65,14 @@ public class KisApiClient : IKisApiClient
         var queryParams = new Dictionary<string, string>
         {
             ["CANO"] = user.AccountNumber,
-            ["ACNT_PRDT_CD"] = "01",
-            ["AFHR_FLPR_YN"] = "N",
-            ["OFL_YN"] = "",
-            ["INQR_DVSN"] = "02",
-            ["UNPR_DVSN"] = "01",
-            ["FUND_STTL_ICLD_YN"] = "N",
-            ["FNCG_AMT_AUTO_RDPT_YN"] = "N",
-            ["PRCS_DVSN"] = "00",
+            ["ACNT_PRDT_CD"] = _settings.Defaults.AccountProductCode,
+            ["AFHR_FLPR_YN"] = _settings.Defaults.AfterHoursForeignPrice,
+            ["OFL_YN"] = _settings.Defaults.OfflineYn,
+            ["INQR_DVSN"] = _settings.Defaults.InquiryDivision,
+            ["UNPR_DVSN"] = _settings.Defaults.UnitPriceDivision,
+            ["FUND_STTL_ICLD_YN"] = _settings.Defaults.FundSettlementInclude,
+            ["FNCG_AMT_AUTO_RDPT_YN"] = _settings.Defaults.FinancingAmountAutoRedemption,
+            ["PRCS_DVSN"] = _settings.Defaults.ProcessDivision,
             ["CTX_AREA_FK100"] = "",
             ["CTX_AREA_NK100"] = ""
         };
@@ -90,9 +80,9 @@ public class KisApiClient : IKisApiClient
             .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
 
         var request = new HttpRequestMessage(HttpMethod.Get,
-            $"uapi/domestic-stock/v1/trading/inquire-balance?{queryString}");
+            $"{_settings.Endpoints.BalancePath}?{queryString}");
 
-        SetRequiredHeaders(request, "VTTC8434R", user);
+        SetRequiredHeaders(request, _settings.Defaults.BalanceTransactionId, user);
 
         var response = await _httpClient.SendAsync(request);
         var apiResponse = await response.Content.ReadFromJsonAsync<StockBalanceOutput>();

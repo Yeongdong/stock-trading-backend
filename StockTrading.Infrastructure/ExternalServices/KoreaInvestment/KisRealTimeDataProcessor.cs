@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.Services;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -11,145 +12,111 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
 {
     private readonly ILogger<KisRealTimeDataProcessor> _logger;
-    
-    // 이벤트를 통해 파싱된 실시간 데이터 전달
+
     public event EventHandler<StockTransaction> StockPriceReceived;
     public event EventHandler<object> TradeExecutionReceived;
-    
+
     public KisRealTimeDataProcessor(ILogger<KisRealTimeDataProcessor> logger)
     {
         _logger = logger;
     }
-    
+
     public void ProcessMessage(string messageJson)
     {
-        try
+        var jsonDoc = JsonDocument.Parse(messageJson);
+        var root = jsonDoc.RootElement;
+
+        if (root.TryGetProperty("header", out var header) &&
+            header.TryGetProperty("tr_id", out var trId))
         {
-            _logger.LogDebug($"수신된 WebSocket 메시지: {messageJson}");
-            
-            var jsonDoc = JsonDocument.Parse(messageJson);
-            var root = jsonDoc.RootElement;
-            
-            // 메시지 타입 확인
-            if (root.TryGetProperty("header", out var header) && 
-                header.TryGetProperty("tr_id", out var trId))
+            string trIdValue = trId.GetString();
+            _logger.LogInformation($"메시지 유형: {trIdValue}");
+
+            switch (trIdValue)
             {
-                string trIdValue = trId.GetString();
-                _logger.LogInformation($"메시지 유형: {trIdValue}");
-                
-                switch (trIdValue)
-                {
-                    case "H0STASP0":
-                    case "H0STCNT0":
-                        ProcessStockPrice(root);
-                        break;
-                    case "H0STCNI0":
-                    case "H0STCNI9":
-                        ProcessTradeExecution(root);
-                        break;
-                    case "PINGPONG":
-                        // PING 메시지는 이벤트 발생 X (별도 처리)
-                        break;
-                    default:
-                        _logger.LogWarning($"알 수 없는 메시지 타입: {trIdValue}");
-                        break;
-                }
-            }
-            else
-            {
-                _logger.LogWarning("메시지에 tr_id가 없습니다.");
+                case KisRealTimeConstants.MessageTypes.StockAskBid:
+                case KisRealTimeConstants.MessageTypes.StockExecution:
+                    ProcessStockPrice(root);
+                    break;
+
+                case KisRealTimeConstants.MessageTypes.TradeNotification:
+                case KisRealTimeConstants.MessageTypes.TradeNotificationDemo:
+                    ProcessTradeExecution(root);
+                    break;
+
+                case KisRealTimeConstants.MessageTypes.PingPong:
+                    // PING 메시지는 이벤트 발생 X (별도 처리)
+                    break;
+
+                default:
+                    _logger.LogWarning("알 수 없는 메시지 타입: {TrId}", trIdValue);
+                    break;
             }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, "WebSocket 메시지 처리 오류");
+            _logger.LogWarning("메시지에 tr_id가 없습니다.");
         }
     }
-    
+
     private void ProcessStockPrice(JsonElement root)
     {
-        try
-        {
-            if (root.TryGetProperty("body", out var body))
-            {
-                // 종목코드
-                string stockCode = body.GetProperty("mksc_shrn_iscd").GetString();
-                // 현재가
-                decimal currentPrice = decimal.Parse(body.GetProperty("stck_prpr").GetString());
-                // 전일 대비
-                decimal change = decimal.Parse(body.GetProperty("prdy_vrss").GetString());
-                // 등락률
-                decimal changeRate = decimal.Parse(body.GetProperty("prdy_ctrt").GetString());
-                // 거래량
-                long volume = long.Parse(body.GetProperty("acml_vol").GetString());
+        if (!root.TryGetProperty("body", out var body)) return;
+        // 종목코드
+        var stockCode = body.GetProperty("mksc_shrn_iscd").GetString();
+        // 현재가
+        var currentPrice = decimal.Parse(body.GetProperty("stck_prpr").GetString());
+        // 전일 대비
+        var change = decimal.Parse(body.GetProperty("prdy_vrss").GetString());
+        // 등락률
+        var changeRate = decimal.Parse(body.GetProperty("prdy_ctrt").GetString());
+        // 거래량
+        var volume = long.Parse(body.GetProperty("acml_vol").GetString());
 
-                // 실시간 가격 정보 객체 생성
-                var priceData = new StockTransaction
-                {
-                    Symbol = stockCode,
-                    Price = currentPrice,
-                    PriceChange = change,
-                    ChangeType = change >= 0 ? "상승" : "하락",
-                    TransactionTime = DateTime.Now,
-                    Volume = (int)volume
-                };
-
-                // 이벤트 발생
-                OnStockPriceReceived(priceData);
-                _logger.LogInformation($"실시간 시세 처리: {stockCode}, 가격: {currentPrice}");
-            }
-        }
-        catch (Exception ex)
+        // 실시간 가격 정보 객체 생성
+        var priceData = new StockTransaction
         {
-            _logger.LogError(ex, "실시간 시세 처리 오류");
-        }
+            Symbol = stockCode,
+            Price = currentPrice,
+            PriceChange = change,
+            ChangeType = change >= 0 ? KisRealTimeConstants.ChangeTypes.Rise : KisRealTimeConstants.ChangeTypes.Fall,
+            TransactionTime = DateTime.Now,
+            Volume = (int)volume
+        };
+
+        OnStockPriceReceived(priceData);
+        _logger.LogInformation($"실시간 시세 처리: {stockCode}, 가격: {currentPrice}");
     }
-    
+
     private void ProcessTradeExecution(JsonElement root)
     {
-        try
-        {
-            if (root.TryGetProperty("body", out var body))
-            {
-                _logger.LogInformation("체결 정보 처리 시작");
-                
-                // 체결 정보 처리
-                string orderId = body.GetProperty("odno").GetString();
-                string stockCode = body.GetProperty("pdno").GetString();
-                int quantity = int.Parse(body.GetProperty("cntg_qty").GetString());
-                decimal price = decimal.Parse(body.GetProperty("cntg_pric").GetString());
+        if (!root.TryGetProperty("body", out var body)) return;
+        _logger.LogInformation("체결 정보 처리 시작");
 
-                // 체결 정보 객체 생성
-                var executionData = new
-                {
-                    OrderId = orderId,
-                    StockCode = stockCode,
-                    Quantity = quantity,
-                    Price = price,
-                    ExecutionTime = DateTime.Now
-                };
+        var orderId = body.GetProperty("odno").GetString();
+        var stockCode = body.GetProperty("pdno").GetString();
+        var quantity = int.Parse(body.GetProperty("cntg_qty").GetString());
+        var price = decimal.Parse(body.GetProperty("cntg_pric").GetString());
 
-                // 이벤트 발생
-                OnTradeExecutionReceived(executionData);
-                _logger.LogInformation($"체결 정보 처리: 주문번호 {orderId}, 종목 {stockCode}");
-            }
-            else
-            {
-                _logger.LogWarning("체결 메시지에 body가 없습니다.");
-            }
-        }
-        catch (Exception ex)
+        var executionData = new
         {
-            _logger.LogError(ex, "체결 정보 처리 오류");
-        }
+            OrderId = orderId,
+            StockCode = stockCode,
+            Quantity = quantity,
+            Price = price,
+            ExecutionTime = DateTime.Now
+        };
+
+        OnTradeExecutionReceived(executionData);
+        _logger.LogInformation($"체결 정보 처리: 주문번호 {orderId}, 종목 {stockCode}");
     }
-    
+
     protected virtual void OnStockPriceReceived(StockTransaction data)
     {
         _logger.LogDebug("StockPriceReceived 이벤트 발생");
         StockPriceReceived?.Invoke(this, data);
     }
-    
+
     protected virtual void OnTradeExecutionReceived(object data)
     {
         _logger.LogDebug("TradeExecutionReceived 이벤트 발생");

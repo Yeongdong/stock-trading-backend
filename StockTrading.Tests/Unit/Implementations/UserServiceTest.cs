@@ -120,9 +120,9 @@ public class UserServiceTest
     }
     
     [Fact]
-    public async Task GetOrCreateGoogleUserAsync_NullPayload_ThrowsArgumentNullException()
+    public async Task GetOrCreateGoogleUserAsync_NullPayload_ThrowsArgumentException()
     {
-        await Assert.ThrowsAsync<NullReferenceException>(() =>
+        await Assert.ThrowsAsync<ArgumentException>(() =>
             _userService.GetOrCreateGoogleUserAsync(null));
     }
 
