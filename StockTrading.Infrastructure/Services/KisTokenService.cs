@@ -10,15 +10,15 @@ namespace StockTrading.Infrastructure.Services;
 public class KisTokenService : IKisTokenService
 {
     private readonly HttpClient _httpClient;
-    private readonly IUserTokenRepository _userTokenRepository;
+    private readonly IKisTokenRepository _kisTokenRepository;
+    private readonly IUserKisInfoRepository _userKisInfoRepository;
     private readonly ILogger<KisTokenService> _logger;
 
-    public KisTokenService(
-        IHttpClientFactory httpClientFactory,
-        IUserTokenRepository userTokenRepository,
-        ILogger<KisTokenService> logger)
+    public KisTokenService(IHttpClientFactory httpClientFactory, IKisTokenRepository kisTokenRepository,
+        IUserKisInfoRepository userKisInfoRepository, ILogger<KisTokenService> logger)
     {
-        _userTokenRepository = userTokenRepository;
+        _kisTokenRepository = kisTokenRepository;
+        _userKisInfoRepository = userKisInfoRepository;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient(nameof(KisTokenService));
     }
@@ -33,7 +33,7 @@ public class KisTokenService : IKisTokenService
         };
 
         var response = await _httpClient.PostAsJsonAsync("/oauth2/tokenP", bodyData);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
@@ -49,8 +49,8 @@ public class KisTokenService : IKisTokenService
 
         _logger.LogInformation("토큰 발급 성공: {UserId}", userId);
 
-        await _userTokenRepository.SaveKisTokenAsync(userId, tokenResponse);
-        await _userTokenRepository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
+        await _kisTokenRepository.SaveKisTokenAsync(userId, tokenResponse);
+        await _userKisInfoRepository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
 
         return tokenResponse;
     }
@@ -65,7 +65,7 @@ public class KisTokenService : IKisTokenService
         };
 
         var response = await _httpClient.PostAsJsonAsync("/oauth2/Approval", content);
-        response.EnsureSuccessStatusCode(); // HttpRequestException 발생
+        response.EnsureSuccessStatusCode();
 
         var result = await response.Content.ReadFromJsonAsync<WebSocketApprovalResponse>();
         if (result?.ApprovalKey == null)
@@ -73,7 +73,7 @@ public class KisTokenService : IKisTokenService
             throw new InvalidOperationException("WebSocket 승인 키를 받지 못했습니다.");
         }
 
-        await _userTokenRepository.SaveWebSocketTokenAsync(userId, result.ApprovalKey);
+        await _userKisInfoRepository.SaveWebSocketTokenAsync(userId, result.ApprovalKey);
         _logger.LogInformation("WebSocket 토큰 저장 완료: {UserId}", userId);
 
         return result.ApprovalKey;

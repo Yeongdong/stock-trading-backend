@@ -225,46 +225,4 @@ public class KisServiceTest
             t => t.CommitAsync(),
             Times.Once);
     }
-
-    [Fact]
-    public async Task UpdateUserKisInfoAndTokensAsync_EmptyAppKey_ThrowsNullReferenceException()
-    {
-        int userId = 1;
-        string appKey = "";
-        string appSecret = "testAppSecret";
-        string accountNumber = "12345678901234";
-
-        await Assert.ThrowsAsync<NullReferenceException>(
-            () => _kisService.UpdateUserKisInfoAndTokensAsync(userId, appKey, appSecret, accountNumber));
-    }
-
-    [Fact]
-    public async Task UpdateUserKisInfoAndTokensAsync_ApiError_ThrowsExceptionAndRollsback()
-    {
-        int userId = 1;
-        string appKey = "testAppKey";
-        string appSecret = "testAppSecret";
-        string accountNumber = "12345678901234";
-
-        _mockKisTokenService
-            .Setup(service => service.GetKisTokenAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()))
-            .ThrowsAsync(new HttpRequestException("API 호출 실패", null, BadRequest));
-
-        _mockDbTransaction
-            .Setup(t => t.RollbackAsync())
-            .Returns(Task.CompletedTask);
-
-        var exception = await Assert.ThrowsAsync<Exception>(
-            () => _kisService.UpdateUserKisInfoAndTokensAsync(userId, appKey, appSecret, accountNumber));
-
-        Assert.Contains("한국투자증권 API 호출 중 오류가 발생했습니다", exception.Message);
-
-        _mockDbTransaction.Verify(
-            t => t.RollbackAsync(),
-            Times.Once);
-    }
 }

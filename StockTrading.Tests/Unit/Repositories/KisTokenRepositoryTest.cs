@@ -4,7 +4,7 @@ using Moq;
 using StockTrading.Application.DTOs.Common;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
-using StockTrading.Infrastructure.Repositories;
+using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
 
 namespace StockTrading.Tests.Unit.Repositories
@@ -60,7 +60,7 @@ namespace StockTrading.Tests.Unit.Repositories
                 TokenType = "Bearer"
             };
 
-            await repository.SaveKisToken(userId, tokenResponse);
+            await repository.SaveKisTokenAsync(userId, tokenResponse);
 
             var savedToken = await context.KisTokens.FirstOrDefaultAsync(t => t.UserId == userId);
             Assert.NotNull(savedToken);
@@ -112,7 +112,7 @@ namespace StockTrading.Tests.Unit.Repositories
                 TokenType = "Bearer"
             };
 
-            await repository.SaveKisToken(userId, tokenResponse);
+            await repository.SaveKisTokenAsync(userId, tokenResponse);
 
             var updatedToken = await context.KisTokens.FirstOrDefaultAsync(t => t.UserId == userId);
             Assert.NotNull(updatedToken);

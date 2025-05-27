@@ -147,15 +147,49 @@ public class JwtServiceTest
     public void ValidateToken_WithInvalidSignature_ShouldThrowTokenValidationException()
     {
         var token = _jwtService.GenerateToken(_testUser);
+    
+        var parts = token.Split('.');
+        if (parts.Length == 3)
+        {
+            // 서명 부분을 완전히 다른 값으로 교체
+            parts[2] = "invalid_signature_that_will_definitely_fail_validation";
+            var invalidToken = string.Join(".", parts);
+
+            var exception = Assert.Throws<TokenValidationException>(() => 
+                _jwtService.ValidateToken(invalidToken));
             
-        // 마지막 문자를 변경하여 서명을 손상
-        var invalidToken = token.Substring(0, token.Length - 1) + 
-                           (token[token.Length - 1] == 'A' ? 'B' : 'A');
+            Assert.Equal("토큰 서명이 유효하지 않습니다.", exception.Message);
+        }
+        else
+        {
+            // JWT 형태가 올바르지 않은 경우를 위한 fallback
+            var invalidToken = "invalid.jwt.token";
+        
+            var exception = Assert.Throws<TokenValidationException>(() => 
+                _jwtService.ValidateToken(invalidToken));
+            
+            Assert.Equal("토큰 검증 실패", exception.Message);
+        }
+    }
+
+    [Fact]
+    public void ValidateToken_WithMalformedToken_ShouldThrowTokenValidationException()
+    {
+        var invalidToken = "this.is.not.a.valid.jwt.token.format";
 
         var exception = Assert.Throws<TokenValidationException>(() => 
             _jwtService.ValidateToken(invalidToken));
-            
-        Assert.Equal("토큰 서명이 유효하지 않습니다.", exception.Message);
+        
+        Assert.Equal("토큰 검증 실패", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateToken_WithEmptyToken_ShouldThrowTokenValidationException()
+    {
+        var exception = Assert.Throws<TokenValidationException>(() => 
+            _jwtService.ValidateToken(""));
+        
+        Assert.Equal("토큰 검증 실패", exception.Message);
     }
     
     [Fact]

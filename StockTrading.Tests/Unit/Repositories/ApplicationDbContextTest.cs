@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
-using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
 
 namespace StockTrading.Tests.Unit.Repositories;

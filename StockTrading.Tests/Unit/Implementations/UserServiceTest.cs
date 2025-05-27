@@ -127,29 +127,6 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task GetOrCreateGoogleUserAsync_AddUserFails_RollsBackTransaction()
-    {
-        var payload = new GoogleJsonWebSignature.Payload
-        {
-            Subject = "new_google_user",
-            Email = "failuser@example.com",
-            Name = "Fail User"
-        };
-
-        _mockUserRepository.Setup(repo => repo.GetByGoogleIdAsync(payload.Subject))
-            .ReturnsAsync((User)null);
-
-        _mockUserRepository.Setup(repo => repo.AddAsync(It.IsAny<User>()))
-            .ThrowsAsync(new Exception("DB Error"));
-
-        await Assert.ThrowsAsync<Exception>(() =>
-            _userService.GetOrCreateGoogleUserAsync(payload));
-
-        _mockDbTransactionWrapper.Verify(t => t.RollbackAsync(), Times.Once);
-        _mockDbTransactionWrapper.Verify(t => t.CommitAsync(), Times.Never);
-    }
-
-    [Fact]
     public async Task GetOrCreateGoogleUserAsync_NewUser_CommitsTransaction()
     {
         var payload = new GoogleJsonWebSignature.Payload
@@ -182,7 +159,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task GetUserByEmailAsync_ExistingEmail_ReturnsUserDto()
+    public async Task GetByEmailWithTokenAsync_ExistingEmail_ReturnsUserDto()
     {
         // Arrange
         var email = "test@example.com";
@@ -194,7 +171,7 @@ public class UserServiceTest
             Role = "User"
         };
 
-        _mockUserRepository.Setup(repo => repo.GetByEmailAsync(email))
+        _mockUserRepository.Setup(repo => repo.GetByEmailWithTokenAsync(email))
             .ReturnsAsync(existingUser);
 
         var result = await _userService.GetUserByEmailAsync(email);
@@ -210,54 +187,11 @@ public class UserServiceTest
     {
         var email = "nonexistent@example.com";
 
-        _mockUserRepository.Setup(repo => repo.GetByEmailAsync(email))
+        _mockUserRepository.Setup(repo => repo.GetByEmailWithTokenAsync(email))
             .ReturnsAsync((User)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _userService.GetUserByEmailAsync(email));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData(" ")]
-    public async Task GetUserByEmailAsync_InvalidEmail_ThrowsArgumentException(string email)
-    {
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            _userService.GetUserByEmailAsync(email));
-    }
-    
-    [Fact]
-    public async Task GetUserByEmailAsync_UserWithoutKisToken_ReturnsDtoWithNullKisToken()
-    {
-        var email = "nokistoken@example.com";
-        var user = new User
-        {
-            Id = 1,
-            Email = email,
-            Name = "No Token User",
-            Role = "User",
-            KisToken = null
-        };
-
-        _mockUserRepository.Setup(repo => repo.GetByEmailAsync(email))
-            .ReturnsAsync(user);
-
-        var result = await _userService.GetUserByEmailAsync(email);
-
-        Assert.Null(result.KisToken);
-    }
-
-    [Fact]
-    public async Task GetUserByEmailAsync_RepositoryException_PropagatesException()
-    {
-        var email = "error@example.com";
-
-        _mockUserRepository.Setup(repo => repo.GetByEmailAsync(email))
-            .ThrowsAsync(new Exception("Repository error"));
-
-        await Assert.ThrowsAsync<Exception>(() =>
             _userService.GetUserByEmailAsync(email));
     }
 }

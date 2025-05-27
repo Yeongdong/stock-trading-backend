@@ -6,7 +6,6 @@ using Moq;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
-using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
 
 namespace StockTrading.Tests.Unit.Repositories;
@@ -54,7 +53,7 @@ public class UserKisInfoRepositoryTest
         var appSecret = "test-app-secret";
         var accountNumber = "123456789";
 
-        await repository.UpdateUserKisInfo(userId, appKey, appSecret, accountNumber);
+        await repository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
 
         var updatedUser = await context.Users.FindAsync(userId);
         Assert.NotNull(updatedUser);
@@ -75,7 +74,7 @@ public class UserKisInfoRepositoryTest
         var accountNumber = "123456789";
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => 
-            repository.UpdateUserKisInfo(nonExistentUserId, appKey, appSecret, accountNumber));
+            repository.UpdateUserKisInfoAsync(nonExistentUserId, appKey, appSecret, accountNumber));
     }
     
     [Fact]
@@ -100,7 +99,7 @@ public class UserKisInfoRepositoryTest
         var appSecret = "test-app-secret";
         var accountNumber = "123456789";
 
-        await repository.UpdateUserKisInfo(userId, appKey, appSecret, accountNumber);
+        await repository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
 
         var updatedUser = await context.Users.FindAsync(userId);
         Assert.NotNull(updatedUser);
@@ -201,7 +200,7 @@ public class UserKisInfoRepositoryTest
         var repository = new UserKisInfoRepository(mockContext, _logger);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => 
-            repository.UpdateUserKisInfo(1, "key", "secret", "account"));
+            repository.UpdateUserKisInfoAsync(1, "key", "secret", "account"));
     }
     
     [Fact]

@@ -4,5 +4,6 @@ namespace StockTrading.Application.Repositories;
 
 public interface IKisTokenRepository
 {
-    public Task SaveKisToken(int userId, TokenResponse tokenResponse);
+    public Task SaveKisTokenAsync(int userId, TokenResponse tokenResponse);
+    Task<bool> IsKisTokenValidAsync(int userId);
 }

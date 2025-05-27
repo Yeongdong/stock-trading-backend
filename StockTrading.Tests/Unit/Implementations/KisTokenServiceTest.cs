@@ -15,7 +15,8 @@ namespace StockTrading.Tests.Unit.Implementations;
 [TestSubject(typeof(KisTokenService))]
 public class KisTokenServiceTest
 {
-    private readonly Mock<IUserTokenRepository> _mockUserTokenRepository;
+    private readonly Mock<IKisTokenRepository> _mockUserTokenRepository;
+    private readonly Mock<IUserKisInfoRepository> _mockUserKisInfoRepository;
     private readonly Mock<ILogger<KisTokenService>> _mockLogger;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly HttpClient _httpClient;
@@ -25,7 +26,8 @@ public class KisTokenServiceTest
 
     public KisTokenServiceTest()
     {
-        _mockUserTokenRepository = new Mock<IUserTokenRepository>();
+        _mockUserTokenRepository = new Mock<IKisTokenRepository>();
+        _mockUserKisInfoRepository = new Mock<IUserKisInfoRepository>();
         _mockLogger = new Mock<ILogger<KisTokenService>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
 
@@ -38,7 +40,7 @@ public class KisTokenServiceTest
             .Setup(f => f.CreateClient(nameof(KisTokenService)))
             .Returns(_httpClient);
         _kisTokenService = new KisTokenService(_mockHttpClientFactory.Object, _mockUserTokenRepository.Object,
-            _mockLogger.Object);
+            _mockUserKisInfoRepository.Object, _mockLogger.Object);
     }
 
     [Fact]
@@ -77,7 +79,7 @@ public class KisTokenServiceTest
             .Setup(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenResponse>()))
             .Returns(Task.CompletedTask);
 
-        _mockUserTokenRepository
+        _mockUserKisInfoRepository
             .Setup(repo => repo.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber))
             .Returns(Task.CompletedTask);
 
@@ -91,7 +93,7 @@ public class KisTokenServiceTest
             repo => repo.SaveKisTokenAsync(userId, It.Is<TokenResponse>(t =>
                 t.AccessToken == expectedTokenResponse.AccessToken)),
             Times.Once);
-        _mockUserTokenRepository.Verify(
+        _mockUserKisInfoRepository.Verify(
             repo => repo.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber),
             Times.Once);
     }
@@ -125,7 +127,7 @@ public class KisTokenServiceTest
         _mockUserTokenRepository.Verify(
             repo => repo.SaveKisTokenAsync(It.IsAny<int>(), It.IsAny<TokenResponse>()),
             Times.Never);
-        _mockUserTokenRepository.Verify(
+        _mockUserKisInfoRepository.Verify(
             repo => repo.UpdateUserKisInfoAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>()),
             Times.Never);
@@ -194,14 +196,14 @@ public class KisTokenServiceTest
                 Content = new StringContent(jsonResponse, Encoding.UTF8, "application/json")
             });
 
-        _mockUserTokenRepository
+        _mockUserKisInfoRepository
             .Setup(repo => repo.SaveWebSocketTokenAsync(userId, expectedResponse.ApprovalKey))
             .Returns(Task.CompletedTask);
 
         var result = await _kisTokenService.GetWebSocketTokenAsync(userId, appKey, appSecret);
 
         Assert.Equal(expectedResponse.ApprovalKey, result);
-        _mockUserTokenRepository.Verify(
+        _mockUserKisInfoRepository.Verify(
             repo => repo.SaveWebSocketTokenAsync(userId, expectedResponse.ApprovalKey),
             Times.Once);
     }
@@ -231,7 +233,7 @@ public class KisTokenServiceTest
         await Assert.ThrowsAsync<HttpRequestException>(() =>
             _kisTokenService.GetWebSocketTokenAsync(userId, appKey, appSecret));
 
-        _mockUserTokenRepository.Verify(
+        _mockUserKisInfoRepository.Verify(
             repo => repo.SaveWebSocketTokenAsync(It.IsAny<int>(), It.IsAny<string>()),
             Times.Never);
     }

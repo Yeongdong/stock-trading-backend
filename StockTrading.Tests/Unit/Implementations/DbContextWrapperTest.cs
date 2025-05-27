@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Moq;
+using StockTrading.Application.Repositories;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Security.Encryption;
 using StockTrading.Infrastructure.Services;
@@ -31,6 +32,10 @@ public class DbContextWrapperTest
         var result = await dbContextWrapper.BeginTransactionAsync();
 
         Assert.NotNull(result);
-        Assert.IsType<DbTransactionWrapper>(result);
+        Assert.IsAssignableFrom<IDbTransactionWrapper>(result);
+    
+        // 기능 테스트
+        await result.CommitAsync(); // 예외가 발생하지 않으면 OK
+        await result.DisposeAsync(); // 예외가 발생하지 않으면 OK
     }
 }

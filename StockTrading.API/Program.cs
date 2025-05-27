@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
-using StockTrading.Infrastructure.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
 using StockTrading.Infrastructure.Security.Options;
 using StockTrading.API.Middleware;
@@ -218,7 +217,8 @@ static void ConfigureBusinessServices(IServiceCollection services)
     // Repository 계층
     services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IOrderRepository, OrderRepository>();
-    services.AddScoped<IUserTokenRepository, UserTokenRepository>();
+    services.AddScoped<IKisTokenRepository, KisTokenRepository>();
+    services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
     
     // Infrastructure 계층
     services.AddScoped<IKisApiClient, KisApiClient>();
