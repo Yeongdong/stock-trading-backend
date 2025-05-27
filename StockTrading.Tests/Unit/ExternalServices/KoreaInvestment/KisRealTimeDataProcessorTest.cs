@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
@@ -20,7 +21,7 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
         public void ProcessMessage_StockPriceReceived_EventRaised_ForH0STASP0Message()
         {
             bool eventRaised = false;
-            StockTransaction receivedData = null;
+            KisTransactionInfo receivedData = null;
             
             // 실시간 호가 메시지
             var hokaMessage = @"{

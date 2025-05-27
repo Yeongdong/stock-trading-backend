@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Orders;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Entities;
@@ -24,7 +23,7 @@ public class KisOrderService : IKisOrderService
         _logger = logger;
     }
 
-    public async Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest order, UserDto user)
+    public async Task<OrderResponse> PlaceOrderAsync(OrderRequest order, UserInfo user)
     {
         ArgumentNullException.ThrowIfNull(order);
         KisValidationHelper.ValidateUserForKisApi(user);
@@ -48,7 +47,7 @@ public class KisOrderService : IKisOrderService
         await transaction.CommitAsync();
     
         _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}", 
-            user.Id, apiResponse?.output?.ODNO ?? "알 수 없음");
+            user.Id, apiResponse?.Info?.ODNO ?? "알 수 없음");
 
         return apiResponse;
     }

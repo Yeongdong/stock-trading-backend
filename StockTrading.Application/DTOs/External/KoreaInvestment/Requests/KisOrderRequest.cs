@@ -1,6 +1,6 @@
-namespace StockTrading.Application.DTOs.External.KoreaInvestment;
+namespace StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
 
-public class StockOrderRequestToKis
+public class KisOrderRequest
 {
     public string CANO { get; set; }                // 종합계좌번호
     public string ACNT_PRDT_CD { get; set; }        // 계좌상품코드

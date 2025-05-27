@@ -1,11 +1,11 @@
 using System.Text.Json.Serialization;
 
-namespace StockTrading.Application.DTOs.External.KoreaInvestment;
+namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
-public class AccountSummary
+public class KisAccountSummaryResponse
 {
     [JsonPropertyName("dnca_tot_amt")]
-    public string TotalDeposit { get; set; }
+    public string TotalDeposit { get; init; }
     
     [JsonPropertyName("nxdy_excc_amt")]
     public string NextDaySettlementAmount { get; set; }

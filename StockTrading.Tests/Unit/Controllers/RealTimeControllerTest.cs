@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.API.Controllers;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
 namespace StockTrading.Tests.Unit.Controllers;
@@ -16,7 +16,7 @@ public class RealTimeControllerTest
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ILogger<RealTimeController>> _mockLogger;
     private readonly RealTimeController _controller;
-    private readonly UserDto _testUser;
+    private readonly UserInfo _testUser;
 
     public RealTimeControllerTest()
     {
@@ -24,7 +24,7 @@ public class RealTimeControllerTest
         _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<RealTimeController>>();
 
-        _testUser = new UserDto
+        _testUser = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -64,7 +64,7 @@ public class RealTimeControllerTest
     public async Task StartRealTimeService_ThrowsException_WhenUserHasNoToken()
     {
         // Arrange
-        var userWithoutToken = new UserDto
+        var userWithoutToken = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",

@@ -1,7 +1,8 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Auth;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.Services.Helpers;
@@ -28,7 +29,7 @@ public class KisTokenService : IKisTokenService
         _httpClient = httpClientFactory.CreateClient(nameof(KisTokenService));
     }
 
-    public async Task<TokenResponse> GetKisTokenAsync(int userId, string appKey, string appSecret, string accountNumber)
+    public async Task<TokenInfo> GetKisTokenAsync(int userId, string appKey, string appSecret, string accountNumber)
     {
         var bodyData = new
         {
@@ -46,7 +47,7 @@ public class KisTokenService : IKisTokenService
             throw new HttpRequestException($"토큰 발급 실패: {errorContent}");
         }
 
-        var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
+        var tokenResponse = await response.Content.ReadFromJsonAsync<TokenInfo>();
         if (tokenResponse == null || !tokenResponse.IsValid())
         {
             throw new InvalidOperationException("유효하지 않은 토큰 응답을 받았습니다.");
@@ -72,7 +73,7 @@ public class KisTokenService : IKisTokenService
         var response = await _httpClient.PostAsJsonAsync("/oauth2/Approval", content);
         response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<WebSocketApprovalResponse>();
+        var result = await response.Content.ReadFromJsonAsync<KisWebSocketApprovalResponse>();
         if (result?.ApprovalKey == null)
         {
             throw new InvalidOperationException("WebSocket 승인 키를 받지 못했습니다.");
@@ -84,7 +85,7 @@ public class KisTokenService : IKisTokenService
         return result.ApprovalKey;
     }
 
-    public async Task<TokenResponse> UpdateUserKisInfoAndTokensAsync(int userId, string appKey, string appSecret,
+    public async Task<TokenInfo> UpdateUserKisInfoAndTokensAsync(int userId, string appKey, string appSecret,
         string accountNumber)
     {
         KisValidationHelper.ValidateTokenRequest(userId, appKey, appSecret, accountNumber);

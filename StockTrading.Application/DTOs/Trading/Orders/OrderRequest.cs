@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace StockTrading.Application.DTOs.Orders;
+namespace StockTrading.Application.DTOs.Trading.Orders;
 
-public class StockOrderRequest
+public class OrderRequest
 {
     [JsonPropertyName("acntPrdtCd")]
     public string ACNT_PRDT_CD { get; set; } = "01";

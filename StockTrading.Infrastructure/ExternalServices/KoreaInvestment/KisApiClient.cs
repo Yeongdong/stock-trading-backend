@@ -3,10 +3,11 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.External.KoreaInvestment;
-using StockTrading.Application.DTOs.Orders;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Application.DTOs.Trading.Portfolio;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 
@@ -26,9 +27,9 @@ public class KisApiClient : IKisApiClient
         _settings = settings.Value;
     }
 
-    public async Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest request, UserDto user)
+    public async Task<OrderResponse> PlaceOrderAsync(OrderRequest request, UserInfo user)
     {
-        var kisRequest = new StockOrderRequestToKis
+        var kisRequest = new KisOrderRequest
         {
             CANO = user.AccountNumber,
             ACNT_PRDT_CD = "01",
@@ -52,7 +53,7 @@ public class KisApiClient : IKisApiClient
         response.EnsureSuccessStatusCode();
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        var orderResponse = JsonSerializer.Deserialize<StockOrderResponse>(responseContent);
+        var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
 
         if (orderResponse.rt_cd != "0")
             throw new Exception($"주문 실패: {orderResponse.msg}");
@@ -60,7 +61,7 @@ public class KisApiClient : IKisApiClient
         return orderResponse;
     }
 
-    public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
+    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
     {
         var queryParams = new Dictionary<string, string>
         {
@@ -85,31 +86,15 @@ public class KisApiClient : IKisApiClient
         SetRequiredHeaders(request, _settings.Defaults.BalanceTransactionId, user);
 
         var response = await _httpClient.SendAsync(request);
-        var apiResponse = await response.Content.ReadFromJsonAsync<StockBalanceOutput>();
+        var apiResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
 
-        return new StockBalance
+        return new AccountBalance
         {
-            Positions = apiResponse.Positions.Select(p => new Position
-            {
-                StockCode = p.StockCode,
-                StockName = p.StockName,
-                Quantity = p.Quantity,
-                AveragePrice = p.AveragePrice,
-                CurrentPrice = p.CurrentPrice,
-                ProfitLoss = p.ProfitLoss,
-                ProfitLossRate = p.ProfitLossRate
-            }).ToList(),
-
-            Summary = new Summary
-            {
-                TotalDeposit = apiResponse.Summary[0].TotalDeposit,
-                StockEvaluation = apiResponse.Summary[0].StockEvaluation,
-                TotalEvaluation = apiResponse.Summary[0].TotalEvaluation
-            }
+            Positions = apiResponse.Positions, Summary = apiResponse.Summary[0]
         };
     }
 
-    private void SetRequiredHeaders(HttpRequestMessage httpRequestMessage, string trId, UserDto user)
+    private void SetRequiredHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
     {
         httpRequestMessage.Headers.Add("authorization", $"Bearer {user.KisToken.AccessToken}");
         httpRequestMessage.Headers.Add("appkey", user.KisAppKey);

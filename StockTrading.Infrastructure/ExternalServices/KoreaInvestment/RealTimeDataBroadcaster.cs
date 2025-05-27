@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Services;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
@@ -19,7 +20,7 @@ public class RealTimeDataBroadcaster : IRealTimeDataBroadcaster
         _logger = logger;
     }
 
-    public async Task BroadcastStockPriceAsync(StockTransaction priceData)
+    public async Task BroadcastStockPriceAsync(KisTransactionInfo priceData)
     {
         try
         {

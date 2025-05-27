@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Application.Services;
 
 public interface IJwtService
 {
-    string GenerateToken(UserDto user);
+    string GenerateToken(UserInfo user);
     ClaimsPrincipal ValidateToken(string token);
 }

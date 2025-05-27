@@ -1,6 +1,6 @@
 using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Entities;
@@ -20,7 +20,7 @@ public class UserService : IUserService
         _dbContextWrapper = dbContextWrapper;
     }
 
-    public async Task<UserDto> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
+    public async Task<UserInfo> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
     {
         if (payload?.Subject == null || payload.Email == null || payload.Name == null)
             throw new ArgumentException("유효하지 않은 Google 사용자 정보입니다.");
@@ -35,7 +35,7 @@ public class UserService : IUserService
         return await CreateNewGoogleUserAsync(payload);
     }
 
-    public async Task<UserDto> GetUserByEmailAsync(string email)
+    public async Task<UserInfo> GetUserByEmailAsync(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("이메일은 필수입니다.", nameof(email));
@@ -49,7 +49,7 @@ public class UserService : IUserService
         return ToUserDto(user);
     }
 
-    private async Task<UserDto> CreateNewGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
+    private async Task<UserInfo> CreateNewGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
     {
         _logger.LogInformation("새 Google 사용자 생성: {GoogleId}", payload.Subject);
 
@@ -71,9 +71,9 @@ public class UserService : IUserService
         return ToUserDto(createdUser);
     }
 
-    private UserDto ToUserDto(User user)
+    private UserInfo ToUserDto(User user)
     {
-        return new UserDto
+        return new UserInfo
         {
             Id = user.Id,
             Email = user.Email,
@@ -83,7 +83,7 @@ public class UserService : IUserService
             KisAppSecret = user.KisAppSecret,
             KisToken = user.KisToken == null
                 ? null
-                : new KisTokenDto
+                : new KisTokenInfo
                 {
                     Id = user.KisToken.Id,
                     AccessToken = user.KisToken.AccessToken,

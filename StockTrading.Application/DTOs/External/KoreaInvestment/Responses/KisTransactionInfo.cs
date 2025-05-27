@@ -1,6 +1,6 @@
-namespace StockTrading.Application.DTOs.External.KoreaInvestment;
+namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
-public record StockTransaction
+public record KisTransactionInfo
 {
     public string Symbol { get; init; }          // 종목코드
     public decimal Price { get; init; }          // 체결가격

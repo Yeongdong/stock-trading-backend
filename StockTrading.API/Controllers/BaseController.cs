@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.API.Controllers;
 
@@ -16,9 +16,9 @@ public class BaseController : ControllerBase
         UserContextService = userContextService;
     }
 
-    private UserDto? _currentUser;
+    private UserInfo? _currentUser;
 
-    protected async Task<UserDto> GetCurrentUserAsync()
+    protected async Task<UserInfo> GetCurrentUserAsync()
     {
         return _currentUser ??= await UserContextService.GetCurrentUserAsync();
     }

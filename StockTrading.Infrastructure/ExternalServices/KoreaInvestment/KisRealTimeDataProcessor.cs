@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
 
@@ -13,7 +14,7 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
 {
     private readonly ILogger<KisRealTimeDataProcessor> _logger;
 
-    public event EventHandler<StockTransaction> StockPriceReceived;
+    public event EventHandler<KisTransactionInfo> StockPriceReceived;
     public event EventHandler<object> TradeExecutionReceived;
 
     public KisRealTimeDataProcessor(ILogger<KisRealTimeDataProcessor> logger)
@@ -74,7 +75,7 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
         var volume = long.Parse(body.GetProperty("acml_vol").GetString());
 
         // 실시간 가격 정보 객체 생성
-        var priceData = new StockTransaction
+        var priceData = new KisTransactionInfo
         {
             Symbol = stockCode,
             Price = currentPrice,
@@ -111,7 +112,7 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
         _logger.LogInformation($"체결 정보 처리: 주문번호 {orderId}, 종목 {stockCode}");
     }
 
-    protected virtual void OnStockPriceReceived(StockTransaction data)
+    protected virtual void OnStockPriceReceived(KisTransactionInfo data)
     {
         _logger.LogDebug("StockPriceReceived 이벤트 발생");
         StockPriceReceived?.Invoke(this, data);

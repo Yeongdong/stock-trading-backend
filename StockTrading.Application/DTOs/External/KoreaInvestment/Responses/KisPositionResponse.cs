@@ -1,14 +1,14 @@
 using System.Text.Json.Serialization;
 
-namespace StockTrading.Application.DTOs.External.KoreaInvestment;
+namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
-public class StockPosition
+public class KisPositionResponse
 {
     [JsonPropertyName("pdno")]
-    public string StockCode { get; set; }
+    public string StockCode { get; init; }
     
     [JsonPropertyName("prdt_name")]
-    public string StockName { get; set; }
+    public string StockName { get; init; }
     
     [JsonPropertyName("trad_dvsn_name")]
     public string TradingType { get; set; }
@@ -26,7 +26,7 @@ public class StockPosition
     public string TodaySellQuantity { get; set; }
     
     [JsonPropertyName("hldg_qty")]
-    public string Quantity { get; set; }
+    public string Quantity { get; init; }
     
     [JsonPropertyName("ord_psbl_qty")]
     public string OrderableQuantity { get; set; }

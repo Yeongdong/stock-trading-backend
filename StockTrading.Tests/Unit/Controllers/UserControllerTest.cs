@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using StockTrading.API.Controllers;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Tests.Unit.Controllers;
 
@@ -23,7 +23,7 @@ public class UserControllerTest
     public async Task GetCurrentUser_ReturnsOkResult()
     {
         // Arrange
-        var testUser = new UserDto
+        var testUser = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -39,7 +39,7 @@ public class UserControllerTest
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnedUser = Assert.IsType<UserDto>(okResult.Value);
+        var returnedUser = Assert.IsType<UserInfo>(okResult.Value);
         Assert.Equal(testUser.Id, returnedUser.Id);
         Assert.Equal(testUser.Email, returnedUser.Email);
     }

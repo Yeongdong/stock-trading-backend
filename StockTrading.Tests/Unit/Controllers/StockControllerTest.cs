@@ -4,9 +4,10 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.API.Controllers;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Orders;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Application.DTOs.Trading.Portfolio;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
 namespace StockTrading.Tests.Unit.Controllers;
@@ -19,7 +20,7 @@ public class StockControllerTest
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ILogger<StockController>> _mockLogger;
     private readonly StockController _controller;
-    private readonly UserDto _testUser;
+    private readonly UserInfo _testUser;
 
     public StockControllerTest()
     {
@@ -28,7 +29,7 @@ public class StockControllerTest
         _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<StockController>>();
 
-        _testUser = new UserDto
+        _testUser = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -50,10 +51,10 @@ public class StockControllerTest
     public async Task GetBalance_ReturnsOkResult()
     {
         // Arrange
-        var expectedBalance = new StockBalance
+        var expectedBalance = new AccountBalance
         {
-            Positions = new List<Position>(),
-            Summary = new Summary()
+            Positions = new List<KisPositionResponse>(),
+            Summary = new KisAccountSummaryResponse()
         };
 
         _mockKisBalanceService
@@ -65,7 +66,7 @@ public class StockControllerTest
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnValue = Assert.IsType<StockBalance>(okResult.Value);
+        var returnValue = Assert.IsType<AccountBalance>(okResult.Value);
         Assert.Equal(expectedBalance, returnValue);
     }
 
@@ -73,7 +74,7 @@ public class StockControllerTest
     public async Task PlaceOrder_ReturnsOkResult()
     {
         // Arrange
-        var orderRequest = new StockOrderRequest
+        var orderRequest = new OrderRequest
         {
             tr_id = "VTTC0802U",
             PDNO = "005930",
@@ -82,11 +83,11 @@ public class StockControllerTest
             ORD_UNPR = 70000
         };
 
-        var expectedResponse = new StockOrderResponse
+        var expectedResponse = new OrderResponse
         {
             rt_cd = "0",
             msg = "정상처리 되었습니다.",
-            output = new OrderOutput { ODNO = "123456" }
+            Info = new OrderInfo { ODNO = "123456" }
         };
 
         _mockKisOrderService
@@ -98,7 +99,7 @@ public class StockControllerTest
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnValue = Assert.IsType<StockOrderResponse>(okResult.Value);
+        var returnValue = Assert.IsType<OrderResponse>(okResult.Value);
         Assert.Equal(expectedResponse, returnValue);
     }
 
@@ -106,7 +107,7 @@ public class StockControllerTest
     public async Task PlaceOrder_InvalidModel_ReturnsBadRequest()
     {
         // Arrange
-        var invalidOrder = new StockOrderRequest
+        var invalidOrder = new OrderRequest
         {
             // 필수 필드들을 비워둠
             PDNO = "12345", // 잘못된 형식 (5자리)

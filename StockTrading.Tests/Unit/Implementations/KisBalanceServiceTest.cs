@@ -1,8 +1,9 @@
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Trading.Portfolio;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.Services;
 
@@ -34,7 +35,7 @@ public class KisBalanceServiceTest
         var expectedBalance = CreateTestBalance();
 
         _mockKisApiClient
-            .Setup(client => client.GetStockBalanceAsync(It.IsAny<UserDto>()))
+            .Setup(client => client.GetStockBalanceAsync(It.IsAny<UserInfo>()))
             .ReturnsAsync(expectedBalance);
 
         // Act
@@ -47,7 +48,7 @@ public class KisBalanceServiceTest
         Assert.Equal("삼성전자", result.Positions[0].StockName);
         Assert.Equal("10", result.Positions[0].Quantity);
         Assert.Equal("1000000", result.Summary.TotalDeposit);
-        
+
         _mockKisApiClient.Verify(client => client.GetStockBalanceAsync(userDto), Times.Once);
     }
 
@@ -69,7 +70,7 @@ public class KisBalanceServiceTest
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _kisBalanceService.GetStockBalanceAsync(userDto));
-        
+
         Assert.Equal("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
     }
 
@@ -83,7 +84,7 @@ public class KisBalanceServiceTest
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _kisBalanceService.GetStockBalanceAsync(userDto));
-        
+
         Assert.Equal("KIS 앱 시크릿이 설정되지 않았습니다.", exception.Message);
     }
 
@@ -97,7 +98,7 @@ public class KisBalanceServiceTest
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _kisBalanceService.GetStockBalanceAsync(userDto));
-        
+
         Assert.Equal("계좌번호가 설정되지 않았습니다.", exception.Message);
     }
 
@@ -111,7 +112,7 @@ public class KisBalanceServiceTest
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _kisBalanceService.GetStockBalanceAsync(userDto));
-        
+
         Assert.Equal("KIS 액세스 토큰이 없습니다. 토큰을 먼저 발급받아주세요.", exception.Message);
     }
 
@@ -125,7 +126,7 @@ public class KisBalanceServiceTest
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _kisBalanceService.GetStockBalanceAsync(userDto));
-        
+
         Assert.Equal("KIS 액세스 토큰이 만료되었습니다. 토큰을 재발급받아주세요.", exception.Message);
     }
 
@@ -136,7 +137,7 @@ public class KisBalanceServiceTest
         var userDto = CreateTestUser();
 
         _mockKisApiClient
-            .Setup(client => client.GetStockBalanceAsync(It.IsAny<UserDto>()))
+            .Setup(client => client.GetStockBalanceAsync(It.IsAny<UserInfo>()))
             .ThrowsAsync(new HttpRequestException("네트워크 연결 오류"));
 
         // Act & Assert
@@ -149,10 +150,10 @@ public class KisBalanceServiceTest
     {
         // Arrange
         var userDto = CreateTestUser();
-        var emptyBalance = new StockBalance
+        var emptyBalance = new AccountBalance
         {
-            Positions = new List<Position>(),
-            Summary = new Summary
+            Positions = new List<KisPositionResponse>(),
+            Summary = new KisAccountSummaryResponse
             {
                 TotalDeposit = "1000000",
                 StockEvaluation = "0",
@@ -161,7 +162,7 @@ public class KisBalanceServiceTest
         };
 
         _mockKisApiClient
-            .Setup(client => client.GetStockBalanceAsync(It.IsAny<UserDto>()))
+            .Setup(client => client.GetStockBalanceAsync(It.IsAny<UserInfo>()))
             .ReturnsAsync(emptyBalance);
 
         // Act
@@ -173,9 +174,9 @@ public class KisBalanceServiceTest
         Assert.Equal("0", result.Summary.StockEvaluation);
     }
 
-    private static UserDto CreateTestUser()
+    private static UserInfo CreateTestUser()
     {
-        return new UserDto
+        return new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -183,7 +184,7 @@ public class KisBalanceServiceTest
             KisAppKey = "testAppKey",
             KisAppSecret = "testAppSecret",
             AccountNumber = "12345678901234",
-            KisToken = new KisTokenDto
+            KisToken = new KisTokenInfo
             {
                 Id = 1,
                 AccessToken = "validToken",
@@ -193,13 +194,13 @@ public class KisBalanceServiceTest
         };
     }
 
-    private static StockBalance CreateTestBalance()
+    private static AccountBalance CreateTestBalance()
     {
-        return new StockBalance
+        return new AccountBalance
         {
-            Positions = new List<Position>
+            Positions = new List<KisPositionResponse>
             {
-                new Position
+                new KisPositionResponse
                 {
                     StockCode = "005930",
                     StockName = "삼성전자",
@@ -210,7 +211,7 @@ public class KisBalanceServiceTest
                     ProfitLossRate = "7.69"
                 }
             },
-            Summary = new Summary
+            Summary = new KisAccountSummaryResponse
             {
                 TotalDeposit = "1000000",
                 StockEvaluation = "700000",

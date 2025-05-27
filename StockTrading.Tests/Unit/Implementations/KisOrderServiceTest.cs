@@ -1,8 +1,8 @@
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Orders;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Entities;
@@ -48,7 +48,7 @@ public class KisOrderServiceTest
         var expectedResponse = CreateTestOrderResponse();
 
         _mockKisApiClient
-            .Setup(client => client.PlaceOrderAsync(It.IsAny<StockOrderRequest>(), It.IsAny<UserDto>()))
+            .Setup(client => client.PlaceOrderAsync(It.IsAny<OrderRequest>(), It.IsAny<UserInfo>()))
             .ReturnsAsync(expectedResponse);
         _mockOrderRepository
             .Setup(repo => repo.AddAsync(It.IsAny<StockOrder>()))
@@ -58,7 +58,7 @@ public class KisOrderServiceTest
 
         Assert.NotNull(result);
         Assert.Equal("0", result.rt_cd);
-        Assert.Equal("123456789", result.output.ODNO);
+        Assert.Equal("123456789", result.Info.ODNO);
 
         _mockKisApiClient.Verify(client => client.PlaceOrderAsync(order, userDto), Times.Once);
         _mockOrderRepository.Verify(repo => repo.AddAsync(It.IsAny<StockOrder>()), Times.Once);
@@ -114,7 +114,7 @@ public class KisOrderServiceTest
         var order = CreateTestOrder();
 
         _mockKisApiClient
-            .Setup(client => client.PlaceOrderAsync(It.IsAny<StockOrderRequest>(), It.IsAny<UserDto>()))
+            .Setup(client => client.PlaceOrderAsync(It.IsAny<OrderRequest>(), It.IsAny<UserInfo>()))
             .ThrowsAsync(new HttpRequestException("API 호출 실패"));
 
         // Act & Assert
@@ -127,9 +127,9 @@ public class KisOrderServiceTest
         _mockOrderRepository.Verify(repo => repo.AddAsync(It.IsAny<StockOrder>()), Times.Never);
     }
 
-    private static UserDto CreateTestUser()
+    private static UserInfo CreateTestUser()
     {
-        return new UserDto
+        return new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -137,7 +137,7 @@ public class KisOrderServiceTest
             KisAppKey = "testAppKey",
             KisAppSecret = "testAppSecret",
             AccountNumber = "12345678901234",
-            KisToken = new KisTokenDto
+            KisToken = new KisTokenInfo
             {
                 Id = 1,
                 AccessToken = "validToken",
@@ -147,9 +147,9 @@ public class KisOrderServiceTest
         };
     }
 
-    private static StockOrderRequest CreateTestOrder()
+    private static OrderRequest CreateTestOrder()
     {
-        return new StockOrderRequest
+        return new OrderRequest
         {
             PDNO = "005930",
             tr_id = "VTTC0802U",
@@ -159,14 +159,14 @@ public class KisOrderServiceTest
         };
     }
 
-    private static StockOrderResponse CreateTestOrderResponse()
+    private static OrderResponse CreateTestOrderResponse()
     {
-        return new StockOrderResponse
+        return new OrderResponse
         {
             rt_cd = "0",
             msg_cd = "MSG_0001",
             msg = "정상처리 되었습니다.",
-            output = new OrderOutput
+            Info = new OrderInfo
             {
                 ODNO = "123456789",
                 KRX_FWDG_ORD_ORGNO = "12345",

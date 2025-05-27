@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.Trading.Portfolio;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.Services.Helpers;
 
@@ -17,7 +17,7 @@ public class KisBalanceService : IKisBalanceService
         _logger = logger;
     }
     
-    public async Task<StockBalance> GetStockBalanceAsync(UserDto user)
+    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
     {
         KisValidationHelper.ValidateUserForKisApi(user);
 

@@ -1,8 +1,8 @@
 using StockTrading.Domain.Entities;
 
-namespace StockTrading.Application.DTOs.Common;
+namespace StockTrading.Application.DTOs.Users;
 
-public class KisTokenDto
+public class KisTokenInfo
 {
     public int Id { get; set; }
     public string AccessToken { get; set; }

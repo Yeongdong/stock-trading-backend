@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using StockTrading.API.DTOs.Requests;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Interfaces;
+using StockTrading.Application.DTOs.Auth;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 
@@ -20,7 +20,8 @@ public class AuthController : BaseController
     private readonly JwtSettings _jwtSettings;
 
     public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
-        IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService, IOptions<JwtSettings> jwtSettings): base(userContextService)
+        IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService,
+        IOptions<JwtSettings> jwtSettings) : base(userContextService)
     {
         _configuration = configuration;
         _jwtService = jwtService;
@@ -31,7 +32,7 @@ public class AuthController : BaseController
 
     [HttpPost("google")]
     [AllowAnonymous]
-    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    public async Task<IActionResult> GoogleLogin([FromBody] LoginRequest request)
     {
         var payload = await _googleAuthValidator.ValidateAsync(
             request.Credential,
@@ -41,7 +42,11 @@ public class AuthController : BaseController
         var token = _jwtService.GenerateToken(user);
 
         SetAuthCookie(token);
-        return Ok(new { User = user });
+        return Ok(new LoginResponse
+        {
+            User = user,
+            Message = "로그인 성공"
+        });
     }
 
     [HttpPost("logout")]
@@ -68,10 +73,10 @@ public class AuthController : BaseController
         var principal = _jwtService.ValidateToken(token);
         var user = await GetCurrentUserAsync();
 
-        return Ok(new
-        {
-            IsAuthenticated = true,
-            User = user
+        return Ok(new LoginResponse 
+        { 
+            User = user,
+            IsAuthenticated = true, 
         });
     }
 

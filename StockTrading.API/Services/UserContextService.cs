@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
 namespace StockTrading.API.Services;
@@ -15,7 +15,7 @@ public class UserContextService: IUserContextService
         _userService = userService;
     }
 
-    public async Task<UserDto> GetCurrentUserAsync()
+    public async Task<UserInfo> GetCurrentUserAsync()
     {
         var context = _httpContextAccessor.HttpContext;
         var email = context?.User.FindFirst(ClaimTypes.Email)?.Value;

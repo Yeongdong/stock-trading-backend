@@ -1,7 +1,7 @@
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -49,7 +49,7 @@ public class KisRealTimeServiceTest
     [Fact]
     public async Task StartAsync_WithUser_CallsAuthenticateAsync()
     {
-        var user = new UserDto
+        var user = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using StockTrading.API.DTOs.Requests;
 using StockTrading.API.Services;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
 namespace StockTrading.API.Controllers;
@@ -17,7 +17,7 @@ public class AccountController : BaseController
     }
 
     [HttpPost("userInfo")]
-    public async Task<IActionResult> UpdateUserInfo([FromBody] UserInfoRequest request)
+    public async Task<IActionResult> UpdateUserInfo([FromBody] UserSettingsRequest request)
     {
         if (!ModelState.IsValid)
         {

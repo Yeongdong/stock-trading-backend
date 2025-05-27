@@ -1,10 +1,10 @@
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Infrastructure.Services.Helpers;
 
 public static class KisValidationHelper
 {
-    public static void ValidateUserForKisApi(UserDto user)
+    public static void ValidateUserForKisApi(UserInfo user)
     {
         ArgumentNullException.ThrowIfNull(user);
 

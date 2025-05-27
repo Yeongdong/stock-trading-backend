@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Auth;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
@@ -53,7 +53,7 @@ namespace StockTrading.Tests.Unit.Repositories
             await context.SaveChangesAsync();
 
             var userId = user.Id;
-            var tokenResponse = new TokenResponse
+            var tokenResponse = new TokenInfo
             {
                 AccessToken = "new_access_token",
                 ExpiresIn = 86400,
@@ -105,7 +105,7 @@ namespace StockTrading.Tests.Unit.Repositories
             await context.SaveChangesAsync();
 
             // 새 토큰 응답 준비
-            var tokenResponse = new TokenResponse
+            var tokenResponse = new TokenInfo
             {
                 AccessToken = "updated_access_token",
                 ExpiresIn = 86400, // 1일

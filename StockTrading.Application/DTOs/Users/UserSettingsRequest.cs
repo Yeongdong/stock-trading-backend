@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace StockTrading.API.DTOs.Requests;
+namespace StockTrading.Application.DTOs.Users;
 
-public class UserInfoRequest 
+public class UserSettingsRequest 
 {
     [JsonPropertyName("appKey")]
     public string AppKey { get; set; }

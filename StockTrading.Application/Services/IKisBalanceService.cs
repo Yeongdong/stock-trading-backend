@@ -1,9 +1,9 @@
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.Trading.Portfolio;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Application.Services;
 
 public interface IKisBalanceService
 {
-    Task<StockBalance> GetStockBalanceAsync(UserDto userDto);
+    Task<AccountBalance> GetStockBalanceAsync(UserInfo userInfo);
 }

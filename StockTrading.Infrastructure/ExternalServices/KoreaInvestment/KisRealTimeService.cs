@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Common;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
@@ -37,7 +38,7 @@ public class KisRealTimeService : IKisRealTimeService
         _dataProcessor.ProcessMessage(message);
     }
 
-    private void OnStockPriceReceived(object sender, StockTransaction data)
+    private void OnStockPriceReceived(object sender, KisTransactionInfo data)
     {
         // fire-and-forget 처리
         _ = Task.Run(async () => { await _broadcaster.BroadcastStockPriceAsync(data); });
@@ -54,7 +55,7 @@ public class KisRealTimeService : IKisRealTimeService
         _logger.LogInformation("실시간 서비스 시작");
     }
 
-    public async Task StartAsync(UserDto user)
+    public async Task StartAsync(UserInfo user)
     {
         await StartAsync();
         await _webSocketClient.AuthenticateAsync(user.WebSocketToken);

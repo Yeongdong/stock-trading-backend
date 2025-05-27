@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Domain.Exceptions.Authentication;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.Services;
@@ -20,7 +20,7 @@ public class JwtServiceTest
     private readonly Mock<IOptions<JwtSettings>> _mockOptions;
     private readonly Mock<ILogger<JwtService>> _mockLogger;
     private readonly JwtService _jwtService;
-    private readonly UserDto _testUser;
+    private readonly UserInfo _testUser;
 
     public JwtServiceTest()
     {
@@ -40,7 +40,7 @@ public class JwtServiceTest
 
         _jwtService = new JwtService(_mockOptions.Object, _mockLogger.Object);
 
-        _testUser = new UserDto
+        _testUser = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",

@@ -1,6 +1,6 @@
-namespace StockTrading.Application.DTOs.Orders;
+namespace StockTrading.Application.DTOs.Trading.Orders;
 
-public class OrderOutput
+public class OrderInfo
 {
     public string KRX_FWDG_ORD_ORGNO { get; set; }  // 한국거래소전송주문조직번호
     public string ODNO { get; set; }                // 주문번호

@@ -5,9 +5,10 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
-using StockTrading.Application.DTOs.Common;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
-using StockTrading.Application.DTOs.Orders;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -20,7 +21,7 @@ public class KisApiClientTest
     private HttpClient _httpClient;
     private Mock<IOptions<KisApiSettings>> _mockSettings;
     private KisApiClient _kisApiClient;
-    private UserDto _testUser;
+    private UserInfo _testUser;
 
     private void SetupTest()
     {
@@ -40,12 +41,12 @@ public class KisApiClientTest
     {
         SetupTest();
 
-        var successResponse = new StockOrderResponse
+        var successResponse = new OrderResponse
         {
             rt_cd = "0",
             msg_cd = "MCA0000",
             msg = "정상처리 되었습니다.",
-            output = new OrderOutput
+            Info = new OrderInfo
             {
                 KRX_FWDG_ORD_ORGNO = "12345",
                 ODNO = "123456789",
@@ -70,7 +71,7 @@ public class KisApiClientTest
                 Content = responseContent
             });
 
-        var orderRequest = new StockOrderRequest
+        var orderRequest = new OrderRequest
         {
             ACNT_PRDT_CD = "01",
             tr_id = "TTTC0802U", // 매수 주문
@@ -85,8 +86,8 @@ public class KisApiClientTest
         Assert.Equal("0", result.rt_cd);
         Assert.Equal("MCA0000", result.msg_cd);
         Assert.Equal("정상처리 되었습니다.", result.msg);
-        Assert.NotNull(result.output);
-        Assert.Equal("123456789", result.output.ODNO);
+        Assert.NotNull(result.Info);
+        Assert.Equal("123456789", result.Info.ODNO);
     }
 
     [Fact]
@@ -94,12 +95,12 @@ public class KisApiClientTest
     {
         SetupTest();
 
-        var errorResponse = new StockOrderResponse
+        var errorResponse = new OrderResponse
         {
             rt_cd = "1",
             msg_cd = "ERC00001",
             msg = "오류가 발생했습니다.",
-            output = null
+            Info = null
         };
 
         var responseContent = new StringContent(
@@ -121,7 +122,7 @@ public class KisApiClientTest
                 Content = responseContent
             });
 
-        var orderRequest = new StockOrderRequest
+        var orderRequest = new OrderRequest
         {
             ACNT_PRDT_CD = "01",
             tr_id = "TTTC0802U",
@@ -142,11 +143,11 @@ public class KisApiClientTest
     {
         SetupTest();
 
-        var balanceResponse = new StockBalanceOutput
+        var balanceResponse = new KisBalanceResponse
         {
-            Positions = new List<StockPosition>
+            Positions = new List<KisPositionResponse>
             {
-                new StockPosition
+                new KisPositionResponse
                 {
                     StockCode = "005930",
                     StockName = "삼성전자",
@@ -157,9 +158,9 @@ public class KisApiClientTest
                     ProfitLossRate = "2.94"
                 }
             },
-            Summary = new List<AccountSummary>
+            Summary = new List<KisAccountSummaryResponse>
             {
-                new AccountSummary
+                new KisAccountSummaryResponse
                 {
                     TotalDeposit = "10000000",
                     StockEvaluation = "7000000",
@@ -269,9 +270,9 @@ public class KisApiClientTest
         };
     }
 
-    private static UserDto CreateTestUser()
+    private static UserInfo CreateTestUser()
     {
-        return new UserDto
+        return new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -279,7 +280,7 @@ public class KisApiClientTest
             KisAppKey = "test_app_key",
             KisAppSecret = "test_app_secret",
             AccountNumber = "50123456789",
-            KisToken = new KisTokenDto
+            KisToken = new KisTokenInfo
             {
                 Id = 1,
                 AccessToken = "test_access_token",

@@ -22,4 +22,8 @@
       <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.12" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="DTOs\Common\" />
+    </ItemGroup>
+
 </Project>

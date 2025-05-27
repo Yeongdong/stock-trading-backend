@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace StockTrading.Application.DTOs.Common;
+namespace StockTrading.Application.DTOs.Auth;
 
-public class TokenResponse
+public class TokenInfo
 {
     [JsonPropertyName("access_token")] public string AccessToken { get; init; }
 

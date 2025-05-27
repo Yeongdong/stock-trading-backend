@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Exceptions.Authentication;
 using StockTrading.Domain.Settings;
@@ -23,7 +23,7 @@ public class JwtService : IJwtService
         _logger = logger;
     }
 
-    public string GenerateToken(UserDto user)
+    public string GenerateToken(UserInfo user)
     {
         try
         {

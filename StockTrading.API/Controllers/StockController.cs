@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Orders;
+using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.Services;
 
 namespace StockTrading.API.Controllers;
@@ -29,7 +29,7 @@ public class StockController : BaseController
     }
 
     [HttpPost("order")]
-    public async Task<IActionResult> PlaceOrder(StockOrderRequest request)
+    public async Task<IActionResult> PlaceOrder(OrderRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -43,7 +43,7 @@ public class StockController : BaseController
         var orderResponse = await _kisOrderService.PlaceOrderAsync(request, user);
 
         _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}", user.Id,
-            orderResponse?.output?.ODNO ?? "알 수 없음");
+            orderResponse?.Info?.ODNO ?? "알 수 없음");
 
         return Ok(orderResponse);
     }

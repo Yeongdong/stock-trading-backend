@@ -1,8 +1,8 @@
 using StockTrading.Domain.Entities;
 
-namespace StockTrading.Application.DTOs.Common;
+namespace StockTrading.Application.DTOs.Users;
 
-public class UserDto
+public class UserInfo
 {
     public int Id { get; set; }
     public string Email { get; set; } = null!;
@@ -10,7 +10,7 @@ public class UserDto
     public string? KisAppKey { get; set; }
     public string? KisAppSecret { get; set; }
     public string? AccountNumber { get; set; }
-    public KisTokenDto? KisToken { get; set; }
+    public KisTokenInfo? KisToken { get; set; }
     public string? WebSocketToken { get; set; }
 
     public User ToEntity()

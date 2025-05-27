@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 
-namespace StockTrading.Application.DTOs.External.KoreaInvestment;
+namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
-public class StockBalanceOutput
+public class KisBalanceResponse
 {
     [JsonPropertyName("rt_cd")]
     public string ReturnCode { get; set; }
@@ -14,8 +14,8 @@ public class StockBalanceOutput
     public string Message { get; set; }
     
     [JsonPropertyName("output1")]
-    public List<StockPosition> Positions { get; set; }
+    public List<KisPositionResponse> Positions { get; set; }
     
     [JsonPropertyName("output2")]
-    public List<AccountSummary> Summary { get; set; }
+    public List<KisAccountSummaryResponse> Summary { get; set; }
 }

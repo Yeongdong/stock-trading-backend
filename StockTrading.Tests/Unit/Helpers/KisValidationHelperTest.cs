@@ -1,5 +1,5 @@
 using JetBrains.Annotations;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Infrastructure.Services.Helpers;
 
 namespace StockTrading.Tests.Unit.Helpers;
@@ -179,9 +179,9 @@ public class KisValidationHelperTest
         Assert.Equal("계좌번호는 필수입니다. (Parameter 'accountNumber')", exception.Message);
     }
 
-    private static UserDto CreateValidUser()
+    private static UserInfo CreateValidUser()
     {
-        return new UserDto
+        return new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -189,7 +189,7 @@ public class KisValidationHelperTest
             KisAppKey = "validAppKey",
             KisAppSecret = "validAppSecret",
             AccountNumber = "1234567890",
-            KisToken = new KisTokenDto
+            KisToken = new KisTokenInfo
             {
                 Id = 1,
                 AccessToken = "validAccessToken",

@@ -5,8 +5,9 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Auth;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Repositories;
 using StockTrading.Infrastructure.Services;
 
@@ -66,14 +67,14 @@ public class KisTokenServiceTest
         string appSecret = "test_app_secret";
         string accountNumber = "12345678901234";
 
-        var expectedTokenResponse = new TokenResponse
+        var expectedTokenResponse = new TokenInfo
         {
             AccessToken = "test_access_token",
             TokenType = "Bearer",
             ExpiresIn = 86400,
         };
 
-        var expectedWebSocketResponse = new WebSocketApprovalResponse
+        var expectedWebSocketResponse = new KisWebSocketApprovalResponse
         {
             ApprovalKey = "test_approval_key"
         };
@@ -82,7 +83,7 @@ public class KisTokenServiceTest
         SetupHttpResponse("/oauth2/Approval", expectedWebSocketResponse);
 
         _mockKisTokenRepository
-            .Setup(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenResponse>()))
+            .Setup(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenInfo>()))
             .Returns(Task.CompletedTask);
 
         _mockUserKisInfoRepository
@@ -103,7 +104,7 @@ public class KisTokenServiceTest
         Assert.Equal(expectedTokenResponse.ExpiresIn, result.ExpiresIn);
 
         _mockDbTransaction.Verify(t => t.CommitAsync(), Times.Once);
-        _mockKisTokenRepository.Verify(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenResponse>()), Times.Once);
+        _mockKisTokenRepository.Verify(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenInfo>()), Times.Once);
         _mockUserKisInfoRepository.Verify(repo => repo.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber),
             Times.Once);
         _mockUserKisInfoRepository.Verify(
@@ -139,7 +140,7 @@ public class KisTokenServiceTest
         string appSecret = "test_app_secret";
         string accountNumber = "12345678901234";
 
-        var expectedTokenResponse = new TokenResponse
+        var expectedTokenResponse = new TokenInfo
         {
             AccessToken = "test_access_token",
             TokenType = "Bearer",
@@ -149,7 +150,7 @@ public class KisTokenServiceTest
         SetupHttpResponse("/oauth2/tokenP", expectedTokenResponse);
 
         _mockKisTokenRepository
-            .Setup(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenResponse>()))
+            .Setup(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenInfo>()))
             .Returns(Task.CompletedTask);
 
         _mockUserKisInfoRepository
@@ -195,7 +196,7 @@ public class KisTokenServiceTest
             _kisTokenService.GetKisTokenAsync(userId, appKey, appSecret, accountNumber));
 
         _mockKisTokenRepository.Verify(
-            repo => repo.SaveKisTokenAsync(It.IsAny<int>(), It.IsAny<TokenResponse>()),
+            repo => repo.SaveKisTokenAsync(It.IsAny<int>(), It.IsAny<TokenInfo>()),
             Times.Never);
     }
 
@@ -207,7 +208,7 @@ public class KisTokenServiceTest
         string appKey = "test_app_key";
         string appSecret = "test_app_secret";
 
-        var expectedResponse = new WebSocketApprovalResponse
+        var expectedResponse = new KisWebSocketApprovalResponse
         {
             ApprovalKey = "test_approval_key"
         };
@@ -236,7 +237,7 @@ public class KisTokenServiceTest
         string appKey = "test_app_key";
         string appSecret = "test_app_secret";
 
-        var invalidResponse = new WebSocketApprovalResponse
+        var invalidResponse = new KisWebSocketApprovalResponse
         {
             ApprovalKey = null
         };

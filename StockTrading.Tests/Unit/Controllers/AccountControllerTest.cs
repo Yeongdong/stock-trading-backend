@@ -2,9 +2,9 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using StockTrading.API.Controllers;
-using StockTrading.API.DTOs.Requests;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Auth;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
 namespace StockTrading.Tests.Unit.Controllers;
@@ -15,14 +15,14 @@ public class AccountControllerTest
     private readonly Mock<IKisTokenService> _mockKisTokenService;
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly AccountController _controller;
-    private readonly UserDto _testUser;
+    private readonly UserInfo _testUser;
 
     public AccountControllerTest()
     {
         _mockKisTokenService = new Mock<IKisTokenService>();
         _mockUserContextService = new Mock<IUserContextService>();
 
-        _testUser = new UserDto
+        _testUser = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -42,14 +42,14 @@ public class AccountControllerTest
     public async Task UpdateUserInfo_Success_ReturnsOkResult()
     {
         // Arrange
-        var userInfoRequest = new UserInfoRequest
+        var userInfoRequest = new UserSettingsRequest
         {
             AppKey = "testAppKey",
             AppSecret = "testAppSecret",
             AccountNumber = "testAccountNumber"
         };
 
-        var tokenResponse = new TokenResponse
+        var tokenResponse = new TokenInfo
         {
             AccessToken = "access_token_value",
             TokenType = "Bearer",
@@ -69,7 +69,7 @@ public class AccountControllerTest
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
-        var returnValue = Assert.IsType<TokenResponse>(okResult.Value);
+        var returnValue = Assert.IsType<TokenInfo>(okResult.Value);
         Assert.Equal(tokenResponse.AccessToken, returnValue.AccessToken);
     }
 
@@ -77,7 +77,7 @@ public class AccountControllerTest
     public async Task UpdateUserInfo_InvalidModel_ReturnsBadRequest()
     {
         // Arrange
-        var userInfoRequest = new UserInfoRequest(); // 빈 요청
+        var userInfoRequest = new UserSettingsRequest(); // 빈 요청
         _controller.ModelState.AddModelError("AppKey", "Required");
 
         // Act

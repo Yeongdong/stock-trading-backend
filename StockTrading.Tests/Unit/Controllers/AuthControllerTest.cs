@@ -6,10 +6,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;
 using StockTrading.API.Controllers;
-using StockTrading.API.DTOs.Requests;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Interfaces;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Auth;
+using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 
@@ -61,7 +61,7 @@ public class AuthControllerTest
     public async Task GoogleLogin_Success_ReturnsOkResult()
     {
         // Arrange
-        var googleLoginRequest = new GoogleLoginRequest
+        var googleLoginRequest = new LoginRequest
         {
             Credential = "valid-google-token"
         };
@@ -73,7 +73,7 @@ public class AuthControllerTest
             Subject = "user123"
         };
 
-        var user = new UserDto
+        var user = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
@@ -106,7 +106,7 @@ public class AuthControllerTest
     public async Task CheckAuth_WithValidToken_ReturnsOkResult()
     {
         // Arrange
-        var testUser = new UserDto
+        var testUser = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",

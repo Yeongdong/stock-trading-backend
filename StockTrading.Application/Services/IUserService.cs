@@ -1,10 +1,10 @@
 using Google.Apis.Auth;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Application.Services;
 
 public interface IUserService
 {
-    Task<UserDto> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload);
-    Task<UserDto> GetUserByEmailAsync(string email);
+    Task<UserInfo> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload);
+    Task<UserInfo> GetUserByEmailAsync(string email);
 }

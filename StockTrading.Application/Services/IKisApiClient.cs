@@ -1,12 +1,12 @@
-using StockTrading.Application.DTOs.Common;
-using StockTrading.Application.DTOs.Orders;
-using StockTrading.Application.DTOs.Stocks;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Application.DTOs.Trading.Portfolio;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Application.Services;
 
 public interface IKisApiClient
 {
-    Task<StockOrderResponse> PlaceOrderAsync(StockOrderRequest request, UserDto user);
-    Task<StockBalance> GetStockBalanceAsync(UserDto user);
+    Task<OrderResponse> PlaceOrderAsync(OrderRequest request, UserInfo user);
+    Task<AccountBalance> GetStockBalanceAsync(UserInfo user);
     
 }

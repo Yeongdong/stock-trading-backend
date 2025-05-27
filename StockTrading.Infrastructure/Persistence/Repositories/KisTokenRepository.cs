@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Auth;
 using StockTrading.Application.Repositories;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
@@ -18,7 +18,7 @@ public class KisTokenRepository : IKisTokenRepository
         _logger = logger;
     }
 
-    public async Task SaveKisTokenAsync(int userId, TokenResponse tokenResponse)
+    public async Task SaveKisTokenAsync(int userId, TokenInfo tokenInfo)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null)
@@ -29,14 +29,14 @@ public class KisTokenRepository : IKisTokenRepository
         var existingToken = await _context.KisTokens
             .FirstOrDefaultAsync(t => t.UserId == userId);
 
-        var expiresIn = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+        var expiresIn = DateTime.UtcNow.AddSeconds(tokenInfo.ExpiresIn);
 
         if (existingToken != null)
         {
             _logger.LogInformation("기존 토큰 업데이트");
-            existingToken.AccessToken = tokenResponse.AccessToken;
+            existingToken.AccessToken = tokenInfo.AccessToken;
             existingToken.ExpiresIn = expiresIn;
-            existingToken.TokenType = tokenResponse.TokenType;
+            existingToken.TokenType = tokenInfo.TokenType;
             _context.KisTokens.Update(existingToken);
         }
         else
@@ -45,9 +45,9 @@ public class KisTokenRepository : IKisTokenRepository
             var newToken = new KisToken
             {
                 UserId = userId,
-                AccessToken = tokenResponse.AccessToken,
+                AccessToken = tokenInfo.AccessToken,
                 ExpiresIn = expiresIn,
-                TokenType = tokenResponse.TokenType
+                TokenType = tokenInfo.TokenType
             };
 
             await _context.KisTokens.AddAsync(newToken);

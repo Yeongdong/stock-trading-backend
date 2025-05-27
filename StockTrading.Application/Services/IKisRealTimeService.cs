@@ -1,11 +1,11 @@
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Application.Services;
 
 public interface IKisRealTimeService
 {
     // 서비스 시작/중지
-    Task StartAsync(UserDto user);
+    Task StartAsync(UserInfo user);
     Task StopAsync();
 
     // 종목 구독 관리

@@ -1,8 +1,8 @@
-using StockTrading.Application.DTOs.Common;
+using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.API.Services;
 
 public interface IUserContextService
 {
-    Task<UserDto> GetCurrentUserAsync();
+    Task<UserInfo> GetCurrentUserAsync();
 }
