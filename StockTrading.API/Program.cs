@@ -201,6 +201,13 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
         client.Timeout = TimeSpan.FromSeconds(30);
         client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
     });
+    
+    services.AddHttpClient(nameof(KisTokenService), client =>
+    {
+        client.BaseAddress = new Uri(kisBaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(30);
+        client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
+    });
 
     services.AddScoped<IKisApiClient>(provider => provider.GetRequiredService<KisApiClient>());
 }
