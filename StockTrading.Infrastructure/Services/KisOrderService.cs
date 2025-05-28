@@ -15,7 +15,8 @@ public class KisOrderService : IKisOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly ILogger<KisOrderService> _logger;
 
-    public KisOrderService(IKisApiClient kisApiClient, IDbContextWrapper dbContextWrapper, IOrderRepository orderRepository, ILogger<KisOrderService> logger)
+    public KisOrderService(IKisApiClient kisApiClient, IDbContextWrapper dbContextWrapper,
+        IOrderRepository orderRepository, ILogger<KisOrderService> logger)
     {
         _kisApiClient = kisApiClient;
         _dbContextWrapper = dbContextWrapper;
@@ -28,9 +29,6 @@ public class KisOrderService : IKisOrderService
         ArgumentNullException.ThrowIfNull(order);
         KisValidationHelper.ValidateUserForKisApi(user);
 
-        _logger.LogInformation("주문 시작: 사용자 {UserId}, 종목 {StockCode}, 수량 {Quantity}", 
-            user.Id, order.PDNO, order.ORD_QTY);
-
         var stockOrder = new StockOrder(
             stockCode: order.PDNO,
             tradeType: order.tr_id,
@@ -41,13 +39,10 @@ public class KisOrderService : IKisOrderService
         );
 
         await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
-    
+
         var apiResponse = await _kisApiClient.PlaceOrderAsync(order, user);
         await _orderRepository.AddAsync(stockOrder);
         await transaction.CommitAsync();
-    
-        _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}", 
-            user.Id, apiResponse?.Info?.ODNO ?? "알 수 없음");
 
         return apiResponse;
     }

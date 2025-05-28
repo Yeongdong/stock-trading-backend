@@ -56,7 +56,7 @@ public class KisApiClient : IKisApiClient
         var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
 
         if (orderResponse.rt_cd != "0")
-            throw new Exception($"주문 실패: {orderResponse.msg}");
+            throw new Exception($"주문 실패: {orderResponse.msg1}");
 
         return orderResponse;
     }

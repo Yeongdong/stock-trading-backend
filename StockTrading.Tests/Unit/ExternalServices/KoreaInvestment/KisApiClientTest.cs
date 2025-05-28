@@ -45,13 +45,16 @@ public class KisApiClientTest
         {
             rt_cd = "0",
             msg_cd = "MCA0000",
-            msg = "정상처리 되었습니다.",
-            Info = new OrderInfo
-            {
-                KRX_FWDG_ORD_ORGNO = "12345",
-                ODNO = "123456789",
-                ORD_TMD = "121212"
-            }
+            msg1 = "정상처리 되었습니다.",
+            output =
+            [
+                new OrderResponseOutput()
+                {
+                    KRX_FWDG_ORD_ORGNO = "12345",
+                    ODNO = "123456789",
+                    ORD_TMD = "121212"
+                }
+            ]
         };
 
         var responseContent = new StringContent(
@@ -85,9 +88,9 @@ public class KisApiClientTest
 
         Assert.Equal("0", result.rt_cd);
         Assert.Equal("MCA0000", result.msg_cd);
-        Assert.Equal("정상처리 되었습니다.", result.msg);
-        Assert.NotNull(result.Info);
-        Assert.Equal("123456789", result.Info.ODNO);
+        Assert.Equal("정상처리 되었습니다.", result.msg1);
+        Assert.NotNull(result.output);
+        Assert.Equal("123456789", result.output[0].ODNO);
     }
 
     [Fact]
@@ -99,8 +102,8 @@ public class KisApiClientTest
         {
             rt_cd = "1",
             msg_cd = "ERC00001",
-            msg = "오류가 발생했습니다.",
-            Info = null
+            msg1 = "오류가 발생했습니다.",
+            output = []
         };
 
         var responseContent = new StringContent(
@@ -145,8 +148,8 @@ public class KisApiClientTest
 
         var balanceResponse = new KisBalanceResponse
         {
-            Positions = new List<KisPositionResponse>
-            {
+            Positions =
+            [
                 new KisPositionResponse
                 {
                     StockCode = "005930",
@@ -157,16 +160,16 @@ public class KisApiClientTest
                     ProfitLoss = "200000",
                     ProfitLossRate = "2.94"
                 }
-            },
-            Summary = new List<KisAccountSummaryResponse>
-            {
+            ],
+            Summary =
+            [
                 new KisAccountSummaryResponse
                 {
                     TotalDeposit = "10000000",
                     StockEvaluation = "7000000",
                     TotalEvaluation = "17000000"
                 }
-            }
+            ]
         };
 
         var responseContent = new StringContent(
