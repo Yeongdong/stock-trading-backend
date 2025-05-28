@@ -4,7 +4,6 @@ using StockTrading.API.Services;
 namespace StockTrading.API.Controllers;
 
 [Route("api/[controller]")]
-[IgnoreAntiforgeryToken]
 public class UserController : BaseController
 {
     public UserController(IUserContextService userContextService)

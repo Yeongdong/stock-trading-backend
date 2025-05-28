@@ -46,10 +46,7 @@ ConfigureRealTimeServices(builder.Services);
 // 8. CORS 설정
 ConfigureCors(builder.Services, builder.Configuration);
 
-// 9. CSRF 보호 설정 (환경별 분기)
-ConfigureAntiforgery(builder.Services, builder.Environment);
-
-// 10. 헬스체크 추가
+// 9. 헬스체크 추가
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>();
 
@@ -189,27 +186,23 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
 {
     var kisBaseUrl = configuration["KoreaInvestment:BaseUrl"];
 
-    // 기본 HttpClient 추가
     services.AddHttpClient();
 
-    // KIS API 클라이언트
-    services.AddHttpClient(nameof(KisApiClient), client =>
+    services.AddHttpClient<KisApiClient>(client =>
     {
         client.BaseAddress = new Uri(kisBaseUrl);
         client.Timeout = TimeSpan.FromSeconds(30);
         client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
     });
 
-    services.AddHttpClient(nameof(KisTokenService), client =>
+    services.AddHttpClient<KisOrderService>(client =>
     {
         client.BaseAddress = new Uri(kisBaseUrl);
         client.Timeout = TimeSpan.FromSeconds(30);
         client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
     });
 
-    // 타입 기반 등록 유지
-    services.AddHttpClient<KisApiClient>();
-    services.AddHttpClient<KisOrderService>();
+    services.AddScoped<IKisApiClient>(provider => provider.GetRequiredService<KisApiClient>());
 }
 
 static void ConfigureBusinessServices(IServiceCollection services, IConfiguration configuration)
@@ -221,7 +214,6 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
 
     // Infrastructure 계층
-    services.AddScoped<IKisApiClient, KisApiClient>();
     services.AddScoped<IDbContextWrapper, DbContextWrapper>();
 
     // Application 서비스 계층
@@ -284,36 +276,6 @@ static void ConfigureCors(IServiceCollection services, IConfiguration configurat
                 .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
         });
     });
-}
-
-static void ConfigureAntiforgery(IServiceCollection services, IWebHostEnvironment environment)
-{
-    // 개발 환경에서는 CSRF 보호 완화
-    if (environment.IsDevelopment())
-    {
-        services.AddAntiforgery(options =>
-        {
-            options.Cookie.Name = "XSRF-TOKEN";
-            options.Cookie.HttpOnly = false;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.None; // 개발 환경
-            options.HeaderName = "X-XSRF-TOKEN";
-            options.Cookie.SameSite = SameSiteMode.Lax;
-        });
-    }
-    else
-    {
-        services.AddAntiforgery(options =>
-        {
-            options.Cookie.Name = "XSRF-TOKEN";
-            options.Cookie.HttpOnly = false;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // 운영 환경
-            options.HeaderName = "X-XSRF-TOKEN";
-            options.Cookie.SameSite = SameSiteMode.Strict;
-        });
-    }
-
-    // 컨트롤러에 자동 검증 필터
-    services.AddMvc(options => { options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()); });
 }
 
 static void ConfigureMiddleware(WebApplication app)

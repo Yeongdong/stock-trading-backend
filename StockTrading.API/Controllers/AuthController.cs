@@ -10,7 +10,6 @@ using StockTrading.Domain.Settings;
 namespace StockTrading.API.Controllers;
 
 [Route("api/[controller]")]
-[IgnoreAntiforgeryToken]
 public class AuthController : BaseController
 {
     private readonly IConfiguration _configuration;

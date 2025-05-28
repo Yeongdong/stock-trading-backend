@@ -20,9 +20,7 @@ public class AccountController : BaseController
     public async Task<IActionResult> UpdateUserInfo([FromBody] UserSettingsRequest request)
     {
         if (!ModelState.IsValid)
-        {
             return BadRequest(ModelState);
-        }
 
         var user = await GetCurrentUserAsync();
 
