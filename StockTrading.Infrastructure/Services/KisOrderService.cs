@@ -35,8 +35,8 @@ public class KisOrderService : IKisOrderService
             stockCode: order.PDNO,
             tradeType: order.tr_id,
             orderType: order.ORD_DVSN,
-            quantity: order.ORD_QTY,
-            price: order.ORD_UNPR,
+            quantity: order.QuantityAsInt,
+            price: order.PriceAsDecimal,
             user: user.ToEntity()
         );
 

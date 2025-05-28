@@ -32,19 +32,17 @@ public class StockController : BaseController
     public async Task<IActionResult> PlaceOrder(OrderRequest request)
     {
         if (!ModelState.IsValid)
-        {
             return BadRequest(ModelState);
-        }
-
+    
         var user = await GetCurrentUserAsync();
-
+    
         _logger.LogInformation("주문 시작: 사용자 {UserId}, 종목 {StockCode}", user.Id, request.PDNO);
-
+    
         var orderResponse = await _kisOrderService.PlaceOrderAsync(request, user);
-
+    
         _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}", user.Id,
             orderResponse?.Info?.ODNO ?? "알 수 없음");
-
+    
         return Ok(orderResponse);
     }
 }

@@ -35,8 +35,8 @@ public class KisApiClient : IKisApiClient
             ACNT_PRDT_CD = "01",
             PDNO = request.PDNO,
             ORD_DVSN = request.ORD_DVSN,
-            ORD_QTY = request.ORD_QTY.ToString(),
-            ORD_UNPR = request.ORD_UNPR.ToString(),
+            ORD_QTY = request.ORD_QTY,
+            ORD_UNPR = request.ORD_UNPR,
         };
 
         var content = new StringContent(

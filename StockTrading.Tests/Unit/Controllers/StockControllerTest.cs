@@ -79,8 +79,8 @@ public class StockControllerTest
             tr_id = "VTTC0802U",
             PDNO = "005930",
             ORD_DVSN = "00",
-            ORD_QTY = 10,
-            ORD_UNPR = 70000
+            ORD_QTY = "10",
+            ORD_UNPR = "70000"
         };
 
         var expectedResponse = new OrderResponse
@@ -111,8 +111,8 @@ public class StockControllerTest
         {
             // 필수 필드들을 비워둠
             PDNO = "12345", // 잘못된 형식 (5자리)
-            ORD_QTY = 0, // 0은 유효하지 않음
-            ORD_UNPR = -100 // 음수는 유효하지 않음
+            ORD_QTY = "0", // 0은 유효하지 않음
+            ORD_UNPR = "-100" // 음수는 유효하지 않음
         };
 
         _controller.ModelState.AddModelError("PDNO", "종목코드는 6자리 숫자여야 합니다.");

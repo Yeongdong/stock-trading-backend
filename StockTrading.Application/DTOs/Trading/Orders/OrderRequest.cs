@@ -10,24 +10,28 @@ public class OrderRequest
     
     [JsonPropertyName("trId")]
     [Required(ErrorMessage = "거래구분은 필수입니다.")]
-    public string tr_id { get; set; }
+    public string tr_id { get; init; }
 
     [JsonPropertyName("pdno")]
     [Required(ErrorMessage = "종목코드는 필수입니다.")]
     [RegularExpression(@"^\d{6}$", ErrorMessage = "종목코드는 6자리 숫자여야 합니다.")]
-    public string PDNO { get; set; }
+    public string PDNO { get; init; }
     
     [JsonPropertyName("ordDvsn")]
     [Required(ErrorMessage = "주문구분은 필수입니다.")]
-    public string ORD_DVSN { get; set; }
+    public string ORD_DVSN { get; init; }
     
     [JsonPropertyName("ordQty")]
     [Required(ErrorMessage = "주문수량은 필수입니다.")]
-    [Range(1, int.MaxValue, ErrorMessage = "주문수량은 1 이상이어야 합니다.")]
-    public int ORD_QTY { get; set; }
+    public string ORD_QTY { get; init; }
     
     [JsonPropertyName("ordUnpr")]
     [Required(ErrorMessage = "주문단가는 필수입니다.")]
-    [Range(0.01, double.MaxValue, ErrorMessage = "주문단가는 0보다 커야 합니다.")]
-    public decimal ORD_UNPR { get; set; }
+    public string ORD_UNPR { get; set; }
+    
+    [JsonIgnore]
+    public int QuantityAsInt => int.TryParse(ORD_QTY, out var result) ? result : 0;
+
+    [JsonIgnore]
+    public decimal PriceAsDecimal => decimal.TryParse(ORD_UNPR, out var result) ? result : 0m;
 }

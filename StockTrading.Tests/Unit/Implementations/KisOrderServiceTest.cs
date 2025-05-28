@@ -154,8 +154,8 @@ public class KisOrderServiceTest
             PDNO = "005930",
             tr_id = "VTTC0802U",
             ORD_DVSN = "00",
-            ORD_QTY = 10,
-            ORD_UNPR = 70000
+            ORD_QTY = "10",
+            ORD_UNPR = "70000"
         };
     }
 
