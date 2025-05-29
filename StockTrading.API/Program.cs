@@ -242,20 +242,15 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
 
 static void ConfigureRealTimeServices(IServiceCollection services)
 {
-    // 실시간 서비스
     services.AddSingleton<KisWebSocketClient>();
     services.AddSingleton<IKisWebSocketClient>(provider => provider.GetRequiredService<KisWebSocketClient>());
     services.AddSingleton<KisRealTimeDataProcessor>();
-    services.AddSingleton<IKisRealTimeDataProcessor>(
-        provider => provider.GetRequiredService<KisRealTimeDataProcessor>());
+    services.AddSingleton<IKisRealTimeDataProcessor>(provider => provider.GetRequiredService<KisRealTimeDataProcessor>());
     services.AddSingleton<RealTimeDataBroadcaster>();
     services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
     services.AddSingleton<KisSubscriptionManager>();
     services.AddSingleton<IKisSubscriptionManager>(provider => provider.GetRequiredService<KisSubscriptionManager>());
-    services.AddScoped<IKisRealTimeService, KisRealTimeService>();
-
-    // 실시간 서비스는 사용자별 격리를 위해 Scoped
-    services.AddScoped<IKisRealTimeService, KisRealTimeService>();
+    services.AddSingleton<IKisRealTimeService, KisRealTimeService>();
 }
 
 static void ConfigureCors(IServiceCollection services, IConfiguration configuration)

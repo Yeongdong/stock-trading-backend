@@ -1,30 +1,13 @@
-using StockTrading.Domain.Entities;
-
 namespace StockTrading.Application.DTOs.Users;
 
 public class UserInfo
 {
-    public int Id { get; set; }
-    public string Email { get; set; } = null!;
-    public string Name { get; set; } = null!;
+    public int Id { get; init; }
+    public string Email { get; init; } = null!;
+    public string Name { get; init; } = null!;
     public string? KisAppKey { get; set; }
     public string? KisAppSecret { get; set; }
     public string? AccountNumber { get; set; }
     public KisTokenInfo? KisToken { get; set; }
-    public string? WebSocketToken { get; set; }
-
-    public User ToEntity()
-    {
-        return new User
-        {
-            Id = Id,
-            Email = Email,
-            Name = Name,
-            KisAppKey = KisAppKey,
-            KisAppSecret = KisAppSecret,
-            AccountNumber = AccountNumber,
-            KisToken = KisToken?.ToEntity(),
-            WebSocketToken = WebSocketToken,
-        };
-    }
+    public string? WebSocketToken { get; init; }
 }

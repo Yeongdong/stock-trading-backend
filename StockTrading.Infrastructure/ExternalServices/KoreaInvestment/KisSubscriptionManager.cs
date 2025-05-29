@@ -21,70 +21,38 @@ public class KisSubscriptionManager : IKisSubscriptionManager
 
     public async Task SubscribeSymbolAsync(string symbol)
     {
-        if (_subscribedSymbols.ContainsKey(symbol))
-        {
-            _logger.LogInformation($"이미 구독 중인 종목 {symbol}");
-            return;
-        }
+        if (_subscribedSymbols.ContainsKey(symbol)) return;
 
-        try
+        var message = new
         {
-            // 종목 구독 메시지
-            var subscribeMessage = new
-            {
-                header = new
-                {
-                    tr_type = "1", // 1: 등록
-                    tr_id = "H0STASP0", // 실시간 주식 호가
-                    tr_key = symbol // 종목코드
-                },
-                body = new { }
-            };
+            header = new { approval_key = "", custtype = "P", tr_type = "1", content_type = "utf-8" },
+            body = new { input = new { tr_id = "H0STASP0", tr_key = symbol } }
+        };
 
-            await _webSocketClient.SendMessageAsync(JsonSerializer.Serialize(subscribeMessage));
-
-            _subscribedSymbols[symbol] = true;
-            _logger.LogInformation($"종목 구독 완료: {symbol}");
-        }
-        catch (Exception ex)
+        await _webSocketClient.SendMessageAsync(JsonSerializer.Serialize(message, new JsonSerializerOptions
         {
-            _logger.LogError(ex, $"종목 구독 실패: {symbol}");
-            throw;
-        }
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
+
+        _subscribedSymbols[symbol] = true;
     }
 
     public async Task UnsubscribeSymbolAsync(string symbol)
     {
-        if (!_subscribedSymbols.ContainsKey(symbol))
-        {
-            _logger.LogInformation($"구독 중이 아닌 종목: {symbol}");
-            return;
-        }
+        if (!_subscribedSymbols.ContainsKey(symbol)) return;
 
-        try
+        var message = new
         {
-            // 종목 구독 해제 메시지
-            var unsubscribeMessage = new
-            {
-                header = new
-                {
-                    tr_type = "2", // 2: 해제
-                    tr_id = "H0STASP0", // 실시간 주식 호가
-                    tr_key = symbol // 종목코드
-                },
-                body = new { }
-            };
+            header = new { approval_key = "", custtype = "P", tr_type = "2", content_type = "utf-8" },
+            body = new { input = new { tr_id = "H0STASP0", tr_key = symbol } }
+        };
 
-            await _webSocketClient.SendMessageAsync(JsonSerializer.Serialize(unsubscribeMessage));
-
-            _subscribedSymbols.Remove(symbol);
-            _logger.LogInformation($"종목 구독 해제 완료: {symbol}");
-        }
-        catch (Exception ex)
+        await _webSocketClient.SendMessageAsync(JsonSerializer.Serialize(message, new JsonSerializerOptions
         {
-            _logger.LogError(ex, $"종목 구독 해제 실패: {symbol}");
-            throw;
-        }
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
+
+        _subscribedSymbols.Remove(symbol);
     }
 
     public async Task UnsubscribeAllAsync()
@@ -93,12 +61,8 @@ public class KisSubscriptionManager : IKisSubscriptionManager
         {
             await UnsubscribeSymbolAsync(symbol);
         }
-
-        _logger.LogInformation("모든 종목 구독 해제 완료");
     }
 
-    public IReadOnlyCollection<string> GetSubscribedSymbols()
-    {
-        return _subscribedSymbols.Keys.ToList().AsReadOnly();
-    }
+    public IReadOnlyCollection<string> GetSubscribedSymbols() => 
+        _subscribedSymbols.Keys.ToList().AsReadOnly();
 }

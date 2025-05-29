@@ -81,6 +81,7 @@ public class UserService : IUserService
             AccountNumber = user.AccountNumber,
             KisAppKey = user.KisAppKey,
             KisAppSecret = user.KisAppSecret,
+            WebSocketToken = user.WebSocketToken,
             KisToken = user.KisToken == null
                 ? null
                 : new KisTokenInfo

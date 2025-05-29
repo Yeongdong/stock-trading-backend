@@ -4,6 +4,7 @@ using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
+using static StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants.KisRealTimeConstants.MessageTypes;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -27,54 +28,62 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
         var jsonDoc = JsonDocument.Parse(messageJson);
         var root = jsonDoc.RootElement;
 
-        if (root.TryGetProperty("header", out var header) &&
-            header.TryGetProperty("tr_id", out var trId))
+        // 성공/오류 응답 체크
+        if (root.TryGetProperty("body", out var body) &&
+            body.TryGetProperty("rt_cd", out var rtCd))
         {
-            string trIdValue = trId.GetString();
-            _logger.LogInformation($"메시지 유형: {trIdValue}");
+            var returnCode = rtCd.GetString();
+            if (returnCode == "0") return;
+            var msg1 = body.TryGetProperty("msg1", out var msg1Element) ? msg1Element.GetString() : "";
 
-            switch (trIdValue)
-            {
-                case KisRealTimeConstants.MessageTypes.StockAskBid:
-                case KisRealTimeConstants.MessageTypes.StockExecution:
-                    ProcessStockPrice(root);
-                    break;
 
-                case KisRealTimeConstants.MessageTypes.TradeNotification:
-                case KisRealTimeConstants.MessageTypes.TradeNotificationDemo:
-                    ProcessTradeExecution(root);
-                    break;
-
-                case KisRealTimeConstants.MessageTypes.PingPong:
-                    // PING 메시지는 이벤트 발생 X (별도 처리)
-                    break;
-
-                default:
-                    _logger.LogWarning("알 수 없는 메시지 타입: {TrId}", trIdValue);
-                    break;
-            }
+            _logger.LogWarning("KIS API 오류: {Message}", msg1);
+            return;
         }
-        else
+
+        // 실시간 데이터 메시지 처리
+        if (!root.TryGetProperty("header", out var header) ||
+            !header.TryGetProperty("tr_id", out var trId)) return;
+        var trIdValue = trId.GetString();
+
+        switch (trIdValue)
         {
-            _logger.LogWarning("메시지에 tr_id가 없습니다.");
+            case PingPong:
+                // 연결 상태 확인용, 별도 처리 불필요
+                break;
+            case StockAskBid:
+            case StockExecution:
+                ProcessStockPrice(root);
+                break;
+
+            case TradeNotification:
+            case TradeNotificationDemo:
+                ProcessTradeExecution(root);
+                break;
         }
     }
 
     private void ProcessStockPrice(JsonElement root)
     {
         if (!root.TryGetProperty("body", out var body)) return;
-        // 종목코드
-        var stockCode = body.GetProperty("mksc_shrn_iscd").GetString();
-        // 현재가
-        var currentPrice = decimal.Parse(body.GetProperty("stck_prpr").GetString());
-        // 전일 대비
-        var change = decimal.Parse(body.GetProperty("prdy_vrss").GetString());
-        // 등락률
-        var changeRate = decimal.Parse(body.GetProperty("prdy_ctrt").GetString());
-        // 거래량
-        var volume = long.Parse(body.GetProperty("acml_vol").GetString());
 
-        // 실시간 가격 정보 객체 생성
+        // 필수 필드 확인
+        if (!body.TryGetProperty("mksc_shrn_iscd", out var stockCodeElement) ||
+            !body.TryGetProperty("stck_prpr", out var priceElement))
+            return;
+
+        var stockCode = stockCodeElement.GetString();
+        var currentPrice = decimal.Parse(priceElement.GetString());
+        var change = body.TryGetProperty("prdy_vrss", out var changeElement)
+            ? decimal.Parse(changeElement.GetString())
+            : 0;
+        var changeRate = body.TryGetProperty("prdy_ctrt", out var rateElement)
+            ? decimal.Parse(rateElement.GetString())
+            : 0;
+        var volume = body.TryGetProperty("acml_vol", out var volumeElement)
+            ? long.Parse(volumeElement.GetString())
+            : 0;
+
         var priceData = new KisTransactionInfo
         {
             Symbol = stockCode,
@@ -85,14 +94,13 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
             Volume = (int)volume
         };
 
-        OnStockPriceReceived(priceData);
-        _logger.LogInformation($"실시간 시세 처리: {stockCode}, 가격: {currentPrice}");
+        StockPriceReceived?.Invoke(this, priceData);
+        _logger.LogInformation("실시간 주가: {Symbol} {Price}원", stockCode, currentPrice);
     }
 
     private void ProcessTradeExecution(JsonElement root)
     {
         if (!root.TryGetProperty("body", out var body)) return;
-        _logger.LogInformation("체결 정보 처리 시작");
 
         var orderId = body.GetProperty("odno").GetString();
         var stockCode = body.GetProperty("pdno").GetString();
@@ -108,19 +116,7 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
             ExecutionTime = DateTime.Now
         };
 
-        OnTradeExecutionReceived(executionData);
-        _logger.LogInformation($"체결 정보 처리: 주문번호 {orderId}, 종목 {stockCode}");
-    }
-
-    protected virtual void OnStockPriceReceived(KisTransactionInfo data)
-    {
-        _logger.LogDebug("StockPriceReceived 이벤트 발생");
-        StockPriceReceived?.Invoke(this, data);
-    }
-
-    protected virtual void OnTradeExecutionReceived(object data)
-    {
-        _logger.LogDebug("TradeExecutionReceived 이벤트 발생");
-        TradeExecutionReceived?.Invoke(this, data);
+        TradeExecutionReceived?.Invoke(this, executionData);
+        _logger.LogInformation("체결: {Symbol} {Quantity}주 {Price}원", stockCode, quantity, price);
     }
 }

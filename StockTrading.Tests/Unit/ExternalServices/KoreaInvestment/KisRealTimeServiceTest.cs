@@ -35,24 +35,14 @@ public class KisRealTimeServiceTest
     }
 
     [Fact]
-    public async Task StartAsync_CallsWebSocketClientConnect()
+    public async Task StartAsync_WithUser_CallsConnectAndAuthenticate()
     {
-        _mockWebSocketClient
-            .Setup(c => c.ConnectAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        await _service.StartAsync();
-
-        _mockWebSocketClient.Verify(c => c.ConnectAsync(It.IsAny<string>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task StartAsync_WithUser_CallsAuthenticateAsync()
-    {
+        // Arrange
         var user = new UserInfo
         {
             Id = 1,
             Email = "test@example.com",
+            Name = "Test User",
             WebSocketToken = "test_token"
         };
 
@@ -64,58 +54,184 @@ public class KisRealTimeServiceTest
             .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
+        // Act
         await _service.StartAsync(user);
 
-        _mockWebSocketClient.Verify(c => c.ConnectAsync(It.IsAny<string>()), Times.Once);
+        // Assert
+        _mockWebSocketClient.Verify(c => c.ConnectAsync("ws://ops.koreainvestment.com:31000"), Times.Once);
         _mockWebSocketClient.Verify(c => c.AuthenticateAsync(user.WebSocketToken), Times.Once);
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenAlreadyStarted_DoesNotConnectAgain()
+    {
+        // Arrange
+        var user = new UserInfo
+        {
+            Id = 1,
+            Email = "test@example.com",
+            Name = "Test User",
+            WebSocketToken = "test_token"
+        };
+
+        _mockWebSocketClient
+            .Setup(c => c.ConnectAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _mockWebSocketClient
+            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _service.StartAsync(user);
+        await _service.StartAsync(user);  // 두 번째 호출
+
+        // Assert
+        _mockWebSocketClient.Verify(c => c.ConnectAsync(It.IsAny<string>()), Times.Once);
+        _mockWebSocketClient.Verify(c => c.AuthenticateAsync(It.IsAny<string>()), Times.Once);
     }
     
     [Fact]
-    public async Task SubscribeSymbolAsync_CallsSubscriptionManager()
+    public async Task SubscribeSymbolAsync_WhenServiceNotStarted_ThrowsException()
     {
+        // Arrange
         string symbol = "005930";
-            
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.SubscribeSymbolAsync(symbol));
+        
+        Assert.Equal("서비스를 먼저 시작하세요", exception.Message);
+    }
+
+    [Fact]
+    public async Task SubscribeSymbolAsync_WhenServiceStarted_CallsSubscriptionManager()
+    {
+        // Arrange
+        var user = new UserInfo
+        {
+            Id = 1,
+            Email = "test@example.com",
+            Name = "Test User",
+            WebSocketToken = "test_token"
+        };
+        string symbol = "005930";
+
+        _mockWebSocketClient
+            .Setup(c => c.ConnectAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _mockWebSocketClient
+            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
         _mockSubscriptionManager
             .Setup(m => m.SubscribeSymbolAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
+        // Act
+        await _service.StartAsync(user);
         await _service.SubscribeSymbolAsync(symbol);
 
+        // Assert
         _mockSubscriptionManager.Verify(m => m.SubscribeSymbolAsync(symbol), Times.Once);
     }
 
     [Fact]
-    public async Task UnsubscribeSymbolAsync_CallsSubscriptionManager()
+    public async Task UnsubscribeSymbolAsync_WhenServiceStarted_CallsSubscriptionManager()
     {
+        // Arrange
+        var user = new UserInfo
+        {
+            Id = 1,
+            Email = "test@example.com",
+            Name = "Test User",
+            WebSocketToken = "test_token"
+        };
         string symbol = "005930";
-            
+
+        _mockWebSocketClient
+            .Setup(c => c.ConnectAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _mockWebSocketClient
+            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
         _mockSubscriptionManager
             .Setup(m => m.UnsubscribeSymbolAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
+        // Act
+        await _service.StartAsync(user);
         await _service.UnsubscribeSymbolAsync(symbol);
 
+        // Assert
         _mockSubscriptionManager.Verify(m => m.UnsubscribeSymbolAsync(symbol), Times.Once);
+    }
+
+    [Fact]
+    public async Task UnsubscribeSymbolAsync_WhenServiceNotStarted_DoesNotCallSubscriptionManager()
+    {
+        // Arrange
+        string symbol = "005930";
+
+        // Act
+        await _service.UnsubscribeSymbolAsync(symbol);
+
+        // Assert
+        _mockSubscriptionManager.Verify(m => m.UnsubscribeSymbolAsync(It.IsAny<string>()), Times.Never);
     }
     
     [Fact]
     public void GetSubscribedSymbols_CallsSubscriptionManager()
     {
+        // Arrange
         var expectedSymbols = new List<string> { "005930", "000660" };
             
         _mockSubscriptionManager
             .Setup(m => m.GetSubscribedSymbols())
             .Returns(expectedSymbols);
 
+        // Act
         var result = _service.GetSubscribedSymbols();
 
+        // Assert
         _mockSubscriptionManager.Verify(m => m.GetSubscribedSymbols(), Times.Once);
         Assert.Equal(expectedSymbols, result);
     }
 
     [Fact]
-    public async Task StopAsync_CallsUnsubscribeAllAndDisconnect()
+    public async Task StopAsync_WhenServiceNotStarted_DoesNothing()
     {
+        // Act
+        await _service.StopAsync();
+
+        // Assert
+        _mockSubscriptionManager.Verify(m => m.UnsubscribeAllAsync(), Times.Never);
+        _mockWebSocketClient.Verify(c => c.DisconnectAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task StopAsync_WhenServiceStarted_CallsUnsubscribeAllAndDisconnect()
+    {
+        // Arrange
+        var user = new UserInfo
+        {
+            Id = 1,
+            Email = "test@example.com",
+            Name = "Test User",
+            WebSocketToken = "test_token"
+        };
+
+        _mockWebSocketClient
+            .Setup(c => c.ConnectAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        _mockWebSocketClient
+            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
         _mockSubscriptionManager
             .Setup(m => m.UnsubscribeAllAsync())
             .Returns(Task.CompletedTask);
@@ -124,8 +240,11 @@ public class KisRealTimeServiceTest
             .Setup(c => c.DisconnectAsync())
             .Returns(Task.CompletedTask);
 
+        // Act
+        await _service.StartAsync(user);
         await _service.StopAsync();
 
+        // Assert
         _mockSubscriptionManager.Verify(m => m.UnsubscribeAllAsync(), Times.Once);
         _mockWebSocketClient.Verify(c => c.DisconnectAsync(), Times.Once);
     }
