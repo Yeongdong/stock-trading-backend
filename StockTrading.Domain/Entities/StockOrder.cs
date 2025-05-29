@@ -2,36 +2,35 @@ namespace StockTrading.Domain.Entities;
 
 public class StockOrder
 {
-    public int Id { get; set; }
+    public int Id { get; init; }
     public string StockCode { get; private set; }
     public string TradeType { get; private set; }
-    public string OrderType { get; private set; }
+    public string OrderType { get; }
     public int Quantity { get; private set; }
     public decimal Price { get; private set; }
     public int UserId { get; private set; }
-    public User User { get; private set; }
+    public User? User { get; }
     public DateTime CreatedAt { get; private set; }
 
     public StockOrder()
     {
     }
 
-    public StockOrder(string stockCode, string tradeType, string orderType, int quantity, decimal price, User user)
+    public StockOrder(string stockCode, string tradeType, string orderType, int quantity, decimal price, int userId)
     {
         ValidateStockCode(stockCode);
         ValidateTradeType(tradeType);
         ValidateOrderType(orderType);
         ValidateQuantity(quantity);
         ValidatePrice(price);
-        ValidateUser(user);
+        ValidateUserId(userId);
 
         StockCode = stockCode;
         TradeType = tradeType;
         OrderType = orderType;
         Quantity = quantity;
         Price = price;
-        User = user;
-        UserId = user.Id;
+        UserId = userId;
         CreatedAt = DateTime.UtcNow;
     }
 
@@ -92,11 +91,11 @@ public class StockOrder
         }
     }
 
-    private void ValidateUser(User user)
+    private void ValidateUserId(int userId)
     {
-        if (user == null)
+        if (userId <= 0)
         {
-            throw new ArgumentNullException(nameof(user), "사용자 정보는 필수입니다.");
+            throw new ArgumentException("사용자 ID는 0보다 커야 합니다.", nameof(userId));
         }
     }
 }

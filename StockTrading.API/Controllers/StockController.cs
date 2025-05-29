@@ -40,7 +40,7 @@ public class StockController : BaseController
     
         var orderResponse = await _kisOrderService.PlaceOrderAsync(request, user);
     
-        var orderNumber = orderResponse?.output?.FirstOrDefault()?.ODNO ?? "알 수 없음";
+        var orderNumber = orderResponse?.Output?.OrderNumber ?? "알 수 없음";
         _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}", user.Id, orderNumber);
     
         return Ok(orderResponse);

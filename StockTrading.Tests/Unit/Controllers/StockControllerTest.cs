@@ -85,17 +85,15 @@ public class StockControllerTest
 
         var expectedResponse = new OrderResponse
         {
-            rt_cd = "0",
-            msg1 = "정상처리 되었습니다.",
-            output =
-            [
-                new()
+            ReturnCode = "0",
+            Message = "정상처리 되었습니다.",
+            Output =
+                new OrderResponseOutput
                 {
-                    KRX_FWDG_ORD_ORGNO = "91252", // 예시 거래소코드
-                    ODNO = "0000117057", // 예시 주문번호  
-                    ORD_TMD = "121052" // 예시 주문시간 (HHMMSS)
+                    KrxForwardOrderOrgNo = "91252", // 예시 거래소코드
+                    OrderNumber = "0000117057", // 예시 주문번호  
+                    OrderTime = "121052" // 예시 주문시간 (HHMMSS)
                 }
-            ]
         };
 
         _mockKisOrderService

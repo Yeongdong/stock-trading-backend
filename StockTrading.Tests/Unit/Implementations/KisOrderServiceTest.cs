@@ -57,8 +57,8 @@ public class KisOrderServiceTest
         var result = await _kisOrderService.PlaceOrderAsync(order, userDto);
 
         Assert.NotNull(result);
-        Assert.Equal("0", result.rt_cd);
-        Assert.Equal("123456789", result.output[0].ODNO);
+        Assert.Equal("0", result.ReturnCode);
+        Assert.Equal("123456789", result.Output.OrderNumber);
 
         _mockKisApiClient.Verify(client => client.PlaceOrderAsync(order, userDto), Times.Once);
         _mockOrderRepository.Verify(repo => repo.AddAsync(It.IsAny<StockOrder>()), Times.Once);
@@ -163,18 +163,16 @@ public class KisOrderServiceTest
     {
         return new OrderResponse
         {
-            rt_cd = "0",
-            msg_cd = "MSG_0001",
-            msg1 = "정상처리 되었습니다.",
-            output =
-            [
-                new OrderResponseOutput()
+            ReturnCode = "0",
+            MessageCode = "MSG_0001",
+            Message = "정상처리 되었습니다.",
+            Output =
+                new OrderResponseOutput
                 {
-                    ODNO = "123456789",
-                    KRX_FWDG_ORD_ORGNO = "12345",
-                    ORD_TMD = "102030"
+                    OrderNumber = "123456789",
+                    KrxForwardOrderOrgNo = "12345",
+                    OrderTime = "102030"
                 }
-            ]
         };
     }
 }

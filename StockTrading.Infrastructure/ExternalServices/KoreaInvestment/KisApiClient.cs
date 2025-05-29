@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
@@ -20,11 +21,13 @@ public class KisApiClient : IKisApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly KisApiSettings _settings;
+    private readonly ILogger<KisApiClient> _logger;
 
-    public KisApiClient(HttpClient httpClient, IOptions<KisApiSettings> settings)
+    public KisApiClient(HttpClient httpClient, IOptions<KisApiSettings> settings, ILogger<KisApiClient> logger)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
+        _logger = logger;
     }
 
     public async Task<OrderResponse> PlaceOrderAsync(OrderRequest request, UserInfo user)
@@ -53,10 +56,11 @@ public class KisApiClient : IKisApiClient
         response.EnsureSuccessStatusCode();
 
         var responseContent = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation($"KIS API Response: {responseContent}");
         var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
 
-        if (orderResponse.rt_cd != "0")
-            throw new Exception($"주문 실패: {orderResponse.msg1}");
+        if (orderResponse.ReturnCode != "0")
+            throw new Exception($"주문 실패: {orderResponse.Message}");
 
         return orderResponse;
     }

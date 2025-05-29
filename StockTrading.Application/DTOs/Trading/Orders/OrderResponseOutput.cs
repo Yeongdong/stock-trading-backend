@@ -1,8 +1,15 @@
+using System.Text.Json.Serialization;
+
 namespace StockTrading.Application.DTOs.Trading.Orders;
 
 public class OrderResponseOutput
 {
-    public string KRX_FWDG_ORD_ORGNO { get; set; } // 거래소코드
-    public string ODNO { get; set; } // 주문번호
-    public string ORD_TMD { get; set; } // 주문시간
+    [JsonPropertyName("KRX_FWDG_ORD_ORGNO")]
+    public string KrxForwardOrderOrgNo { get; set; } // 거래소코드
+    
+    [JsonPropertyName("ODNO")]
+    public string OrderNumber { get; set; }  // 주문번호
+    
+    [JsonPropertyName("ORD_TMD")]
+    public string OrderTime { get; set; } // 주문시간
 }

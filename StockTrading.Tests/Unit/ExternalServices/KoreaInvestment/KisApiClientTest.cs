@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using JetBrains.Annotations;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
@@ -20,6 +21,7 @@ public class KisApiClientTest
     private Mock<HttpMessageHandler> _mockHttpMessageHandler;
     private HttpClient _httpClient;
     private Mock<IOptions<KisApiSettings>> _mockSettings;
+    private Mock<ILogger<KisApiClient>> _mockLogger;
     private KisApiClient _kisApiClient;
     private UserInfo _testUser;
 
@@ -31,8 +33,9 @@ public class KisApiClientTest
             BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443")
         };
         _mockSettings = new Mock<IOptions<KisApiSettings>>();
+        _mockLogger = new Mock<ILogger<KisApiClient>>();
         _mockSettings.Setup(x => x.Value).Returns(CreateTestSettings());
-        _kisApiClient = new KisApiClient(_httpClient, _mockSettings.Object);
+        _kisApiClient = new KisApiClient(_httpClient, _mockSettings.Object, _mockLogger.Object);
         _testUser = CreateTestUser();
     }
 
@@ -43,18 +46,16 @@ public class KisApiClientTest
 
         var successResponse = new OrderResponse
         {
-            rt_cd = "0",
-            msg_cd = "MCA0000",
-            msg1 = "정상처리 되었습니다.",
-            output =
-            [
+            ReturnCode = "0",
+            MessageCode = "MCA0000",
+            Message = "정상처리 되었습니다.",
+            Output =
                 new OrderResponseOutput()
                 {
-                    KRX_FWDG_ORD_ORGNO = "12345",
-                    ODNO = "123456789",
-                    ORD_TMD = "121212"
+                    KrxForwardOrderOrgNo = "12345",
+                    OrderNumber = "123456789",
+                    OrderTime = "121212"
                 }
-            ]
         };
 
         var responseContent = new StringContent(
@@ -86,11 +87,11 @@ public class KisApiClientTest
 
         var result = await _kisApiClient.PlaceOrderAsync(orderRequest, _testUser);
 
-        Assert.Equal("0", result.rt_cd);
-        Assert.Equal("MCA0000", result.msg_cd);
-        Assert.Equal("정상처리 되었습니다.", result.msg1);
-        Assert.NotNull(result.output);
-        Assert.Equal("123456789", result.output[0].ODNO);
+        Assert.Equal("0", result.ReturnCode);
+        Assert.Equal("MCA0000", result.MessageCode);
+        Assert.Equal("정상처리 되었습니다.", result.Message);
+        Assert.NotNull(result.Output);
+        Assert.Equal("123456789", result.Output.OrderNumber);
     }
 
     [Fact]
@@ -100,10 +101,9 @@ public class KisApiClientTest
 
         var errorResponse = new OrderResponse
         {
-            rt_cd = "1",
-            msg_cd = "ERC00001",
-            msg1 = "오류가 발생했습니다.",
-            output = []
+            ReturnCode = "1",
+            MessageCode = "ERC00001",
+            Message = "오류가 발생했습니다."
         };
 
         var responseContent = new StringContent(

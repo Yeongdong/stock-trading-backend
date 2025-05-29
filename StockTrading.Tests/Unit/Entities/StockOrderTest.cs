@@ -25,7 +25,7 @@ public class StockOrderTest
             Role = "User"
         };
         
-        var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, user);
+        var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, user.Id);
         
         stockOrder.StockCode.Should().Be(stockCode);
         stockOrder.TradeType.Should().Be(tradeType);
@@ -49,7 +49,7 @@ public class StockOrderTest
             Email = "test@example.com"
         };
 
-        Action act = () => new StockOrder(stockCode, tradeType, orderType, quantity, price, user);
+        Action act = () => new StockOrder(stockCode, tradeType, orderType, quantity, price, user.Id);
         act.Should().Throw<ArgumentException>();
     }
 }

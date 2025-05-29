@@ -35,7 +35,7 @@ public class KisOrderService : IKisOrderService
             orderType: order.ORD_DVSN,
             quantity: order.QuantityAsInt,
             price: order.PriceAsDecimal,
-            user: user.ToEntity()
+            userId: user.Id
         );
 
         await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
