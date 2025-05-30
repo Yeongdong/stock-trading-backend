@@ -61,8 +61,8 @@ public class RealTimeController : BaseController
         try
         {
             await _realTimeService.SubscribeSymbolAsync(symbol);
-            _logger.LogInformation("사용자 {Email}가 종목 {Symbol} 구독", user.Email, symbol);
-            return Ok(new { message = $"종목 {symbol}이 구독 완료" });
+            _logger.LogInformation("구독 성공: 사용자 {Email}가 종목 {Symbol} 구독", user.Email, symbol);
+            return Ok(new { message = $"종목 {symbol} 구독 완료" });
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("실시간 서비스가 시작되지 않았습니다"))
         {

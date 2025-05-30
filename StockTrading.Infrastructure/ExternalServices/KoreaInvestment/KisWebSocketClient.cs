@@ -30,12 +30,14 @@ public class KisWebSocketClient : IKisWebSocketClient, IDisposable
         if (_isConnected && _webSocket?.State == WebSocketState.Open) return;
 
         await CleanupAsync();
+
         _webSocket = new ClientWebSocket();
         _cancellationTokenSource = new CancellationTokenSource();
+        _webSocket.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
         await _webSocket.ConnectAsync(new Uri(url), _cancellationTokenSource.Token);
         _isConnected = true;
 
-        _ = ReceiveMessagesAsync();
+        _ = Task.Run(ReceiveMessagesAsync, _cancellationTokenSource.Token);
     }
 
     public async Task AuthenticateAsync(string token)
@@ -55,7 +57,7 @@ public class KisWebSocketClient : IKisWebSocketClient, IDisposable
     public async Task SendMessageAsync(string message)
     {
         if (_webSocket?.State != WebSocketState.Open)
-            throw new InvalidOperationException("WebSocket 연결되지 않음");
+            throw new InvalidOperationException($"WebSocket 상태가 유효하지 않습니다: {_webSocket?.State}");
 
         var bytes = Encoding.UTF8.GetBytes(message);
         await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,

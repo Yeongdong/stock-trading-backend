@@ -1,6 +1,4 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.External.KoreaInvestment;
-using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 
@@ -41,9 +39,10 @@ public class KisRealTimeService : IKisRealTimeService
     {
         if (_isStarted) return;
 
-        _currentUser = user;
         await _webSocketClient.ConnectAsync("ws://ops.koreainvestment.com:31000");
         await _webSocketClient.AuthenticateAsync(user.WebSocketToken!);
+        if (_subscriptionManager is KisSubscriptionManager manager)
+            manager.SetWebSocketToken(user.WebSocketToken!);
         _isStarted = true;
     }
 

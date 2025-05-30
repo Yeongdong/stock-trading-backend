@@ -12,11 +12,17 @@ public class KisSubscriptionManager : IKisSubscriptionManager
     private readonly IKisWebSocketClient _webSocketClient;
     private readonly ILogger<KisSubscriptionManager> _logger;
     private readonly Dictionary<string, bool> _subscribedSymbols = new();
+    private string _webSocketToken;
 
     public KisSubscriptionManager(IKisWebSocketClient webSocketClient, ILogger<KisSubscriptionManager> logger)
     {
         _webSocketClient = webSocketClient;
         _logger = logger;
+    }
+
+    public void SetWebSocketToken(string token)
+    {
+        _webSocketToken = token;
     }
 
     public async Task SubscribeSymbolAsync(string symbol)
@@ -25,14 +31,16 @@ public class KisSubscriptionManager : IKisSubscriptionManager
 
         var message = new
         {
-            header = new { approval_key = "", custtype = "P", tr_type = "1", content_type = "utf-8" },
+            header = new { approval_key = _webSocketToken, custtype = "P", tr_type = "1", content_type = "utf-8" },
             body = new { input = new { tr_id = "H0STASP0", tr_key = symbol } }
         };
 
-        await _webSocketClient.SendMessageAsync(JsonSerializer.Serialize(message, new JsonSerializerOptions
+        var jsonMessage = JsonSerializer.Serialize(message, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        }));
+        });
+
+        await _webSocketClient.SendMessageAsync(jsonMessage);
 
         _subscribedSymbols[symbol] = true;
     }
@@ -43,7 +51,7 @@ public class KisSubscriptionManager : IKisSubscriptionManager
 
         var message = new
         {
-            header = new { approval_key = "", custtype = "P", tr_type = "2", content_type = "utf-8" },
+            header = new { approval_key = _webSocketToken, custtype = "P", tr_type = "2", content_type = "utf-8" },
             body = new { input = new { tr_id = "H0STASP0", tr_key = symbol } }
         };
 
@@ -63,6 +71,6 @@ public class KisSubscriptionManager : IKisSubscriptionManager
         }
     }
 
-    public IReadOnlyCollection<string> GetSubscribedSymbols() => 
+    public IReadOnlyCollection<string> GetSubscribedSymbols() =>
         _subscribedSymbols.Keys.ToList().AsReadOnly();
 }
