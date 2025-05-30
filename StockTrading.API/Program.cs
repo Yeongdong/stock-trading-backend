@@ -227,7 +227,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     services.AddScoped<IJwtService, JwtService>();
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IKisOrderService, KisOrderService>();
-    services.AddScoped<IKisBalanceService, KisBalanceService>();
+    services.AddScoped<IKisBalanceService, KisKisBalanceService>();
     services.AddScoped<IKisTokenService, KisTokenService>();
 
     // API 계층
@@ -244,12 +244,18 @@ static void ConfigureRealTimeServices(IServiceCollection services)
 {
     services.AddSingleton<KisWebSocketClient>();
     services.AddSingleton<IKisWebSocketClient>(provider => provider.GetRequiredService<KisWebSocketClient>());
-    services.AddSingleton<KisRealTimeDataProcessor>();
+    services.AddSingleton<KisRealTimeDataProcessor>(provider =>
+    {
+        var logger = provider.GetRequiredService<ILogger<KisRealTimeDataProcessor>>();
+        var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+        return new KisRealTimeDataProcessor(logger, loggerFactory);
+    });
     services.AddSingleton<IKisRealTimeDataProcessor>(provider => provider.GetRequiredService<KisRealTimeDataProcessor>());
     services.AddSingleton<RealTimeDataBroadcaster>();
     services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
     services.AddSingleton<KisSubscriptionManager>();
     services.AddSingleton<IKisSubscriptionManager>(provider => provider.GetRequiredService<KisSubscriptionManager>());
+    
     services.AddSingleton<IKisRealTimeService, KisRealTimeService>();
 }
 

@@ -1,6 +1,6 @@
 using StockTrading.Application.DTOs.Users;
 
-namespace StockTrading.Infrastructure.Services.Helpers;
+namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
 
 public static class KisValidationHelper
 {

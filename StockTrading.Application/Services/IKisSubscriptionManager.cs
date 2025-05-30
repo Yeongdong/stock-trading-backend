@@ -6,4 +6,5 @@ public interface IKisSubscriptionManager
     Task UnsubscribeSymbolAsync(string symbol);
     Task UnsubscribeAllAsync();
     IReadOnlyCollection<string> GetSubscribedSymbols();
+    void SetWebSocketToken(string token);
 }

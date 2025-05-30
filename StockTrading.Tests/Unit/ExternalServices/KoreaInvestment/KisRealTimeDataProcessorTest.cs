@@ -1,20 +1,33 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
 {
     public class KisRealTimeDataProcessorTest
     {
         private readonly Mock<ILogger<KisRealTimeDataProcessor>> _mockLogger;
+        private readonly Mock<ILoggerFactory> _mockLoggerFactory;
         private readonly KisRealTimeDataProcessor _processor;
 
         public KisRealTimeDataProcessorTest()
         {
             _mockLogger = new Mock<ILogger<KisRealTimeDataProcessor>>();
-            _processor = new KisRealTimeDataProcessor(_mockLogger.Object);
+            _mockLoggerFactory = new Mock<ILoggerFactory>();
+
+            _mockLoggerFactory.Setup(x => x.CreateLogger<JsonMessageParser>())
+                .Returns(Mock.Of<ILogger<JsonMessageParser>>());
+            _mockLoggerFactory.Setup(x => x.CreateLogger<PipeDelimitedMessageParser>())
+                .Returns(Mock.Of<ILogger<PipeDelimitedMessageParser>>());
+            _mockLoggerFactory.Setup(x => x.CreateLogger<StockDataParser>())
+                .Returns(Mock.Of<ILogger<StockDataParser>>());
+            _mockLoggerFactory.Setup(x => x.CreateLogger<StockDataConverter>())
+                .Returns(Mock.Of<ILogger<StockDataConverter>>());
+
+            _processor = new KisRealTimeDataProcessor(_mockLogger.Object, _mockLoggerFactory.Object);
         }
 
         [Fact]
@@ -22,7 +35,7 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
         {
             bool eventRaised = false;
             KisTransactionInfo receivedData = null;
-            
+
             // 실시간 호가 메시지
             var hokaMessage = @"{
                 ""header"": {
@@ -42,14 +55,15 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
                     ""bid_rsqn1"": ""2470""
                 }
             }";
-            
-            _processor.StockPriceReceived += (sender, data) => {
+
+            _processor.StockPriceReceived += (sender, data) =>
+            {
                 eventRaised = true;
                 receivedData = data;
             };
-            
+
             _processor.ProcessMessage(hokaMessage);
-            
+
             Assert.True(eventRaised, "StockPriceReceived 이벤트가 발생하지 않았습니다.");
             Assert.NotNull(receivedData);
             Assert.Equal("005930", receivedData.Symbol);
@@ -63,7 +77,7 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
         {
             bool eventRaised = false;
             object receivedData = null;
-            
+
             // 실시간 체결통보 메시지
             var executionMessage = @"{
                 ""header"": {
@@ -82,22 +96,23 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
                     ""ord_unpr"": ""76900""
                 }
             }";
-            
-            _processor.TradeExecutionReceived += (sender, data) => {
+
+            _processor.TradeExecutionReceived += (sender, data) =>
+            {
                 eventRaised = true;
                 receivedData = data;
             };
-            
+
             _processor.ProcessMessage(executionMessage);
-            
+
             Assert.True(eventRaised, "TradeExecutionReceived 이벤트가 발생하지 않았습니다.");
             Assert.NotNull(receivedData);
-            
+
             // 동적 객체 속성 접근
             var propertyInfo = receivedData.GetType().GetProperty("OrderId");
             Assert.NotNull(propertyInfo);
             Assert.Equal("0000123456", propertyInfo.GetValue(receivedData));
-            
+
             propertyInfo = receivedData.GetType().GetProperty("StockCode");
             Assert.NotNull(propertyInfo);
             Assert.Equal("005930", propertyInfo.GetValue(receivedData));

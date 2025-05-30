@@ -1,11 +1,10 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.Auth;
-using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
-using StockTrading.Infrastructure.Services.Helpers;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
 
 namespace StockTrading.Infrastructure.Services;
 

@@ -1,6 +1,5 @@
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.Services;
 
@@ -40,59 +39,55 @@ public class KisWebSocketClient : IKisWebSocketClient, IDisposable
         _ = Task.Run(ReceiveMessagesAsync, _cancellationTokenSource.Token);
     }
 
-    public async Task AuthenticateAsync(string token)
-    {
-        var message = new
-        {
-            header = new { approval_key = token, custtype = "P", tr_type = "1", content_type = "utf-8" },
-            body = new { input = new { tr_id = "H0STCNT0", tr_key = "005930" } }
-        };
-
-        await SendMessageAsync(JsonSerializer.Serialize(message, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        }));
-    }
-
     public async Task SendMessageAsync(string message)
     {
-        if (_webSocket?.State != WebSocketState.Open)
-            throw new InvalidOperationException($"WebSocket 상태가 유효하지 않습니다: {_webSocket?.State}");
+        // 연결 상태가 유효하지 않으면 재연결 시도
+        if (!IsConnectionValid())
+            throw new InvalidOperationException("WebSocket 연결이 끊어졌습니다. 재연결이 필요합니다.");
 
         var bytes = Encoding.UTF8.GetBytes(message);
-        await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
+        await _webSocket!.SendAsync(
+            new ArraySegment<byte>(bytes),
+            WebSocketMessageType.Text,
+            true,
             _cancellationTokenSource?.Token ?? CancellationToken.None);
     }
 
+    private bool IsConnectionValid()
+    {
+        var isValid = _webSocket?.State == WebSocketState.Open;
+
+        if (!isValid)
+            _isConnected = false;
+
+        return isValid;
+    }
 
     private async Task ReceiveMessagesAsync()
     {
         var buffer = new byte[BUFFER_SIZE];
 
-        try
+        while (_webSocket?.State == WebSocketState.Open &&
+               !(_cancellationTokenSource?.Token.IsCancellationRequested ?? true))
         {
-            while (_webSocket?.State == WebSocketState.Open &&
-                   !(_cancellationTokenSource?.Token.IsCancellationRequested ?? true))
+            var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer),
+                _cancellationTokenSource!.Token);
+
+            if (result.MessageType == WebSocketMessageType.Close)
             {
-                var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer),
-                    _cancellationTokenSource!.Token);
-
-                if (result.MessageType == WebSocketMessageType.Close) break;
-                if (result.MessageType != WebSocketMessageType.Text) continue;
-
-                var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                MessageReceived?.Invoke(this, message);
+                _logger.LogInformation("서버에서 연결 종료");
+                break;
             }
+
+            if (result.MessageType != WebSocketMessageType.Text) continue;
+
+            var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            MessageReceived?.Invoke(this, message);
         }
-        catch (OperationCanceledException)
-        {
-            /* 정상 종료 */
-        }
-        catch (WebSocketException)
-        {
-            _isConnected = false;
-            ConnectionLost?.Invoke(this, EventArgs.Empty);
-        }
+
+        _isConnected = false;
+        _logger.LogWarning("WebSocket 수신 루프 종료. 연결 상태: {State}", _webSocket?.State);
+        ConnectionLost?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task DisconnectAsync() => await CleanupAsync();

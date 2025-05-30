@@ -2,16 +2,16 @@ using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.Trading.Portfolio;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
-using StockTrading.Infrastructure.Services.Helpers;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
 
 namespace StockTrading.Infrastructure.Services;
 
-public class KisBalanceService : IKisBalanceService
+public class KisKisBalanceService : IKisBalanceService
 {
     private readonly IKisApiClient _kisApiClient;
-    private readonly ILogger<KisBalanceService> _logger;
+    private readonly ILogger<KisKisBalanceService> _logger;
 
-    public KisBalanceService(IKisApiClient kisApiClient, ILogger<KisBalanceService> logger)
+    public KisKisBalanceService(IKisApiClient kisApiClient, ILogger<KisKisBalanceService> logger)
     {
         _kisApiClient = kisApiClient;
         _logger = logger;

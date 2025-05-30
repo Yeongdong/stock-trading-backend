@@ -15,6 +15,7 @@ public class KisRealTimeServiceTest
     private readonly Mock<IKisSubscriptionManager> _mockSubscriptionManager;
     private readonly Mock<IRealTimeDataBroadcaster> _mockBroadcaster;
     private readonly Mock<ILogger<KisRealTimeService>> _mockLogger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly KisRealTimeService _service;
 
     public KisRealTimeServiceTest()
@@ -25,12 +26,15 @@ public class KisRealTimeServiceTest
         _mockBroadcaster = new Mock<IRealTimeDataBroadcaster>();
         _mockLogger = new Mock<ILogger<KisRealTimeService>>();
 
+        _loggerFactory = LoggerFactory.Create(builder => { });
+
         _service = new KisRealTimeService(
             _mockWebSocketClient.Object,
             _mockDataProcessor.Object,
             _mockSubscriptionManager.Object,
             _mockBroadcaster.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _loggerFactory
         );
     }
 
@@ -50,16 +54,12 @@ public class KisRealTimeServiceTest
             .Setup(c => c.ConnectAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _mockWebSocketClient
-            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
 
         // Act
         await _service.StartAsync(user);
 
         // Assert
         _mockWebSocketClient.Verify(c => c.ConnectAsync("ws://ops.koreainvestment.com:31000"), Times.Once);
-        _mockWebSocketClient.Verify(c => c.AuthenticateAsync(user.WebSocketToken), Times.Once);
     }
 
     [Fact]
@@ -78,19 +78,14 @@ public class KisRealTimeServiceTest
             .Setup(c => c.ConnectAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _mockWebSocketClient
-            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
         // Act
         await _service.StartAsync(user);
-        await _service.StartAsync(user);  // 두 번째 호출
+        await _service.StartAsync(user); // 두 번째 호출
 
         // Assert
         _mockWebSocketClient.Verify(c => c.ConnectAsync(It.IsAny<string>()), Times.Once);
-        _mockWebSocketClient.Verify(c => c.AuthenticateAsync(It.IsAny<string>()), Times.Once);
     }
-    
+
     [Fact]
     public async Task SubscribeSymbolAsync_WhenServiceNotStarted_ThrowsException()
     {
@@ -100,7 +95,7 @@ public class KisRealTimeServiceTest
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => _service.SubscribeSymbolAsync(symbol));
-        
+
         Assert.Equal("서비스를 먼저 시작하세요", exception.Message);
     }
 
@@ -119,10 +114,6 @@ public class KisRealTimeServiceTest
 
         _mockWebSocketClient
             .Setup(c => c.ConnectAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
-        _mockWebSocketClient
-            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         _mockSubscriptionManager
@@ -154,10 +145,6 @@ public class KisRealTimeServiceTest
             .Setup(c => c.ConnectAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _mockWebSocketClient
-            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
         _mockSubscriptionManager
             .Setup(m => m.UnsubscribeSymbolAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
@@ -182,13 +169,13 @@ public class KisRealTimeServiceTest
         // Assert
         _mockSubscriptionManager.Verify(m => m.UnsubscribeSymbolAsync(It.IsAny<string>()), Times.Never);
     }
-    
+
     [Fact]
     public void GetSubscribedSymbols_CallsSubscriptionManager()
     {
         // Arrange
         var expectedSymbols = new List<string> { "005930", "000660" };
-            
+
         _mockSubscriptionManager
             .Setup(m => m.GetSubscribedSymbols())
             .Returns(expectedSymbols);
@@ -228,14 +215,10 @@ public class KisRealTimeServiceTest
             .Setup(c => c.ConnectAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        _mockWebSocketClient
-            .Setup(c => c.AuthenticateAsync(It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
         _mockSubscriptionManager
             .Setup(m => m.UnsubscribeAllAsync())
             .Returns(Task.CompletedTask);
-                
+
         _mockWebSocketClient
             .Setup(c => c.DisconnectAsync())
             .Returns(Task.CompletedTask);

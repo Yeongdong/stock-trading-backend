@@ -29,7 +29,6 @@ public class RealTimeController : BaseController
             return BadRequest("WebSocket 토큰이 필요합니다. KIS 토큰을 먼저 발급받아주세요.");
 
         await _realTimeService.StartAsync(user);
-        _logger.LogInformation("사용자 {Email}의 실시간 데이터 서비스 시작", user.Email);
         return Ok(new { message = "실시간 데이터 서비스 시작" });
     }
 
@@ -39,11 +38,8 @@ public class RealTimeController : BaseController
     [HttpPost("stop")]
     public async Task<IActionResult> StopRealTimeService()
     {
-        var user = await GetCurrentUserAsync();
-
         await _realTimeService.StopAsync();
 
-        _logger.LogInformation("사용자 {Email}의 실시간 데이터 서비스 중지", user.Email);
         return Ok(new { message = "실시간 데이터 서비스 중지" });
     }
 
@@ -56,12 +52,9 @@ public class RealTimeController : BaseController
         if (string.IsNullOrEmpty(symbol) || symbol.Length != 6)
             return BadRequest("유효하지 않은 종목 코드. 6자리 코드 필요");
 
-        var user = await GetCurrentUserAsync();
-
         try
         {
             await _realTimeService.SubscribeSymbolAsync(symbol);
-            _logger.LogInformation("구독 성공: 사용자 {Email}가 종목 {Symbol} 구독", user.Email, symbol);
             return Ok(new { message = $"종목 {symbol} 구독 완료" });
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("실시간 서비스가 시작되지 않았습니다"))
@@ -77,15 +70,10 @@ public class RealTimeController : BaseController
     public async Task<IActionResult> UnsubscribeSymbol(string symbol)
     {
         if (string.IsNullOrWhiteSpace(symbol) || symbol.Length != 6)
-        {
             throw new ArgumentException("유효하지 않은 종목 코드. 6자리 코드 필요");
-        }
-
-        var user = await GetCurrentUserAsync();
 
         await _realTimeService.UnsubscribeSymbolAsync(symbol);
 
-        _logger.LogInformation("사용자 {Email}가 종목 {Symbol} 구독 해제", user.Email, symbol);
         return Ok(new { message = $"종목 {symbol} 구독 해제" });
     }
 

@@ -1,6 +1,6 @@
 using JetBrains.Annotations;
 using StockTrading.Application.DTOs.Users;
-using StockTrading.Infrastructure.Services.Helpers;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
 
 namespace StockTrading.Tests.Unit.Helpers;
 

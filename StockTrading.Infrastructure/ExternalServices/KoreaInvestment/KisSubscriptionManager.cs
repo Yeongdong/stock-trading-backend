@@ -20,14 +20,11 @@ public class KisSubscriptionManager : IKisSubscriptionManager
         _logger = logger;
     }
 
-    public void SetWebSocketToken(string token)
-    {
-        _webSocketToken = token;
-    }
-
     public async Task SubscribeSymbolAsync(string symbol)
     {
         if (_subscribedSymbols.ContainsKey(symbol)) return;
+
+        _logger.LogInformation("종목 구독 시작: {Symbol}", symbol);
 
         var message = new
         {
@@ -43,6 +40,14 @@ public class KisSubscriptionManager : IKisSubscriptionManager
         await _webSocketClient.SendMessageAsync(jsonMessage);
 
         _subscribedSymbols[symbol] = true;
+
+        _logger.LogInformation("종목 구독 완료: {Symbol}, 총 구독 종목 수: {Count}", symbol, _subscribedSymbols.Count);
+        _logger.LogInformation("현재 구독 중인 종목들: {Symbols}", string.Join(", ", _subscribedSymbols.Keys));
+    }
+
+    public IReadOnlyCollection<string> GetSubscribedSymbols()
+    {
+        return _subscribedSymbols.Keys.ToList().AsReadOnly();
     }
 
     public async Task UnsubscribeSymbolAsync(string symbol)
@@ -71,6 +76,8 @@ public class KisSubscriptionManager : IKisSubscriptionManager
         }
     }
 
-    public IReadOnlyCollection<string> GetSubscribedSymbols() =>
-        _subscribedSymbols.Keys.ToList().AsReadOnly();
+    public void SetWebSocketToken(string token)
+    {
+        _webSocketToken = token;
+    }
 }

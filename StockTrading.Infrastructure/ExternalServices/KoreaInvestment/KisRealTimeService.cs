@@ -1,9 +1,14 @@
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Managers;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.State;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
+/// <summary>
+/// KIS 실시간 서비스 (리팩토링 버전)
+/// </summary>
 public class KisRealTimeService : IKisRealTimeService
 {
     private readonly IKisWebSocketClient _webSocketClient;
@@ -12,15 +17,13 @@ public class KisRealTimeService : IKisRealTimeService
     private readonly IRealTimeDataBroadcaster _broadcaster;
     private readonly ILogger<KisRealTimeService> _logger;
 
-    private bool _isStarted;
-    private UserInfo? _currentUser;
+    private readonly ConnectionManager _connectionManager;
+    private readonly RetryManager _retryManager;
+    private readonly ServiceState _serviceState;
 
-    public KisRealTimeService(
-        IKisWebSocketClient webSocketClient,
-        IKisRealTimeDataProcessor dataProcessor,
-        IKisSubscriptionManager subscriptionManager,
-        IRealTimeDataBroadcaster broadcaster,
-        ILogger<KisRealTimeService> logger)
+    public KisRealTimeService(IKisWebSocketClient webSocketClient, IKisRealTimeDataProcessor dataProcessor,
+        IKisSubscriptionManager subscriptionManager, IRealTimeDataBroadcaster broadcaster,
+        ILogger<KisRealTimeService> logger, ILoggerFactory loggerFactory)
     {
         _webSocketClient = webSocketClient;
         _dataProcessor = dataProcessor;
@@ -28,33 +31,58 @@ public class KisRealTimeService : IKisRealTimeService
         _broadcaster = broadcaster;
         _logger = logger;
 
-        // 이벤트 연결
-        _webSocketClient.MessageReceived += (_, msg) => _dataProcessor.ProcessMessage(msg);
-        _webSocketClient.ConnectionLost += OnConnectionLost;
-        _dataProcessor.StockPriceReceived += (_, data) => _ = _broadcaster.BroadcastStockPriceAsync(data);
-        _dataProcessor.TradeExecutionReceived += (_, data) => _ = _broadcaster.BroadcastTradeExecutionAsync(data);
+        _connectionManager = new ConnectionManager(_webSocketClient, loggerFactory.CreateLogger<ConnectionManager>());
+        _retryManager = new RetryManager(loggerFactory.CreateLogger<RetryManager>());
+        _serviceState = new ServiceState();
+
+        SetupEventHandlers();
     }
 
     public async Task StartAsync(UserInfo user)
     {
-        if (_isStarted) return;
+        if (_serviceState.IsStarted)
+        {
+            _logger.LogInformation("서비스가 이미 시작됨. 사용자: {UserId}", user.Id);
+            return;
+        }
 
-        await _webSocketClient.ConnectAsync("ws://ops.koreainvestment.com:31000");
-        await _webSocketClient.AuthenticateAsync(user.WebSocketToken!);
-        if (_subscriptionManager is KisSubscriptionManager manager)
-            manager.SetWebSocketToken(user.WebSocketToken!);
-        _isStarted = true;
+        _logger.LogInformation("실시간 서비스 시작. 사용자: {UserId}, WebSocketToken: {HasToken}",
+            user.Id, !string.IsNullOrEmpty(user.WebSocketToken));
+
+        await _connectionManager.ConnectAsync();
+        _subscriptionManager.SetWebSocketToken(user.WebSocketToken);
+        _serviceState.Start(user);
+
+        _logger.LogInformation("실시간 서비스 시작 완료. 사용자: {UserId}", user.Id);
     }
 
     public async Task SubscribeSymbolAsync(string symbol)
     {
-        if (!_isStarted) throw new InvalidOperationException("서비스를 먼저 시작하세요");
-        await _subscriptionManager.SubscribeSymbolAsync(symbol);
+        _serviceState.EnsureStarted();
+
+        await _retryManager.ExecuteWithRetryAsync(
+            operation: () => _subscriptionManager.SubscribeSymbolAsync(symbol),
+            shouldRetry: RetryManager.IsConnectionException,
+            onRetry: HandleConnectionLostAsync,
+            operationName: $"종목 구독({symbol})");
     }
 
     public async Task UnsubscribeSymbolAsync(string symbol)
     {
-        if (_isStarted) await _subscriptionManager.UnsubscribeSymbolAsync(symbol);
+        if (!_serviceState.IsStarted)
+        {
+            _logger.LogDebug("서비스가 중지된 상태에서 구독 해제 요청: {Symbol}", symbol);
+            return;
+        }
+
+        try
+        {
+            await _subscriptionManager.UnsubscribeSymbolAsync(symbol);
+        }
+        catch (Exception ex) when (RetryManager.IsConnectionException(ex))
+        {
+            _logger.LogWarning("구독 해제 중 연결 끊어짐: {Symbol}", symbol);
+        }
     }
 
     public IReadOnlyCollection<string> GetSubscribedSymbols() =>
@@ -62,34 +90,53 @@ public class KisRealTimeService : IKisRealTimeService
 
     public async Task StopAsync()
     {
-        if (!_isStarted) return;
+        if (!_serviceState.IsStarted)
+        {
+            _logger.LogDebug("서비스가 이미 중지됨");
+            return;
+        }
 
-        _isStarted = false;
+        _logger.LogInformation("실시간 서비스 중지 시작");
+
         await _subscriptionManager.UnsubscribeAllAsync();
-        await _webSocketClient.DisconnectAsync();
+        await _connectionManager.DisconnectAsync();
+        _serviceState.Stop();
+
+        _logger.LogInformation("실시간 서비스 중지 완료");
     }
 
-    private async void OnConnectionLost(object? sender, EventArgs e)
+    private void SetupEventHandlers()
     {
-        if (_currentUser == null) return;
+        _webSocketClient.MessageReceived += (_, msg) => _dataProcessor.ProcessMessage(msg);
+        _webSocketClient.ConnectionLost += OnConnectionLostEvent;
+        _dataProcessor.StockPriceReceived += (_, data) => _ = _broadcaster.BroadcastStockPriceAsync(data);
+        _dataProcessor.TradeExecutionReceived += (_, data) => _ = _broadcaster.BroadcastTradeExecutionAsync(data);
+    }
 
-        _logger.LogWarning("재연결 시도");
-        _isStarted = false;
-
-        try
+    private async void OnConnectionLostEvent(object? sender, EventArgs e)
+    {
+        if (!_serviceState.IsStarted)
         {
-            await Task.Delay(3000);
-            await StartAsync(_currentUser);
+            _logger.LogDebug("서비스 중지 상태에서 연결 끊어짐 이벤트 무시");
+            return;
+        }
 
-            foreach (var symbol in _subscriptionManager.GetSubscribedSymbols())
-            {
-                await _subscriptionManager.SubscribeSymbolAsync(symbol);
-                await Task.Delay(500);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "재연결 실패");
-        }
+        await HandleConnectionLostAsync();
+    }
+
+    private async Task HandleConnectionLostAsync()
+    {
+        _serviceState.EnsureUserExists();
+
+        _logger.LogWarning("WebSocket 연결 끊어짐. 재연결 및 재구독 시작");
+
+        await _connectionManager.ReconnectAsync();
+
+        var subscribedSymbols = _subscriptionManager.GetSubscribedSymbols();
+        await _connectionManager.ResubscribeAsync(
+            symbols: subscribedSymbols,
+            subscribeAction: _subscriptionManager.SubscribeSymbolAsync);
+
+        _logger.LogInformation("재연결 및 재구독 완료");
     }
 }

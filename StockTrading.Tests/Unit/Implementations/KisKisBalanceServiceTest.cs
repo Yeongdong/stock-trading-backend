@@ -9,19 +9,19 @@ using StockTrading.Infrastructure.Services;
 
 namespace StockTrading.Tests.Unit.Implementations;
 
-[TestSubject(typeof(KisBalanceService))]
-public class KisBalanceServiceTest
+[TestSubject(typeof(KisKisBalanceService))]
+public class KisKisBalanceServiceTest
 {
     private readonly Mock<IKisApiClient> _mockKisApiClient;
-    private readonly Mock<ILogger<KisBalanceService>> _mockLogger;
-    private readonly KisBalanceService _kisBalanceService;
+    private readonly Mock<ILogger<KisKisBalanceService>> _mockLogger;
+    private readonly KisKisBalanceService _kisKisBalanceService;
 
-    public KisBalanceServiceTest()
+    public KisKisBalanceServiceTest()
     {
         _mockKisApiClient = new Mock<IKisApiClient>();
-        _mockLogger = new Mock<ILogger<KisBalanceService>>();
+        _mockLogger = new Mock<ILogger<KisKisBalanceService>>();
 
-        _kisBalanceService = new KisBalanceService(
+        _kisKisBalanceService = new KisKisBalanceService(
             _mockKisApiClient.Object,
             _mockLogger.Object
         );
@@ -39,7 +39,7 @@ public class KisBalanceServiceTest
             .ReturnsAsync(expectedBalance);
 
         // Act
-        var result = await _kisBalanceService.GetStockBalanceAsync(userDto);
+        var result = await _kisKisBalanceService.GetStockBalanceAsync(userDto);
 
         // Assert
         Assert.NotNull(result);
@@ -57,7 +57,7 @@ public class KisBalanceServiceTest
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(null));
+            _kisKisBalanceService.GetStockBalanceAsync(null));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class KisBalanceServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(userDto));
+            _kisKisBalanceService.GetStockBalanceAsync(userDto));
 
         Assert.Equal("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
     }
@@ -83,7 +83,7 @@ public class KisBalanceServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(userDto));
+            _kisKisBalanceService.GetStockBalanceAsync(userDto));
 
         Assert.Equal("KIS 앱 시크릿이 설정되지 않았습니다.", exception.Message);
     }
@@ -97,7 +97,7 @@ public class KisBalanceServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(userDto));
+            _kisKisBalanceService.GetStockBalanceAsync(userDto));
 
         Assert.Equal("계좌번호가 설정되지 않았습니다.", exception.Message);
     }
@@ -111,7 +111,7 @@ public class KisBalanceServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(userDto));
+            _kisKisBalanceService.GetStockBalanceAsync(userDto));
 
         Assert.Equal("KIS 액세스 토큰이 없습니다. 토큰을 먼저 발급받아주세요.", exception.Message);
     }
@@ -125,7 +125,7 @@ public class KisBalanceServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(userDto));
+            _kisKisBalanceService.GetStockBalanceAsync(userDto));
 
         Assert.Equal("KIS 액세스 토큰이 만료되었습니다. 토큰을 재발급받아주세요.", exception.Message);
     }
@@ -142,7 +142,7 @@ public class KisBalanceServiceTest
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            _kisBalanceService.GetStockBalanceAsync(userDto));
+            _kisKisBalanceService.GetStockBalanceAsync(userDto));
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public class KisBalanceServiceTest
             .ReturnsAsync(emptyBalance);
 
         // Act
-        var result = await _kisBalanceService.GetStockBalanceAsync(userDto);
+        var result = await _kisKisBalanceService.GetStockBalanceAsync(userDto);
 
         // Assert
         Assert.NotNull(result);

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Services;
 
@@ -22,27 +21,17 @@ public class RealTimeDataBroadcaster : IRealTimeDataBroadcaster
 
     public async Task BroadcastStockPriceAsync(KisTransactionInfo priceData)
     {
-        try
-        {
+            _logger.LogInformation("SignalR 브로드캐스트 시작: {Symbol} - {Price}원", 
+                priceData.Symbol, priceData.Price);
+
             await _hubContext.Clients.All.SendAsync("ReceiveStockPrice", priceData);
-            _logger.LogDebug($"실시간 시세 전송: {priceData.Symbol}, 가격: {priceData.Price}");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "실시간 시세 브로드캐스팅 오류");
-        }
+        
+            _logger.LogInformation("SignalR 브로드캐스트 완료: {Symbol} - {Price}원, 연결된 클라이언트에게 전송됨", 
+                priceData.Symbol, priceData.Price);
     }
 
     public async Task BroadcastTradeExecutionAsync(object executionData)
     {
-        try
-        {
-            await _hubContext.Clients.All.SendAsync("ReceiveTradeExecution", executionData);
-            _logger.LogDebug("체결 정보 전송 완료");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "체결 정보 브로드캐스팅 오류");
-        }
+        await _hubContext.Clients.All.SendAsync("ReceiveTradeExecution", executionData);
     }
 }
