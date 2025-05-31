@@ -55,7 +55,8 @@ public class AuthController : BaseController
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict
+            SameSite = SameSiteMode.None,
+            Path = "/"
         });
 
         return Ok(new { Message = "로그아웃 성공" });
