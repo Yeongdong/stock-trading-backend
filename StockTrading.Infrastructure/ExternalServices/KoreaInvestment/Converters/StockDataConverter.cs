@@ -76,46 +76,36 @@ public class StockDataConverter
             : KisRealTimeConstants.ChangeTypes.Unchanged;
     }
 
-    private DateTime ParseTradeTime(string tradeTime)
+    private static DateTime ParseTradeTime(string tradeTime)
     {
-        try
-        {
-            if (tradeTime.Length == KisRealTimeConstants.Parsing.TradeTimeLength)
-            {
-                var hour = int.Parse(tradeTime[..2]);
-                var minute = int.Parse(tradeTime.Substring(2, 2));
-                var second = int.Parse(tradeTime.Substring(4, 2));
+        if (tradeTime.Length != KisRealTimeConstants.Parsing.TradeTimeLength) return DateTime.Now;
 
-                return DateTime.Today
-                    .AddHours(hour)
-                    .AddMinutes(minute)
-                    .AddSeconds(second);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "거래시간 파싱 실패: {TradeTime}, 현재 시간 사용", tradeTime);
-        }
+        var hour = int.Parse(tradeTime[..2]);
+        var minute = int.Parse(tradeTime.Substring(2, 2));
+        var second = int.Parse(tradeTime.Substring(4, 2));
 
-        return DateTime.Now;
+        return DateTime.Today
+            .AddHours(hour)
+            .AddMinutes(minute)
+            .AddSeconds(second);
     }
 
-    private decimal ParseDecimalSafely(string value)
-    {
-        if (decimal.TryParse(value, out var result))
-            return result;
-
-        _logger.LogDebug("Decimal 파싱 실패: '{Value}', 기본값 0 사용", value);
-        return 0m;
-    }
-
-    private long ParseLongSafely(string value)
+    private static long ParseLongSafely(string value)
     {
         if (decimal.TryParse(value, out var decimalResult))
             return (long)decimalResult;
 
-        _logger.LogDebug("Long 파싱 실패: '{Value}', 기본값 0 사용", value);
         return 0L;
+    }
+
+    public static int ParseIntSafely(string value)
+    {
+        return int.TryParse(value, out var result) ? result : 0;
+    }
+
+    public static decimal ParseDecimalSafely(string value)
+    {
+        return decimal.TryParse(value, out var result) ? result : 0m;
     }
 
     private static bool IsValidStockCode(string stockCode)

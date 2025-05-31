@@ -8,5 +8,5 @@ public interface IKisApiClient
 {
     Task<OrderResponse> PlaceOrderAsync(OrderRequest request, UserInfo user);
     Task<AccountBalance> GetStockBalanceAsync(UserInfo user);
-    
+    Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request, UserInfo user);
 }
