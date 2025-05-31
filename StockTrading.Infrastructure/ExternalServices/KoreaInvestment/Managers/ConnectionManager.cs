@@ -8,14 +8,14 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Managers;
 /// </summary>
 public class ConnectionManager
 {
-    private readonly IKisWebSocketClient _webSocketClient;
+    private readonly IWebSocketClient _webSocketClient;
     private readonly ILogger<ConnectionManager> _logger;
 
     private const string WebSocketUrl = "ws://ops.koreainvestment.com:31000";
     private const int ReconnectDelayMs = 3000;
     private const int SubscriptionDelayMs = 500;
 
-    public ConnectionManager(IKisWebSocketClient webSocketClient, ILogger<ConnectionManager> logger)
+    public ConnectionManager(IWebSocketClient webSocketClient, ILogger<ConnectionManager> logger)
     {
         _webSocketClient = webSocketClient;
         _logger = logger;

@@ -1,6 +1,6 @@
 namespace StockTrading.Application.Services;
 
-public interface IKisWebSocketClient
+public interface IWebSocketClient
 {
     event EventHandler<string> MessageReceived;
     event EventHandler? ConnectionLost;

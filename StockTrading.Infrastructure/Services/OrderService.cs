@@ -8,15 +8,15 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
 
 namespace StockTrading.Infrastructure.Services;
 
-public class KisOrderService : IKisOrderService
+public class OrderService : IOrderService
 {
     private readonly IKisApiClient _kisApiClient;
     private readonly IDbContextWrapper _dbContextWrapper;
     private readonly IOrderRepository _orderRepository;
-    private readonly ILogger<KisOrderService> _logger;
+    private readonly ILogger<OrderService> _logger;
 
-    public KisOrderService(IKisApiClient kisApiClient, IDbContextWrapper dbContextWrapper,
-        IOrderRepository orderRepository, ILogger<KisOrderService> logger)
+    public OrderService(IKisApiClient kisApiClient, IDbContextWrapper dbContextWrapper,
+        IOrderRepository orderRepository, ILogger<OrderService> logger)
     {
         _kisApiClient = kisApiClient;
         _dbContextWrapper = dbContextWrapper;

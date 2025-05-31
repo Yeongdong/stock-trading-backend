@@ -7,10 +7,10 @@ namespace StockTrading.API.Controllers;
 [Route("api/[controller]")]
 public class RealTimeController : BaseController
 {
-    private readonly IKisRealTimeService _realTimeService;
+    private readonly IRealTimeService _realTimeService;
     private readonly ILogger<RealTimeController> _logger;
 
-    public RealTimeController(IKisRealTimeService realTimeService, IUserContextService userContextService,
+    public RealTimeController(IRealTimeService realTimeService, IUserContextService userContextService,
         ILogger<RealTimeController> logger) : base(userContextService)
     {
         _realTimeService = realTimeService;

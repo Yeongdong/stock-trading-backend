@@ -10,29 +10,29 @@ using StockTrading.Infrastructure.Services;
 
 namespace StockTrading.Tests.Unit.Implementations;
 
-[TestSubject(typeof(KisOrderService))]
-public class KisOrderServiceTest
+[TestSubject(typeof(OrderService))]
+public class OrderServiceTest
 {
     private readonly Mock<IKisApiClient> _mockKisApiClient;
     private readonly Mock<IDbContextWrapper> _mockDbContextWrapper;
     private readonly Mock<IDbTransactionWrapper> _mockDbTransaction;
     private readonly Mock<IOrderRepository> _mockOrderRepository;
-    private readonly Mock<ILogger<KisOrderService>> _mockLogger;
-    private readonly KisOrderService _kisOrderService;
+    private readonly Mock<ILogger<OrderService>> _mockLogger;
+    private readonly OrderService _orderService;
 
-    public KisOrderServiceTest()
+    public OrderServiceTest()
     {
         _mockKisApiClient = new Mock<IKisApiClient>();
         _mockDbContextWrapper = new Mock<IDbContextWrapper>();
         _mockDbTransaction = new Mock<IDbTransactionWrapper>();
         _mockOrderRepository = new Mock<IOrderRepository>();
-        _mockLogger = new Mock<ILogger<KisOrderService>>();
+        _mockLogger = new Mock<ILogger<OrderService>>();
 
         _mockDbContextWrapper
             .Setup(db => db.BeginTransactionAsync())
             .ReturnsAsync(_mockDbTransaction.Object);
 
-        _kisOrderService = new KisOrderService(
+        _orderService = new OrderService(
             _mockKisApiClient.Object,
             _mockDbContextWrapper.Object,
             _mockOrderRepository.Object,
@@ -54,7 +54,7 @@ public class KisOrderServiceTest
             .Setup(repo => repo.AddAsync(It.IsAny<StockOrder>()))
             .ReturnsAsync(It.IsAny<StockOrder>);
 
-        var result = await _kisOrderService.PlaceOrderAsync(order, userDto);
+        var result = await _orderService.PlaceOrderAsync(order, userDto);
 
         Assert.NotNull(result);
         Assert.Equal("0", result.ReturnCode);
@@ -73,7 +73,7 @@ public class KisOrderServiceTest
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _kisOrderService.PlaceOrderAsync(null, userDto));
+            _orderService.PlaceOrderAsync(null, userDto));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class KisOrderServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisOrderService.PlaceOrderAsync(order, userDto));
+            _orderService.PlaceOrderAsync(order, userDto));
 
         Assert.Equal("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
     }
@@ -101,7 +101,7 @@ public class KisOrderServiceTest
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisOrderService.PlaceOrderAsync(order, userDto));
+            _orderService.PlaceOrderAsync(order, userDto));
 
         Assert.Equal("KIS 액세스 토큰이 만료되었습니다. 토큰을 재발급받아주세요.", exception.Message);
     }
@@ -119,7 +119,7 @@ public class KisOrderServiceTest
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            _kisOrderService.PlaceOrderAsync(order, userDto));
+            _orderService.PlaceOrderAsync(order, userDto));
 
         // 트랜잭션이 시작되었는지 확인
         _mockDbContextWrapper.Verify(db => db.BeginTransactionAsync(), Times.Once);

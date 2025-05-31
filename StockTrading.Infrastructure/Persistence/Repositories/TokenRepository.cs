@@ -7,12 +7,12 @@ using StockTrading.Infrastructure.Persistence.Contexts;
 
 namespace StockTrading.Infrastructure.Persistence.Repositories;
 
-public class KisTokenRepository : IKisTokenRepository
+public class TokenRepository : ITokenRepository
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<KisTokenRepository> _logger;
+    private readonly ILogger<TokenRepository> _logger;
 
-    public KisTokenRepository(ApplicationDbContext context, ILogger<KisTokenRepository> logger)
+    public TokenRepository(ApplicationDbContext context, ILogger<TokenRepository> logger)
     {
         _context = context;
         _logger = logger;

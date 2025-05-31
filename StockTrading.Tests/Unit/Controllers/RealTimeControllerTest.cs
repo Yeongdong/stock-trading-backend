@@ -12,7 +12,7 @@ namespace StockTrading.Tests.Unit.Controllers;
 [TestSubject(typeof(RealTimeController))]
 public class RealTimeControllerTest
 {
-    private readonly Mock<IKisRealTimeService> _mockRealTimeService;
+    private readonly Mock<IRealTimeService> _mockRealTimeService;
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ILogger<RealTimeController>> _mockLogger;
     private readonly RealTimeController _controller;
@@ -20,7 +20,7 @@ public class RealTimeControllerTest
 
     public RealTimeControllerTest()
     {
-        _mockRealTimeService = new Mock<IKisRealTimeService>();
+        _mockRealTimeService = new Mock<IRealTimeService>();
         _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<RealTimeController>>();
 

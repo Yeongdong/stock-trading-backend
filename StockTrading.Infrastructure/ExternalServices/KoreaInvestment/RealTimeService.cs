@@ -9,21 +9,21 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /// <summary>
 /// KIS 실시간 서비스 (리팩토링 버전)
 /// </summary>
-public class KisRealTimeService : IKisRealTimeService
+public class RealTimeService : IRealTimeService
 {
-    private readonly IKisWebSocketClient _webSocketClient;
-    private readonly IKisRealTimeDataProcessor _dataProcessor;
-    private readonly IKisSubscriptionManager _subscriptionManager;
+    private readonly IWebSocketClient _webSocketClient;
+    private readonly IRealTimeDataProcessor _dataProcessor;
+    private readonly ISubscriptionManager _subscriptionManager;
     private readonly IRealTimeDataBroadcaster _broadcaster;
-    private readonly ILogger<KisRealTimeService> _logger;
+    private readonly ILogger<RealTimeService> _logger;
 
     private readonly ConnectionManager _connectionManager;
     private readonly RetryManager _retryManager;
     private readonly ServiceState _serviceState;
 
-    public KisRealTimeService(IKisWebSocketClient webSocketClient, IKisRealTimeDataProcessor dataProcessor,
-        IKisSubscriptionManager subscriptionManager, IRealTimeDataBroadcaster broadcaster,
-        ILogger<KisRealTimeService> logger, ILoggerFactory loggerFactory)
+    public RealTimeService(IWebSocketClient webSocketClient, IRealTimeDataProcessor dataProcessor,
+        ISubscriptionManager subscriptionManager, IRealTimeDataBroadcaster broadcaster,
+        ILogger<RealTimeService> logger, ILoggerFactory loggerFactory)
     {
         _webSocketClient = webSocketClient;
         _dataProcessor = dataProcessor;

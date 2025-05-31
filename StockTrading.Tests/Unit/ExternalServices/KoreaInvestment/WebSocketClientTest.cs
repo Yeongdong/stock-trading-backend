@@ -5,16 +5,16 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
-[TestSubject(typeof(KisWebSocketClient))]
-public class KisWebSocketClientTest
+[TestSubject(typeof(WebSocketClient))]
+public class WebSocketClientTest
 {
-    private readonly Mock<ILogger<KisWebSocketClient>> _mockLogger;
-    private readonly KisWebSocketClient _client;
+    private readonly Mock<ILogger<WebSocketClient>> _mockLogger;
+    private readonly WebSocketClient _client;
 
-    public KisWebSocketClientTest()
+    public WebSocketClientTest()
     {
-        _mockLogger = new Mock<ILogger<KisWebSocketClient>>();
-        _client = new KisWebSocketClient(_mockLogger.Object);
+        _mockLogger = new Mock<ILogger<WebSocketClient>>();
+        _client = new WebSocketClient(_mockLogger.Object);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class KisWebSocketClientTest
             Assert.Equal(testMessage, message);
         };
 
-        var methodInfo = typeof(KisWebSocketClient).GetMethod("OnMessageReceived",
+        var methodInfo = typeof(WebSocketClient).GetMethod("OnMessageReceived",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         methodInfo.Invoke(_client, new object[] { testMessage });
 

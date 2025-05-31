@@ -7,14 +7,14 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /*
  * 종목 구독 관리
  */
-public class KisSubscriptionManager : IKisSubscriptionManager
+public class SubscriptionManager : ISubscriptionManager
 {
-    private readonly IKisWebSocketClient _webSocketClient;
-    private readonly ILogger<KisSubscriptionManager> _logger;
+    private readonly IWebSocketClient _webSocketClient;
+    private readonly ILogger<SubscriptionManager> _logger;
     private readonly Dictionary<string, bool> _subscribedSymbols = new();
     private string _webSocketToken;
 
-    public KisSubscriptionManager(IKisWebSocketClient webSocketClient, ILogger<KisSubscriptionManager> logger)
+    public SubscriptionManager(IWebSocketClient webSocketClient, ILogger<SubscriptionManager> logger)
     {
         _webSocketClient = webSocketClient;
         _logger = logger;

@@ -3,7 +3,7 @@ using StockTrading.Application.DTOs.Users;
 
 namespace StockTrading.Application.Services;
 
-public interface IKisOrderService
+public interface IOrderService
 {
     Task<OrderResponse> PlaceOrderAsync(OrderRequest orderRequest, UserInfo userInfo);
 }

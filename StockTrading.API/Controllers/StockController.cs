@@ -8,15 +8,15 @@ namespace StockTrading.API.Controllers;
 [Route("api/[controller]")]
 public class StockController : BaseController
 {
-    private readonly IKisOrderService _kisOrderService;
-    private readonly IKisBalanceService _kisBalanceService;
+    private readonly IOrderService _orderService;
+    private readonly IBalanceService _balanceService;
     private readonly ILogger<StockController> _logger;
 
-    public StockController(IKisOrderService kisOrderService, IKisBalanceService kisBalanceService, 
+    public StockController(IOrderService orderService, IBalanceService balanceService, 
         IUserContextService userContextService, ILogger<StockController> logger) : base(userContextService)
     {
-        _kisOrderService = kisOrderService;
-        _kisBalanceService = kisBalanceService;
+        _orderService = orderService;
+        _balanceService = balanceService;
         _logger = logger;
     }
 
@@ -24,7 +24,7 @@ public class StockController : BaseController
     public async Task<IActionResult> GetBalance()
     {
         var user = await GetCurrentUserAsync();
-        var balance = await _kisBalanceService.GetStockBalanceAsync(user);
+        var balance = await _balanceService.GetStockBalanceAsync(user);
         return Ok(balance);
     }
 
@@ -38,7 +38,7 @@ public class StockController : BaseController
     
         _logger.LogInformation("주문 시작: 사용자 {UserId}, 종목 {StockCode}", user.Id, request.PDNO);
     
-        var orderResponse = await _kisOrderService.PlaceOrderAsync(request, user);
+        var orderResponse = await _orderService.PlaceOrderAsync(request, user);
     
         var orderNumber = orderResponse?.Output?.OrderNumber ?? "알 수 없음";
         _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}", user.Id, orderNumber);

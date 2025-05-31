@@ -13,12 +13,12 @@ namespace StockTrading.Tests.Unit.Repositories;
 [TestSubject(typeof(UserKisInfoRepository))]
 public class UserKisInfoRepositoryTest
 {
-    private readonly ILogger<KisTokenRepository> _logger;
+    private readonly ILogger<TokenRepository> _logger;
     private readonly Mock<IEncryptionService> _mockEncryptionService;
 
     public UserKisInfoRepositoryTest()
     {
-        _logger = new NullLogger<KisTokenRepository>();
+        _logger = new NullLogger<TokenRepository>();
         _mockEncryptionService = new Mock<IEncryptionService>();
     }
 

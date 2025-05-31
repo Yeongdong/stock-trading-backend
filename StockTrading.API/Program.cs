@@ -195,7 +195,7 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
         client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
     });
 
-    services.AddHttpClient<KisOrderService>(client =>
+    services.AddHttpClient<OrderService>(client =>
     {
         client.BaseAddress = new Uri(kisBaseUrl);
         client.Timeout = TimeSpan.FromSeconds(30);
@@ -217,7 +217,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     // Repository 계층
     services.AddScoped<IUserRepository, UserRepository>();
     services.AddScoped<IOrderRepository, OrderRepository>();
-    services.AddScoped<IKisTokenRepository, KisTokenRepository>();
+    services.AddScoped<ITokenRepository, TokenRepository>();
     services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
 
     // Infrastructure 계층
@@ -226,8 +226,8 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     // Application 서비스 계층
     services.AddScoped<IJwtService, JwtService>();
     services.AddScoped<IUserService, UserService>();
-    services.AddScoped<IKisOrderService, KisOrderService>();
-    services.AddScoped<IKisBalanceService, KisKisBalanceService>();
+    services.AddScoped<IOrderService, OrderService>();
+    services.AddScoped<IBalanceService, BalanceService>();
     services.AddScoped<IKisTokenService, KisTokenService>();
 
     // API 계층
@@ -242,21 +242,21 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
 
 static void ConfigureRealTimeServices(IServiceCollection services)
 {
-    services.AddSingleton<KisWebSocketClient>();
-    services.AddSingleton<IKisWebSocketClient>(provider => provider.GetRequiredService<KisWebSocketClient>());
-    services.AddSingleton<KisRealTimeDataProcessor>(provider =>
+    services.AddSingleton<WebSocketClient>();
+    services.AddSingleton<IWebSocketClient>(provider => provider.GetRequiredService<WebSocketClient>());
+    services.AddSingleton<RealTimeDataProcessor>(provider =>
     {
-        var logger = provider.GetRequiredService<ILogger<KisRealTimeDataProcessor>>();
+        var logger = provider.GetRequiredService<ILogger<RealTimeDataProcessor>>();
         var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-        return new KisRealTimeDataProcessor(logger, loggerFactory);
+        return new RealTimeDataProcessor(logger, loggerFactory);
     });
-    services.AddSingleton<IKisRealTimeDataProcessor>(provider => provider.GetRequiredService<KisRealTimeDataProcessor>());
+    services.AddSingleton<IRealTimeDataProcessor>(provider => provider.GetRequiredService<RealTimeDataProcessor>());
     services.AddSingleton<RealTimeDataBroadcaster>();
     services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
-    services.AddSingleton<KisSubscriptionManager>();
-    services.AddSingleton<IKisSubscriptionManager>(provider => provider.GetRequiredService<KisSubscriptionManager>());
+    services.AddSingleton<SubscriptionManager>();
+    services.AddSingleton<ISubscriptionManager>(provider => provider.GetRequiredService<SubscriptionManager>());
     
-    services.AddSingleton<IKisRealTimeService, KisRealTimeService>();
+    services.AddSingleton<IRealTimeService, RealTimeService>();
 }
 
 static void ConfigureCors(IServiceCollection services, IConfiguration configuration)

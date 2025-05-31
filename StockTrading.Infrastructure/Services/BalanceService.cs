@@ -6,12 +6,12 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
 
 namespace StockTrading.Infrastructure.Services;
 
-public class KisKisBalanceService : IKisBalanceService
+public class BalanceService : IBalanceService
 {
     private readonly IKisApiClient _kisApiClient;
-    private readonly ILogger<KisKisBalanceService> _logger;
+    private readonly ILogger<BalanceService> _logger;
 
-    public KisKisBalanceService(IKisApiClient kisApiClient, ILogger<KisKisBalanceService> logger)
+    public BalanceService(IKisApiClient kisApiClient, ILogger<BalanceService> logger)
     {
         _kisApiClient = kisApiClient;
         _logger = logger;

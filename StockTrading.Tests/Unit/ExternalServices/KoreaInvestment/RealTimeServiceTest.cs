@@ -7,28 +7,28 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
-[TestSubject(typeof(KisRealTimeService))]
-public class KisRealTimeServiceTest
+[TestSubject(typeof(RealTimeService))]
+public class RealTimeServiceTest
 {
-    private readonly Mock<IKisWebSocketClient> _mockWebSocketClient;
-    private readonly Mock<IKisRealTimeDataProcessor> _mockDataProcessor;
-    private readonly Mock<IKisSubscriptionManager> _mockSubscriptionManager;
+    private readonly Mock<IWebSocketClient> _mockWebSocketClient;
+    private readonly Mock<IRealTimeDataProcessor> _mockDataProcessor;
+    private readonly Mock<ISubscriptionManager> _mockSubscriptionManager;
     private readonly Mock<IRealTimeDataBroadcaster> _mockBroadcaster;
-    private readonly Mock<ILogger<KisRealTimeService>> _mockLogger;
+    private readonly Mock<ILogger<RealTimeService>> _mockLogger;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly KisRealTimeService _service;
+    private readonly RealTimeService _service;
 
-    public KisRealTimeServiceTest()
+    public RealTimeServiceTest()
     {
-        _mockWebSocketClient = new Mock<IKisWebSocketClient>();
-        _mockDataProcessor = new Mock<IKisRealTimeDataProcessor>();
-        _mockSubscriptionManager = new Mock<IKisSubscriptionManager>();
+        _mockWebSocketClient = new Mock<IWebSocketClient>();
+        _mockDataProcessor = new Mock<IRealTimeDataProcessor>();
+        _mockSubscriptionManager = new Mock<ISubscriptionManager>();
         _mockBroadcaster = new Mock<IRealTimeDataBroadcaster>();
-        _mockLogger = new Mock<ILogger<KisRealTimeService>>();
+        _mockLogger = new Mock<ILogger<RealTimeService>>();
 
         _loggerFactory = LoggerFactory.Create(builder => { });
 
-        _service = new KisRealTimeService(
+        _service = new RealTimeService(
             _mockWebSocketClient.Object,
             _mockDataProcessor.Object,
             _mockSubscriptionManager.Object,

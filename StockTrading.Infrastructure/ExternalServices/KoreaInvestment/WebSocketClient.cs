@@ -8,18 +8,18 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /*
  * WebSocket 연결, 메시지 송수신, 기본 인증 등 저수준 통신
  */
-public class KisWebSocketClient : IKisWebSocketClient, IDisposable
+public class WebSocketClient : IWebSocketClient, IDisposable
 {
     private ClientWebSocket? _webSocket;
     private CancellationTokenSource? _cancellationTokenSource;
-    private readonly ILogger<KisWebSocketClient> _logger;
+    private readonly ILogger<WebSocketClient> _logger;
     private bool _isConnected;
     private const int BUFFER_SIZE = 4096;
 
     public event EventHandler<string> MessageReceived;
     public event EventHandler? ConnectionLost;
 
-    public KisWebSocketClient(ILogger<KisWebSocketClient> logger)
+    public WebSocketClient(ILogger<WebSocketClient> logger)
     {
         _logger = logger;
     }

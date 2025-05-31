@@ -15,8 +15,8 @@ namespace StockTrading.Tests.Unit.Controllers;
 [TestSubject(typeof(StockController))]
 public class StockControllerTest
 {
-    private readonly Mock<IKisOrderService> _mockKisOrderService;
-    private readonly Mock<IKisBalanceService> _mockKisBalanceService;
+    private readonly Mock<IOrderService> _mockKisOrderService;
+    private readonly Mock<IBalanceService> _mockKisBalanceService;
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ILogger<StockController>> _mockLogger;
     private readonly StockController _controller;
@@ -24,8 +24,8 @@ public class StockControllerTest
 
     public StockControllerTest()
     {
-        _mockKisOrderService = new Mock<IKisOrderService>();
-        _mockKisBalanceService = new Mock<IKisBalanceService>();
+        _mockKisOrderService = new Mock<IOrderService>();
+        _mockKisBalanceService = new Mock<IBalanceService>();
         _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<StockController>>();
 

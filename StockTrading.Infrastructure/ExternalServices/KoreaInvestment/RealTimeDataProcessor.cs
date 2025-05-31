@@ -10,9 +10,9 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 /// <summary>
 /// 수신된 메시지 처리 및 파싱
 /// </summary>
-public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
+public class RealTimeDataProcessor : IRealTimeDataProcessor
 {
-    private readonly ILogger<KisRealTimeDataProcessor> _logger;
+    private readonly ILogger<RealTimeDataProcessor> _logger;
     private readonly JsonMessageParser _jsonParser;
     private readonly PipeDelimitedMessageParser _pipeParser;
     private readonly StockDataParser _stockDataParser;
@@ -21,7 +21,7 @@ public class KisRealTimeDataProcessor : IKisRealTimeDataProcessor
     public event EventHandler<KisTransactionInfo> StockPriceReceived;
     public event EventHandler<object> TradeExecutionReceived;
 
-    public KisRealTimeDataProcessor(ILogger<KisRealTimeDataProcessor> logger, ILoggerFactory loggerFactory)
+    public RealTimeDataProcessor(ILogger<RealTimeDataProcessor> logger, ILoggerFactory loggerFactory)
     {
         _logger = logger;
         _jsonParser = new JsonMessageParser(loggerFactory.CreateLogger<JsonMessageParser>());

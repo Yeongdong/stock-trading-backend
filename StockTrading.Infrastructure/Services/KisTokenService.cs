@@ -11,17 +11,17 @@ namespace StockTrading.Infrastructure.Services;
 public class KisTokenService : IKisTokenService
 {
     private readonly HttpClient _httpClient;
-    private readonly IKisTokenRepository _kisTokenRepository;
+    private readonly ITokenRepository _tokenRepository;
     private readonly IUserKisInfoRepository _userKisInfoRepository;
     private readonly IDbContextWrapper _dbContextWrapper;
     private readonly ILogger<KisTokenService> _logger;
 
 
-    public KisTokenService(IHttpClientFactory httpClientFactory, IKisTokenRepository kisTokenRepository,
+    public KisTokenService(IHttpClientFactory httpClientFactory, ITokenRepository tokenRepository,
         IUserKisInfoRepository userKisInfoRepository, IDbContextWrapper dbContextWrapper,
         ILogger<KisTokenService> logger)
     {
-        _kisTokenRepository = kisTokenRepository;
+        _tokenRepository = tokenRepository;
         _userKisInfoRepository = userKisInfoRepository;
         _dbContextWrapper = dbContextWrapper;
         _logger = logger;
@@ -59,7 +59,7 @@ public class KisTokenService : IKisTokenService
         var tokenResponse = await response.Content.ReadFromJsonAsync<TokenInfo>();
         _logger.LogInformation("KIS 토큰 발급 성공: {UserId}", userId);
 
-        await _kisTokenRepository.SaveKisTokenAsync(userId, tokenResponse);
+        await _tokenRepository.SaveKisTokenAsync(userId, tokenResponse);
         await _userKisInfoRepository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
 
         return tokenResponse;

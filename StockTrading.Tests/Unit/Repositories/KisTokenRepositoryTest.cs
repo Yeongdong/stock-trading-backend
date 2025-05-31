@@ -9,14 +9,14 @@ using StockTrading.Infrastructure.Security.Encryption;
 
 namespace StockTrading.Tests.Unit.Repositories
 {
-    public class KisTokenRepositoryTests
+    public class TokenRepositoryTests
     {
-        private readonly Mock<ILogger<KisTokenRepository>> _loggerMock;
+        private readonly Mock<ILogger<TokenRepository>> _loggerMock;
         private readonly Mock<IEncryptionService> _mockEncryptionService;
 
-        public KisTokenRepositoryTests()
+        public TokenRepositoryTests()
         {
-            _loggerMock = new Mock<ILogger<KisTokenRepository>>();
+            _loggerMock = new Mock<ILogger<TokenRepository>>();
             _mockEncryptionService = new Mock<IEncryptionService>();
         }
 
@@ -33,7 +33,7 @@ namespace StockTrading.Tests.Unit.Repositories
         public async Task SaveKisToken_WithNoExistingToken_ShouldCreateNewToken()
         {
             using var context = CreateContext();
-            var repository = new KisTokenRepository(context, _loggerMock.Object);
+            var repository = new TokenRepository(context, _loggerMock.Object);
 
             var user = new User
             {
@@ -72,7 +72,7 @@ namespace StockTrading.Tests.Unit.Repositories
         public async Task SaveKisToken_WithExistingToken_ShouldUpdateToken()
         {
             using var context = CreateContext();
-            var repository = new KisTokenRepository(context, _loggerMock.Object);
+            var repository = new TokenRepository(context, _loggerMock.Object);
 
             var user = new User
             {

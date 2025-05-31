@@ -1,6 +1,6 @@
 namespace StockTrading.Application.Services;
 
-public interface IKisSubscriptionManager
+public interface ISubscriptionManager
 {
     Task SubscribeSymbolAsync(string symbol);
     Task UnsubscribeSymbolAsync(string symbol);

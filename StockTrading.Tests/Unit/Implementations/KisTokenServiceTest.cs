@@ -16,7 +16,7 @@ namespace StockTrading.Tests.Unit.Implementations;
 [TestSubject(typeof(KisTokenService))]
 public class KisTokenServiceTest
 {
-    private readonly Mock<IKisTokenRepository> _mockKisTokenRepository;
+    private readonly Mock<ITokenRepository> _mockKisTokenRepository;
     private readonly Mock<IUserKisInfoRepository> _mockUserKisInfoRepository;
     private readonly Mock<IDbContextWrapper> _mockDbContextWrapper;
     private readonly Mock<IDbTransactionWrapper> _mockDbTransaction;
@@ -29,7 +29,7 @@ public class KisTokenServiceTest
 
     public KisTokenServiceTest()
     {
-        _mockKisTokenRepository = new Mock<IKisTokenRepository>();
+        _mockKisTokenRepository = new Mock<ITokenRepository>();
         _mockUserKisInfoRepository = new Mock<IUserKisInfoRepository>();
         _mockDbContextWrapper = new Mock<IDbContextWrapper>();
         _mockDbTransaction = new Mock<IDbTransactionWrapper>();

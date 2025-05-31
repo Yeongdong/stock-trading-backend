@@ -7,9 +7,9 @@ namespace StockTrading.Infrastructure.Persistence.Repositories;
 public class UserKisInfoRepository : IUserKisInfoRepository
 {
     private readonly ApplicationDbContext _context;
-    private readonly ILogger<KisTokenRepository> _logger;
+    private readonly ILogger<TokenRepository> _logger;
 
-    public UserKisInfoRepository(ApplicationDbContext context, ILogger<KisTokenRepository> logger)
+    public UserKisInfoRepository(ApplicationDbContext context, ILogger<TokenRepository> logger)
     {
         _context = context;
         _logger = logger;

@@ -7,15 +7,15 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
 {
-    public class KisRealTimeDataProcessorTest
+    public class RealTimeDataProcessorTest
     {
-        private readonly Mock<ILogger<KisRealTimeDataProcessor>> _mockLogger;
+        private readonly Mock<ILogger<RealTimeDataProcessor>> _mockLogger;
         private readonly Mock<ILoggerFactory> _mockLoggerFactory;
-        private readonly KisRealTimeDataProcessor _processor;
+        private readonly RealTimeDataProcessor _processor;
 
-        public KisRealTimeDataProcessorTest()
+        public RealTimeDataProcessorTest()
         {
-            _mockLogger = new Mock<ILogger<KisRealTimeDataProcessor>>();
+            _mockLogger = new Mock<ILogger<RealTimeDataProcessor>>();
             _mockLoggerFactory = new Mock<ILoggerFactory>();
 
             _mockLoggerFactory.Setup(x => x.CreateLogger<JsonMessageParser>())
@@ -27,7 +27,7 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
             _mockLoggerFactory.Setup(x => x.CreateLogger<StockDataConverter>())
                 .Returns(Mock.Of<ILogger<StockDataConverter>>());
 
-            _processor = new KisRealTimeDataProcessor(_mockLogger.Object, _mockLoggerFactory.Object);
+            _processor = new RealTimeDataProcessor(_mockLogger.Object, _mockLoggerFactory.Object);
         }
 
         [Fact]

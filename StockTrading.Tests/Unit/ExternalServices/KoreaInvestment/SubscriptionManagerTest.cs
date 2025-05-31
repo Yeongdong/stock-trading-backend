@@ -6,18 +6,18 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
-[TestSubject(typeof(KisSubscriptionManager))]
-public class KisSubscriptionManagerTest
+[TestSubject(typeof(SubscriptionManager))]
+public class SubscriptionManagerTest
 {
-    private readonly Mock<IKisWebSocketClient> _mockWebSocketClient;
-    private readonly Mock<ILogger<KisSubscriptionManager>> _mockLogger;
-    private readonly KisSubscriptionManager _manager;
+    private readonly Mock<IWebSocketClient> _mockWebSocketClient;
+    private readonly Mock<ILogger<SubscriptionManager>> _mockLogger;
+    private readonly SubscriptionManager _manager;
 
-    public KisSubscriptionManagerTest()
+    public SubscriptionManagerTest()
     {
-        _mockWebSocketClient = new Mock<IKisWebSocketClient>();
-        _mockLogger = new Mock<ILogger<KisSubscriptionManager>>();
-        _manager = new KisSubscriptionManager(_mockWebSocketClient.Object, _mockLogger.Object);
+        _mockWebSocketClient = new Mock<IWebSocketClient>();
+        _mockLogger = new Mock<ILogger<SubscriptionManager>>();
+        _manager = new SubscriptionManager(_mockWebSocketClient.Object, _mockLogger.Object);
     }
 
     [Fact]
