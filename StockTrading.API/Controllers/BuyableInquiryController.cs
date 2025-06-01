@@ -5,7 +5,7 @@ using StockTrading.Application.Services;
 
 namespace StockTrading.API.Controllers;
 
-[Microsoft.AspNetCore.Components.Route("api/[controller]")]
+[Route("api/[controller]")]
 public class BuyableInquiryController : BaseController
 {
     private readonly IBuyableInquiryService _buyableInquiryService;

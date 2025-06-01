@@ -18,4 +18,8 @@ public class KisOrderExecutionInquiryResponse : KisBaseResponse<KisOrderExecutio
     [JsonPropertyName("ctx_area_fk100")] public string CtxAreaFk100 { get; init; } = string.Empty;
 
     [JsonPropertyName("ctx_area_nk100")] public string CtxAreaNk100 { get; init; } = string.Empty;
+
+    [JsonIgnore] public bool IsSuccess => ReturnCode == "0";
+
+    [JsonIgnore] public bool HasData => ExecutionItems.Count > 0;
 }

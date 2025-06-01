@@ -100,7 +100,7 @@ public class KisApiClient : IKisApiClient
         return new AccountBalance
         {
             Positions = kisResponse.Positions,
-            Summary = kisResponse.Summary[0]
+            Summary = kisResponse.Summary.FirstOrDefault() ?? new KisAccountSummaryResponse()
         };
     }
 
@@ -148,7 +148,7 @@ public class KisApiClient : IKisApiClient
         if (!kisResponse.HasData)
             throw new Exception("주문체결조회 데이터가 없습니다.");
 
-        return ConvertToOrderExecutionResponse(kisResponse.Output);
+        return ConvertToOrderExecutionResponse(kisResponse);
     }
 
     public async Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo user)
@@ -171,7 +171,6 @@ public class KisApiClient : IKisApiClient
 
         var response = await _httpClient.SendAsync(httpRequest);
         response.EnsureSuccessStatusCode();
-
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBuyableInquiryResponse>();
 
         if (!kisResponse.IsSuccess)
@@ -180,7 +179,7 @@ public class KisApiClient : IKisApiClient
         if (!kisResponse.HasData)
             throw new Exception("매수가능조회 데이터가 없습니다.");
 
-        return ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice);
+        return ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice, request.StockCode);
     }
 
     private void SetStandardHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
@@ -227,7 +226,7 @@ public class KisApiClient : IKisApiClient
     }
 
     private static OrderExecutionInquiryResponse ConvertToOrderExecutionResponse(
-        KisOrderExecutionData kisResponse)
+        KisOrderExecutionInquiryResponse kisResponse)
     {
         var executionItems = kisResponse.ExecutionItems.Select(item => new OrderExecutionItem
         {
@@ -254,19 +253,22 @@ public class KisApiClient : IKisApiClient
     }
 
     private static BuyableInquiryResponse ConvertToBuyableInquiryResponse(KisBuyableInquiryData kisData,
-        decimal orderPrice)
+        decimal orderPrice, string stockCode)
     {
+        var buyableAmount = ParseDecimalSafely(kisData.BuyableAmount);
+        var calculatedQuantity = orderPrice > 0 ? (int)(buyableAmount / orderPrice) : 0;
+
         return new BuyableInquiryResponse
         {
-            StockCode = kisData.StockCode,
-            StockName = kisData.StockName,
-            BuyableAmount = ParseDecimalSafely(kisData.BuyableAmount),
-            BuyableQuantity = ParseIntSafely(kisData.BuyableQuantity),
-            OrderableAmount = ParseDecimalSafely(kisData.OrderableAmount),
-            CashBalance = ParseDecimalSafely(kisData.BuyableAmount),
+            StockCode = stockCode,
+            StockName = $"종목{stockCode}",
+            BuyableAmount = buyableAmount,
+            BuyableQuantity = Math.Max(calculatedQuantity, ParseIntSafely(kisData.BuyableQuantity)),
+            OrderableAmount = buyableAmount,
+            CashBalance = buyableAmount,
             OrderPrice = orderPrice,
-            CurrentPrice = ParseDecimalSafely(kisData.CurrentPrice),
-            UnitQuantity = ParseIntSafely(kisData.UnitQuantity)
+            CurrentPrice = ParseDecimalSafely(kisData.CalculationPrice), 
+            UnitQuantity = 1
         };
     }
 }

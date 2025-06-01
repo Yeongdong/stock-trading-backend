@@ -230,6 +230,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     services.AddScoped<IBalanceService, BalanceService>();
     services.AddScoped<IKisTokenService, KisTokenService>();
     services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
+    services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
 
     // API 계층
     services.AddScoped<IUserContextService, UserContextService>();
