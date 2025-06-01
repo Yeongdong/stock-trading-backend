@@ -14,11 +14,10 @@ public class DefaultValues
     
     /// <summary>
     /// 주문체결조회 관련 기본값들
+    /// 모의투자: VTTC0081R (3개월이내) 또는 VTSC9215R (3개월이전)
+    /// 실전투자: TTTC0081R (3개월이내) 또는 CTSC9215R (3개월이전)
     /// </summary>
-    public string OrderExecutionTransactionId { get; set; } = "TTTC8001R";
-    public string OrderExecutionInquiryDivision { get; set; } = "00";
-    public string OrderExecutionSettlementDivision { get; set; } = "01"; // 01:체결, 02:미체결
-    public string OrderExecutionInquiryDivision3 { get; set; } = "00";
+    public string OrderExecutionTransactionId { get; set; } = "VTTC0081R"; 
     
     /// <summary>
     /// 매매구분 코드들

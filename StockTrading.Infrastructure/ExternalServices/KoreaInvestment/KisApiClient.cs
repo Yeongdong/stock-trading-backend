@@ -44,16 +44,16 @@ public class KisApiClient : IKisApiClient
         };
 
         var content = new StringContent(JsonSerializer.Serialize(kisRequest), Encoding.UTF8, "application/json");
-
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.OrderPath);
-        SetRequiredHeaders(httpRequest, request.tr_id, user);
-        httpRequest.Content = content;
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.OrderPath)
+            { Content = content };
+        SetStandardHeaders(httpRequest, request.tr_id, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         response.EnsureSuccessStatusCode();
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation($"KIS API Response: {responseContent}");
+        _logger.LogInformation("KIS 주문 응답: {Response}", responseContent);
+
         var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
 
         if (orderResponse.ReturnCode != "0")
@@ -78,20 +78,19 @@ public class KisApiClient : IKisApiClient
             ["CTX_AREA_FK100"] = "",
             ["CTX_AREA_NK100"] = ""
         };
-        var queryString = string.Join("&", queryParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
 
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            $"{_settings.Endpoints.BalancePath}?{queryString}");
+        var url = BuildGetUrl(_settings.Endpoints.BalancePath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetRequiredHeaders(request, _settings.Defaults.BalanceTransactionId, user);
+        SetStandardHeaders(httpRequest, _settings.Defaults.BalanceTransactionId, user);
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(httpRequest);
         var apiResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
 
         return new AccountBalance
         {
-            Positions = apiResponse.Positions, Summary = apiResponse.Summary[0]
+            Positions = apiResponse.Positions,
+            Summary = apiResponse.Summary[0]
         };
     }
 
@@ -105,30 +104,31 @@ public class KisApiClient : IKisApiClient
             ["INQR_STRT_DT"] = request.StartDate,
             ["INQR_END_DT"] = request.EndDate,
             ["SLL_BUY_DVSN_CD"] = ConvertOrderTypeToKisCode(request.OrderType),
-            ["INQR_DVSN"] = _settings.Defaults.OrderExecutionInquiryDivision,
-            ["PDNO"] = request.StockCode ?? "",
-            ["CCLD_DVSN"] = _settings.Defaults.OrderExecutionSettlementDivision,
-            ["ORD_GNO_BRNO"] = "",
-            ["ODNO"] = "",
-            ["INQR_DVSN_3"] = _settings.Defaults.OrderExecutionInquiryDivision3,
-            ["INQR_DVSN_1"] = "",
-            ["CTX_AREA_FK100"] = "",
-            ["CTX_AREA_NK100"] = ""
+            ["INQR_DVSN"] = "00", // 조회구분
+            ["PDNO"] = request.StockCode ?? "", // 종목코드
+            ["CCLD_DVSN"] = "01", // 체결구분 (01:체결)
+            ["ORD_GNO_BRNO"] = "", // 주문채번지점번호
+            ["ODNO"] = "", // 주문번호
+            ["INQR_DVSN_3"] = "00", // 조회구분3
+            ["INQR_DVSN_1"] = "", // 조회구분1
+            ["CTX_AREA_FK100"] = "", // 연속조회검색조건100
+            ["CTX_AREA_NK100"] = "" // 연속조회키100
         };
 
-        var queryString = string.Join("&", queryParams
-            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
-
-        var httpRequest = new HttpRequestMessage(HttpMethod.Get,
-            $"{_settings.Endpoints.OrderExecutionPath}?{queryString}");
+        var url = BuildGetUrl(_settings.Endpoints.OrderExecutionPath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
         SetOrderExecutionHeaders(httpRequest, _settings.Defaults.OrderExecutionTransactionId, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
-        response.EnsureSuccessStatusCode();
-
         var responseContent = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation($"KIS 주문체결조회 응답: {responseContent}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("KIS API 호출 실패: StatusCode={StatusCode}, Content={Content}",
+                response.StatusCode, responseContent);
+            throw new Exception($"KIS API 호출 실패 ({response.StatusCode}): {responseContent}");
+        }
 
         var kisResponse = JsonSerializer.Deserialize<KisOrderExecutionInquiryResponse>(responseContent);
 
@@ -138,7 +138,7 @@ public class KisApiClient : IKisApiClient
         return ConvertToOrderExecutionResponse(kisResponse);
     }
 
-    private void SetRequiredHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
+    private void SetStandardHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
     {
         httpRequestMessage.Headers.Add("authorization", $"Bearer {user.KisToken.AccessToken}");
         httpRequestMessage.Headers.Add("appkey", user.KisAppKey);
@@ -162,6 +162,13 @@ public class KisApiClient : IKisApiClient
 
         // Accept 헤더
         httpRequestMessage.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    }
+
+    private static string BuildGetUrl(string basePath, Dictionary<string, string> queryParams)
+    {
+        var queryString = string.Join("&", queryParams
+            .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
+        return $"{basePath}?{queryString}";
     }
 
     private string ConvertOrderTypeToKisCode(string orderType)
