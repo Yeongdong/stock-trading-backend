@@ -7,5 +7,5 @@ public class ApiEndpoints
     public string OrderPath { get; init; } = "/uapi/domestic-stock/v1/trading/order-cash";
     public string BalancePath { get; init; } = "/uapi/domestic-stock/v1/trading/inquire-balance";
     public string OrderExecutionPath { get; set; } = "/uapi/domestic-stock/v1/trading/inquire-daily-ccld";
-
+    public string BuyableInquiryPath { get; set; } = "/uapi/domestic-stock/v1/trading/inquire-psbl-order";
 }

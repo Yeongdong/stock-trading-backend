@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Trading.Inquiry;
 using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.DTOs.Trading.Portfolio;
 using StockTrading.Application.DTOs.Users;
@@ -150,6 +151,38 @@ public class KisApiClient : IKisApiClient
         return ConvertToOrderExecutionResponse(kisResponse.Output);
     }
 
+    public async Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo user)
+    {
+        var queryParams = new Dictionary<string, string>
+        {
+            ["CANO"] = user.AccountNumber,
+            ["ACNT_PRDT_CD"] = _settings.Defaults.AccountProductCode,
+            ["PDNO"] = request.StockCode,
+            ["ORD_UNPR"] = request.OrderPrice.ToString("F0"),
+            ["ORD_DVSN"] = request.OrderType,
+            ["CMA_EVLU_AMT_ICLD_YN"] = "Y",
+            ["OVRS_ICLD_YN"] = "N"
+        };
+
+        var url = BuildGetUrl(_settings.Endpoints.BuyableInquiryPath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+        SetStandardHeaders(httpRequest, _settings.Defaults.BuyableInquiryTransactionId, user);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        response.EnsureSuccessStatusCode();
+
+        var kisResponse = await response.Content.ReadFromJsonAsync<KisBuyableInquiryResponse>();
+
+        if (!kisResponse.IsSuccess)
+            throw new Exception($"매수가능조회 실패: {kisResponse.Message}");
+
+        if (!kisResponse.HasData)
+            throw new Exception("매수가능조회 데이터가 없습니다.");
+
+        return ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice);
+    }
+
     private void SetStandardHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
     {
         httpRequestMessage.Headers.Add("authorization", $"Bearer {user.KisToken.AccessToken}");
@@ -217,6 +250,23 @@ public class KisApiClient : IKisApiClient
             ExecutionItems = executionItems,
             TotalCount = executionItems.Count,
             HasMore = !string.IsNullOrEmpty(kisResponse.CtxAreaNk100)
+        };
+    }
+
+    private static BuyableInquiryResponse ConvertToBuyableInquiryResponse(KisBuyableInquiryData kisData,
+        decimal orderPrice)
+    {
+        return new BuyableInquiryResponse
+        {
+            StockCode = kisData.StockCode,
+            StockName = kisData.StockName,
+            BuyableAmount = ParseDecimalSafely(kisData.BuyableAmount),
+            BuyableQuantity = ParseIntSafely(kisData.BuyableQuantity),
+            OrderableAmount = ParseDecimalSafely(kisData.OrderableAmount),
+            CashBalance = ParseDecimalSafely(kisData.BuyableAmount),
+            OrderPrice = orderPrice,
+            CurrentPrice = ParseDecimalSafely(kisData.CurrentPrice),
+            UnitQuantity = ParseIntSafely(kisData.UnitQuantity)
         };
     }
 }

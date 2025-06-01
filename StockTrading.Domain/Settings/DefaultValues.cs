@@ -25,4 +25,9 @@ public class DefaultValues
     public string SellOrderCode { get; set; } = "01";  // 매도
     public string BuyOrderCode { get; set; } = "02";   // 매수
     public string AllOrderCode { get; set; } = "00";   // 전체
+    
+    /// <summary>
+    /// 매수가능 조회 코드
+    /// </summary>
+    public string BuyableInquiryTransactionId { get; set; } = "VTTC8908R";
 }
