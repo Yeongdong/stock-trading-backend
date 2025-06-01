@@ -88,7 +88,7 @@ public class StockControllerTest
             ReturnCode = "0",
             Message = "정상처리 되었습니다.",
             Output =
-                new OrderResponseOutput
+                new KisOrderData
                 {
                     KrxForwardOrderOrgNo = "91252", // 예시 거래소코드
                     OrderNumber = "0000117057", // 예시 주문번호  

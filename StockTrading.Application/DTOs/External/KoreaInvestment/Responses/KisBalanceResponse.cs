@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
-public class KisBalanceResponse
+public class KisBalanceResponse : KisBaseResponse<KisBalanceData>
 {
     [JsonPropertyName("rt_cd")]
     public string ReturnCode { get; set; }
@@ -14,8 +14,8 @@ public class KisBalanceResponse
     public string Message { get; set; }
     
     [JsonPropertyName("output1")]
-    public List<KisPositionResponse> Positions { get; set; }
+    public List<KisPositionResponse> Positions { get; init; }
     
     [JsonPropertyName("output2")]
-    public List<KisAccountSummaryResponse> Summary { get; set; }
+    public List<KisAccountSummaryResponse> Summary { get; init; }
 }

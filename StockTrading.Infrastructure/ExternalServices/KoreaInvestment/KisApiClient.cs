@@ -56,8 +56,11 @@ public class KisApiClient : IKisApiClient
 
         var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
 
-        if (orderResponse.ReturnCode != "0")
+        if (!orderResponse.IsSuccess)
             throw new Exception($"주문 실패: {orderResponse.Message}");
+
+        if (!orderResponse.HasData)
+            throw new Exception("주문 응답 데이터가 없습니다.");
 
         return orderResponse;
     }
@@ -85,12 +88,18 @@ public class KisApiClient : IKisApiClient
         SetStandardHeaders(httpRequest, _settings.Defaults.BalanceTransactionId, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
-        var apiResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
+        var kisResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
+
+        if (!kisResponse.IsSuccess)
+            throw new Exception($"잔고조회 실패: {kisResponse.Message}");
+
+        if (!kisResponse.HasData)
+            throw new Exception("잔고조회 데이터가 없습니다.");
 
         return new AccountBalance
         {
-            Positions = apiResponse.Positions,
-            Summary = apiResponse.Summary[0]
+            Positions = kisResponse.Positions,
+            Summary = kisResponse.Summary[0]
         };
     }
 
@@ -132,10 +141,13 @@ public class KisApiClient : IKisApiClient
 
         var kisResponse = JsonSerializer.Deserialize<KisOrderExecutionInquiryResponse>(responseContent);
 
-        if (kisResponse.ReturnCode != "0")
+        if (!kisResponse.IsSuccess)
             throw new Exception($"주문체결조회 실패: {kisResponse.Message}");
 
-        return ConvertToOrderExecutionResponse(kisResponse);
+        if (!kisResponse.HasData)
+            throw new Exception("주문체결조회 데이터가 없습니다.");
+
+        return ConvertToOrderExecutionResponse(kisResponse.Output);
     }
 
     private void SetStandardHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
@@ -182,7 +194,7 @@ public class KisApiClient : IKisApiClient
     }
 
     private static OrderExecutionInquiryResponse ConvertToOrderExecutionResponse(
-        KisOrderExecutionInquiryResponse kisResponse)
+        KisOrderExecutionData kisResponse)
     {
         var executionItems = kisResponse.ExecutionItems.Select(item => new OrderExecutionItem
         {

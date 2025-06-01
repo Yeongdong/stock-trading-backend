@@ -1,6 +1,7 @@
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Repositories;
@@ -167,7 +168,7 @@ public class OrderServiceTest
             MessageCode = "MSG_0001",
             Message = "정상처리 되었습니다.",
             Output =
-                new OrderResponseOutput
+                new KisOrderData
                 {
                     OrderNumber = "123456789",
                     KrxForwardOrderOrgNo = "12345",

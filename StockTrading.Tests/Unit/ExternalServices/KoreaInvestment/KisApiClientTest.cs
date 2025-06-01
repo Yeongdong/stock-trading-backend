@@ -50,7 +50,7 @@ public class KisApiClientTest
             MessageCode = "MCA0000",
             Message = "정상처리 되었습니다.",
             Output =
-                new OrderResponseOutput()
+                new KisOrderData
                 {
                     KrxForwardOrderOrgNo = "12345",
                     OrderNumber = "123456789",
@@ -99,7 +99,7 @@ public class KisApiClientTest
     {
         SetupTest();
 
-        var errorResponse = new OrderResponse
+        var errorResponse = new KisOrderResponse
         {
             ReturnCode = "1",
             MessageCode = "ERC00001",

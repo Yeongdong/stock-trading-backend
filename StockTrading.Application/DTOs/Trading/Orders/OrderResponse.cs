@@ -1,18 +1,19 @@
-using System.Text.Json.Serialization;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
 namespace StockTrading.Application.DTOs.Trading.Orders;
 
-public class OrderResponse
+/// <summary>
+/// 주문 응답 DTO (Application 레이어용)
+/// </summary>
+public class OrderResponse : KisBaseResponse<KisOrderData>
 {
-    [JsonPropertyName("rt_cd")]
-    public string ReturnCode { get; set; } // 성공 실패 여부
-    
-    [JsonPropertyName("msg_cd")]
-    public string MessageCode { get; set; } // 응답코드
-    
-    [JsonPropertyName("msg1")]
-    public string Message { get; set; } // 응답메시지
-    
-    [JsonPropertyName("output")]
-    public OrderResponseOutput? Output { get; set; } // 응답상세
+    /// <summary>
+    /// 주문번호 (편의 속성)
+    /// </summary>
+    public string? OrderNumber => Output?.OrderNumber;
+
+    /// <summary>
+    /// 주문시간 (편의 속성)  
+    /// </summary>
+    public string? OrderTime => Output?.OrderTime;
 }

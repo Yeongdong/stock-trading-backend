@@ -5,7 +5,7 @@ namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 /// <summary>
 /// KIS API 원본 응답용 DTO
 /// </summary>
-public class KisOrderExecutionInquiryResponse
+public class KisOrderExecutionInquiryResponse : KisBaseResponse<KisOrderExecutionData>
 {
     [JsonPropertyName("rt_cd")] public string ReturnCode { get; init; } = string.Empty;
 
