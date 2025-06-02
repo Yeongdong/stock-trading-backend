@@ -304,7 +304,41 @@ static void ConfigureRealTimeServices(IServiceCollection services)
     {
         var logger = provider.GetRequiredService<ILogger<RealTimeDataProcessor>>();
         var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-        return new RealTimeDataProcessor(logger, loggerFactory);
+        var broadcaster = provider.GetRequiredService<IRealTimeDataBroadcaster>();
+        
+        var processor = new RealTimeDataProcessor(logger, loggerFactory);
+        
+        // 🔥 핵심: 이벤트 핸들러 연결
+        processor.StockPriceReceived += async (sender, data) =>
+        {
+            logger.LogInformation("📡 [Program] StockPriceReceived 이벤트 - 브로드캐스터로 전달: {Symbol} - {Price}원", 
+                data.Symbol, data.Price);
+            
+            try
+            {
+                await broadcaster.BroadcastStockPriceAsync(data);
+                logger.LogInformation("✅ [Program] 브로드캐스트 완료: {Symbol}", data.Symbol);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "❌ [Program] 브로드캐스트 실패: {Symbol} - {Error}", data.Symbol, ex.Message);
+            }
+        };
+        
+        processor.TradeExecutionReceived += async (sender, data) =>
+        {
+            logger.LogInformation("📡 [Program] TradeExecutionReceived 이벤트");
+            try
+            {
+                await broadcaster.BroadcastTradeExecutionAsync(data);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "❌ [Program] 거래체결 브로드캐스트 실패: {Error}", ex.Message);
+            }
+        };
+        
+        return processor;
     });
     services.AddSingleton<IRealTimeDataProcessor>(provider => provider.GetRequiredService<RealTimeDataProcessor>());
     services.AddSingleton<RealTimeDataBroadcaster>();
