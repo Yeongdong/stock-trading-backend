@@ -12,6 +12,7 @@ using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment;
 
@@ -22,6 +23,7 @@ public class KisApiClientTest
     private HttpClient _httpClient;
     private Mock<IOptions<KisApiSettings>> _mockSettings;
     private Mock<ILogger<KisApiClient>> _mockLogger;
+    private Mock<StockDataConverter> _mockConverter;
     private KisApiClient _kisApiClient;
     private UserInfo _testUser;
 
@@ -34,8 +36,9 @@ public class KisApiClientTest
         };
         _mockSettings = new Mock<IOptions<KisApiSettings>>();
         _mockLogger = new Mock<ILogger<KisApiClient>>();
+        _mockConverter = new Mock<StockDataConverter>(Mock.Of<ILogger<StockDataConverter>>());
         _mockSettings.Setup(x => x.Value).Returns(CreateTestSettings());
-        _kisApiClient = new KisApiClient(_httpClient, _mockSettings.Object, _mockLogger.Object);
+        _kisApiClient = new KisApiClient(_httpClient, _mockSettings.Object, _mockLogger.Object, _mockConverter.Object);
         _testUser = CreateTestUser();
     }
 

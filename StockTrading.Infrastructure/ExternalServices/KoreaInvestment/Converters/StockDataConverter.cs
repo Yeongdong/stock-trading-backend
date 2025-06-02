@@ -1,5 +1,8 @@
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Application.DTOs.Trading.Inquiry;
+using StockTrading.Application.DTOs.Trading.Orders;
+using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
@@ -37,6 +40,84 @@ public class StockDataConverter
         return priceData;
     }
 
+    /// <summary>
+    /// KIS 현재가 조회 응답을 Application DTO로 변환
+    /// </summary>
+    public CurrentPriceResponse ConvertToStockPriceResponse(KisCurrentPriceData kisData, string stockCode)
+    {
+        return new CurrentPriceResponse
+        {
+            StockCode = stockCode,
+            StockName = kisData.StockName,
+            CurrentPrice = ParseDecimalSafely(kisData.CurrentPrice),
+            PriceChange = ParseDecimalSafely(kisData.PriceChange),
+            ChangeRate = ParseDecimalSafely(kisData.ChangeRate),
+            ChangeType = ConvertChangeType(kisData.ChangeSign),
+            OpenPrice = ParseDecimalSafely(kisData.OpenPrice),
+            HighPrice = ParseDecimalSafely(kisData.HighPrice),
+            LowPrice = ParseDecimalSafely(kisData.LowPrice),
+            Volume = ParseLongSafely(kisData.Volume),
+            InquiryTime = DateTime.Now
+        };
+    }
+
+    public string ConvertOrderTypeToKisCode(string orderType, KisApiSettings settings)
+    {
+        return orderType switch
+        {
+            "01" => settings.Defaults.SellOrderCode, // 매도
+            "02" => settings.Defaults.BuyOrderCode, // 매수  
+            _ => settings.Defaults.AllOrderCode // 전체
+        };
+    }
+
+    public OrderExecutionInquiryResponse ConvertToOrderExecutionResponse(
+        KisOrderExecutionInquiryResponse kisResponse)
+    {
+        var executionItems = kisResponse.ExecutionItems.Select(item => new OrderExecutionItem
+        {
+            OrderDate = item.OrderDate,
+            OrderNumber = item.OrderNumber,
+            StockCode = item.StockCode,
+            StockName = item.StockName,
+            OrderSide = item.SellBuyDivisionName,
+            OrderQuantity = ParseIntSafely(item.OrderQuantity),
+            OrderPrice = ParseDecimalSafely(item.OrderPrice),
+            ExecutedQuantity = ParseIntSafely(item.TotalExecutedQuantity),
+            ExecutedPrice = ParseDecimalSafely(item.AveragePrice),
+            ExecutedAmount = ParseDecimalSafely(item.TotalExecutedAmount),
+            OrderStatus = item.OrderStatusName,
+            ExecutionTime = item.OrderTime
+        }).ToList();
+
+        return new OrderExecutionInquiryResponse
+        {
+            ExecutionItems = executionItems,
+            TotalCount = executionItems.Count,
+            HasMore = !string.IsNullOrEmpty(kisResponse.CtxAreaNk100)
+        };
+    }
+
+    public BuyableInquiryResponse ConvertToBuyableInquiryResponse(KisBuyableInquiryData kisData,
+        decimal orderPrice, string stockCode)
+    {
+        var buyableAmount = ParseDecimalSafely(kisData.BuyableAmount);
+        var calculatedQuantity = orderPrice > 0 ? (int)(buyableAmount / orderPrice) : 0;
+
+        return new BuyableInquiryResponse
+        {
+            StockCode = stockCode,
+            StockName = $"종목{stockCode}",
+            BuyableAmount = buyableAmount,
+            BuyableQuantity = Math.Max(calculatedQuantity, ParseIntSafely(kisData.BuyableQuantity)),
+            OrderableAmount = buyableAmount,
+            CashBalance = buyableAmount,
+            OrderPrice = orderPrice,
+            CurrentPrice = ParseDecimalSafely(kisData.CalculationPrice),
+            UnitQuantity = 1
+        };
+    }
+
     private KisTransactionInfo CreateTransactionInfo(string[] fields, string stockCode)
     {
         var tradeTime = fields[KisRealTimeConstants.FieldIndices.TradeTime];
@@ -66,7 +147,7 @@ public class StockDataConverter
         };
     }
 
-    private static string ConvertChangeType(string changeSign)
+    private string ConvertChangeType(string changeSign)
     {
         if (KisRealTimeConstants.ChangeTypes.RiseCodes.Contains(changeSign))
             return KisRealTimeConstants.ChangeTypes.Rise;
@@ -76,7 +157,7 @@ public class StockDataConverter
             : KisRealTimeConstants.ChangeTypes.Unchanged;
     }
 
-    private static DateTime ParseTradeTime(string tradeTime)
+    private DateTime ParseTradeTime(string tradeTime)
     {
         if (tradeTime.Length != KisRealTimeConstants.Parsing.TradeTimeLength) return DateTime.Now;
 
@@ -90,7 +171,7 @@ public class StockDataConverter
             .AddSeconds(second);
     }
 
-    private static long ParseLongSafely(string value)
+    private long ParseLongSafely(string value)
     {
         if (decimal.TryParse(value, out var decimalResult))
             return (long)decimalResult;
@@ -98,17 +179,17 @@ public class StockDataConverter
         return 0L;
     }
 
-    public static int ParseIntSafely(string value)
+    private int ParseIntSafely(string value)
     {
         return int.TryParse(value, out var result) ? result : 0;
     }
 
-    public static decimal ParseDecimalSafely(string value)
+    private decimal ParseDecimalSafely(string value)
     {
         return decimal.TryParse(value, out var result) ? result : 0m;
     }
 
-    private static bool IsValidStockCode(string stockCode)
+    private bool IsValidStockCode(string stockCode)
     {
         return !string.IsNullOrWhiteSpace(stockCode) &&
                stockCode.Length == KisRealTimeConstants.Parsing.StockCodeLength &&

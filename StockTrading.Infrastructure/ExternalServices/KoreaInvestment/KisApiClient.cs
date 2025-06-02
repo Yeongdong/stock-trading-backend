@@ -12,7 +12,8 @@ using StockTrading.Application.DTOs.Trading.Portfolio;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
-using static StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters.StockDataConverter;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
+using static StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants.KisMarketConstants;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -24,12 +25,14 @@ public class KisApiClient : IKisApiClient
     private readonly HttpClient _httpClient;
     private readonly KisApiSettings _settings;
     private readonly ILogger<KisApiClient> _logger;
+    private readonly StockDataConverter _converter;
 
-    public KisApiClient(HttpClient httpClient, IOptions<KisApiSettings> settings, ILogger<KisApiClient> logger)
+    public KisApiClient(HttpClient httpClient, IOptions<KisApiSettings> settings, ILogger<KisApiClient> logger, StockDataConverter converter)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
         _logger = logger;
+        _converter = converter;
     }
 
     public async Task<OrderResponse> PlaceOrderAsync(OrderRequest request, UserInfo user)
@@ -113,7 +116,7 @@ public class KisApiClient : IKisApiClient
             ["ACNT_PRDT_CD"] = _settings.Defaults.AccountProductCode,
             ["INQR_STRT_DT"] = request.StartDate,
             ["INQR_END_DT"] = request.EndDate,
-            ["SLL_BUY_DVSN_CD"] = ConvertOrderTypeToKisCode(request.OrderType),
+            ["SLL_BUY_DVSN_CD"] = _converter.ConvertOrderTypeToKisCode(request.OrderType, _settings),
             ["INQR_DVSN"] = "00", // 조회구분
             ["PDNO"] = request.StockCode ?? "", // 종목코드
             ["CCLD_DVSN"] = "01", // 체결구분 (01:체결)
@@ -148,7 +151,7 @@ public class KisApiClient : IKisApiClient
         if (!kisResponse.HasData)
             throw new Exception("주문체결조회 데이터가 없습니다.");
 
-        return ConvertToOrderExecutionResponse(kisResponse);
+        return _converter.ConvertToOrderExecutionResponse(kisResponse);
     }
 
     public async Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo user)
@@ -179,7 +182,41 @@ public class KisApiClient : IKisApiClient
         if (!kisResponse.HasData)
             throw new Exception("매수가능조회 데이터가 없습니다.");
 
-        return ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice, request.StockCode);
+        return _converter.ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice, request.StockCode);
+    }
+
+    public async Task<CurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo user)
+    {
+        var queryParams = new Dictionary<string, string>
+        {
+            ["FID_COND_MRKT_DIV_CODE"] = DOMESTIC_STOCK,
+            ["FID_INPUT_ISCD"] = request.StockCode
+        };
+
+        var url = BuildGetUrl(_settings.Endpoints.CurrentPricePath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+        SetStandardHeaders(httpRequest, _settings.Defaults.CurrentPriceTransactionId, user);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("KIS 현재가 조회 실패: StatusCode={StatusCode}, Content={Content}",
+                response.StatusCode, responseContent);
+            throw new Exception($"KIS 현재가 조회 실패 ({response.StatusCode}): {responseContent}");
+        }
+
+        var kisResponse = JsonSerializer.Deserialize<KisStockPriceResponse>(responseContent);
+
+        if (!kisResponse.IsSuccess)
+            throw new Exception($"현재가 조회 실패: {kisResponse.Message}");
+
+        if (!kisResponse.HasData)
+            throw new Exception("현재가 조회 데이터가 없습니다.");
+
+        return _converter.ConvertToStockPriceResponse(kisResponse.Output, request.StockCode);
     }
 
     private void SetStandardHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)
@@ -213,62 +250,5 @@ public class KisApiClient : IKisApiClient
         var queryString = string.Join("&", queryParams
             .Select(x => $"{x.Key}={Uri.EscapeDataString(x.Value)}"));
         return $"{basePath}?{queryString}";
-    }
-
-    private string ConvertOrderTypeToKisCode(string orderType)
-    {
-        return orderType switch
-        {
-            "01" => _settings.Defaults.SellOrderCode, // 매도
-            "02" => _settings.Defaults.BuyOrderCode, // 매수  
-            _ => _settings.Defaults.AllOrderCode // 전체
-        };
-    }
-
-    private static OrderExecutionInquiryResponse ConvertToOrderExecutionResponse(
-        KisOrderExecutionInquiryResponse kisResponse)
-    {
-        var executionItems = kisResponse.ExecutionItems.Select(item => new OrderExecutionItem
-        {
-            OrderDate = item.OrderDate,
-            OrderNumber = item.OrderNumber,
-            StockCode = item.StockCode,
-            StockName = item.StockName,
-            OrderSide = item.SellBuyDivisionName,
-            OrderQuantity = ParseIntSafely(item.OrderQuantity),
-            OrderPrice = ParseDecimalSafely(item.OrderPrice),
-            ExecutedQuantity = ParseIntSafely(item.TotalExecutedQuantity),
-            ExecutedPrice = ParseDecimalSafely(item.AveragePrice),
-            ExecutedAmount = ParseDecimalSafely(item.TotalExecutedAmount),
-            OrderStatus = item.OrderStatusName,
-            ExecutionTime = item.OrderTime
-        }).ToList();
-
-        return new OrderExecutionInquiryResponse
-        {
-            ExecutionItems = executionItems,
-            TotalCount = executionItems.Count,
-            HasMore = !string.IsNullOrEmpty(kisResponse.CtxAreaNk100)
-        };
-    }
-
-    private static BuyableInquiryResponse ConvertToBuyableInquiryResponse(KisBuyableInquiryData kisData,
-        decimal orderPrice, string stockCode)
-    {
-        var buyableAmount = ParseDecimalSafely(kisData.BuyableAmount);
-        var calculatedQuantity = orderPrice > 0 ? (int)(buyableAmount / orderPrice) : 0;
-
-        return new BuyableInquiryResponse
-        {
-            StockCode = stockCode,
-            StockName = $"종목{stockCode}",
-            BuyableAmount = buyableAmount,
-            BuyableQuantity = Math.Max(calculatedQuantity, ParseIntSafely(kisData.BuyableQuantity)),
-            OrderableAmount = buyableAmount,
-            CashBalance = buyableAmount,
-            OrderPrice = orderPrice,
-            CurrentPrice = ParseDecimalSafely(kisData.CalculationPrice), 
-            UnitQuantity = 1
-        };
     }
 }

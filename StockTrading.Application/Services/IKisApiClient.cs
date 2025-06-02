@@ -11,4 +11,5 @@ public interface IKisApiClient
     Task<AccountBalance> GetStockBalanceAsync(UserInfo user);
     Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request, UserInfo user);
     Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo userInfo);
+    Task<CurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo userInfo);
 }

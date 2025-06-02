@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -13,6 +14,7 @@ using StockTrading.API.Validator.Interfaces;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Services;
@@ -231,6 +233,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     services.AddScoped<IKisTokenService, KisTokenService>();
     services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
     services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
+    services.AddScoped<ICurrentPriceService, CurrentPriceService>(); 
 
     // API 계층
     services.AddScoped<IUserContextService, UserContextService>();
@@ -240,6 +243,9 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
 
     // 설정 등록
     services.Configure<KisApiSettings>(configuration.GetSection(KisApiSettings.SectionName));
+    
+    // Converter 등록
+    services.AddScoped<StockDataConverter>();
 }
 
 static void ConfigureRealTimeServices(IServiceCollection services)

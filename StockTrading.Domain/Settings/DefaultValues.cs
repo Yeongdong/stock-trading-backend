@@ -20,6 +20,13 @@ public class DefaultValues
     public string OrderExecutionTransactionId { get; set; } = "VTTC0081R"; 
     
     /// <summary>
+    /// 주식 현재가 조회 TR ID
+    /// 모의투자: FHKST01010100
+    /// 실전투자: FHKST01010100
+    /// </summary>
+    public string CurrentPriceTransactionId { get; set; } = "FHKST01010100";
+    
+    /// <summary>
     /// 매매구분 코드들
     /// </summary>
     public string SellOrderCode { get; set; } = "01";  // 매도
