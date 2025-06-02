@@ -152,27 +152,75 @@ static void ConfigureAuthentication(IServiceCollection services, IConfiguration 
             {
                 OnMessageReceived = context =>
                 {
-                    context.Token = context.Request.Cookies["auth_token"];
-                    return Task.CompletedTask;
+                    // 쿠키에서 토큰 읽기
+                    if (context.Request.Cookies.TryGetValue("auth_token", out var token))
+                    {
+                        context.Token = token;
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                        logger.LogDebug("🍪 [JWT] 쿠키에서 토큰 추출: {HasToken}", !string.IsNullOrEmpty(token));
+                    }
+                    
+                    // SignalR 연결을 위한 쿼리 스트링에서 토큰 읽기
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/stockhub"))
+                    {
+                        context.Token = accessToken;
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                        logger.LogDebug("🔗 [JWT] SignalR 쿼리에서 토큰 추출: {HasToken}", !string.IsNullOrEmpty(accessToken));
+                    }
+                    
+                    return Task.CompletedTask;;
                 },
                 OnAuthenticationFailed = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                    logger.LogWarning("JWT 인증 실패: {Error}", context.Exception.Message);
+                    var path = context.Request.Path;
+                    
+                    if (path.StartsWithSegments("/stockhub"))
+                    {
+                        logger.LogWarning("🚫 [JWT] SignalR 인증 실패: {Error} | Path: {Path}", 
+                            context.Exception.Message, path);
+                    }
+                    else
+                    {
+                        logger.LogWarning("🚫 [JWT] 인증 실패: {Error} | Path: {Path}", 
+                            context.Exception.Message, path);
+                    }
                     return Task.CompletedTask;
                 },
                 OnTokenValidated = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                     var email = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-                    logger.LogDebug("JWT 토큰 검증 성공: {Email}", email);
+                    var path = context.Request.Path;
+                    
+                    if (path.StartsWithSegments("/stockhub"))
+                    {
+                        logger.LogDebug("✅ [JWT] SignalR 토큰 검증 성공: {Email}", email);
+                    }
+                    else
+                    {
+                        logger.LogDebug("✅ [JWT] 토큰 검증 성공: {Email}", email);
+                    }
                     return Task.CompletedTask;
                 },
                 OnChallenge = context =>
                 {
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                    logger.LogWarning("JWT 인증 요구됨: {Path}", context.Request.Path);
+                    var path = context.Request.Path;
+                    
+                    if (path.StartsWithSegments("/stockhub"))
+                    {
+                        logger.LogWarning("🔐 [JWT] SignalR 인증 요구됨: {Path}", path);
+                    }
+                    else
+                    {
+                        logger.LogWarning("🔐 [JWT] 인증 요구됨: {Path}", path);
+                    }
                     return Task.CompletedTask;
+
                 }
             };
         })
@@ -285,11 +333,13 @@ static void ConfigureCors(IServiceCollection services, IConfiguration configurat
         // 개발 환경용 정책
         options.AddPolicy("Development", builder =>
         {
-            builder.WithOrigins(frontendUrl)
+            builder.WithOrigins(frontendUrl, "http://localhost:3000", "https://localhost:3000")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()
-                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400))
+                .WithExposedHeaders("Connection", "Upgrade")
+                .SetIsOriginAllowed(_ => true);
         });
     });
 }
@@ -316,14 +366,22 @@ static void ConfigureMiddleware(WebApplication app)
         app.Use(async (context, next) =>
         {
             var startTime = DateTime.UtcNow;
-            await next();
-            var duration = DateTime.UtcNow - startTime;
+            // SignalR 연결은 로깅에서 제외 (너무 많은 로그 방지)
+            if (!context.Request.Path.StartsWithSegments("/stockhub"))
+            {
+                await next();
+                var duration = DateTime.UtcNow - startTime;
 
-            logger.LogDebug("HTTP {Method} {Path} - {StatusCode} ({Duration}ms)",
-                context.Request.Method,
-                context.Request.Path,
-                context.Response.StatusCode,
-                duration.TotalMilliseconds);
+                logger.LogDebug("HTTP {Method} {Path} - {StatusCode} ({Duration}ms)",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.Response.StatusCode,
+                    duration.TotalMilliseconds);
+            }
+            else
+            {
+                await next();
+            }
         });
 
         logger.LogInformation("개발 환경: Swagger UI 및 상세 로깅 활성화됨");
@@ -335,26 +393,55 @@ static void ConfigureMiddleware(WebApplication app)
         app.Use(async (context, next) =>
         {
             // 보안 헤더 추가
-            context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-            context.Response.Headers.Add("X-Frame-Options", "DENY");
-            context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-            context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
-            context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'");
+            if (!context.Request.Path.StartsWithSegments("/stockhub"))
+            {
+                context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+                context.Response.Headers.Add("X-Frame-Options", "DENY");
+                context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+                context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+                context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'");
+            }
 
             await next();
         });
         logger.LogInformation("운영 환경: 보안 헤더 적용됨");
     }
 
-
+    // SignalR 연결 로깅 (일반 HTTP 요청과 분리)
     app.Use(async (context, next) =>
     {
-        logger.LogInformation("Request: {Method} {Path}",
-            context.Request.Method,
-            context.Request.Path);
+        if (context.Request.Path.StartsWithSegments("/stockhub"))
+        {
+            logger.LogInformation("🔗 [SignalR] 연결 요청: {Method} {Path} | User-Agent: {UserAgent} | Origin: {Origin}",
+                context.Request.Method,
+                context.Request.Path,
+                context.Request.Headers.UserAgent.ToString(),
+                context.Request.Headers.Origin.ToString());
+        }
+        else
+        {
+            logger.LogInformation("Request: {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path);
+        }
+        
         await next();
-        logger.LogInformation("Response: {StatusCode}", context.Response.StatusCode);
+
+        logger.LogInformation(
+            context.Request.Path.StartsWithSegments("/stockhub")
+                ? "📡 [SignalR] 응답: {StatusCode}"
+                : "Response: {StatusCode}", context.Response.StatusCode);
     });
+
+    
+    // app.Use(async (context, next) =>
+    // {
+    //     logger.LogInformation("Request: {Method} {Path}",
+    //         context.Request.Method,
+    //         context.Request.Path);
+    //     await next();
+    //     logger.LogInformation("Response: {StatusCode}", context.Response.StatusCode);
+    // });
 
 
     // 3. CORS (인증 전에 위치해야 함)
@@ -381,10 +468,39 @@ static void ConfigureMiddleware(WebApplication app)
 
     // 8. 엔드포인트 매핑
     app.MapControllers();
-    app.MapHub<StockHub>("/stockhub");
-
+    // app.MapHub<StockHub>("/stockhub");
+    app.MapHub<StockHub>("/stockhub", options =>
+    {
+        logger.LogInformation("📡 [SignalR] Hub 매핑 완료: /stockhub");
+        
+        // SignalR 전송 옵션 설정
+        options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets | 
+                             Microsoft.AspNetCore.Http.Connections.HttpTransportType.ServerSentEvents;
+        
+        // 타임아웃 설정
+        options.CloseOnAuthenticationExpiration = false;
+        
+        // 개발 환경에서 더 관대한 설정
+        if (app.Environment.IsDevelopment())
+        {
+            options.ApplicationMaxBufferSize = 64 * 1024; // 64KB
+            options.TransportMaxBufferSize = 64 * 1024;   // 64KB
+        }
+    });
+    
     // 9. 헬스체크 엔드포인트
     app.MapHealthChecks("/health");
+    
+    // 10. SignalR 테스트 엔드포인트 (개발 환경에서만)
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapGet("/signalr-test", () => Results.Ok(new
+        {
+            message = "SignalR Hub is available at /stockhub",
+            hubUrl = "/stockhub",
+            timestamp = DateTime.UtcNow
+        }));
+    }
 
     // 10. 기본 상태 확인 엔드포인트
     app.MapGet("/", () => Results.Ok(new

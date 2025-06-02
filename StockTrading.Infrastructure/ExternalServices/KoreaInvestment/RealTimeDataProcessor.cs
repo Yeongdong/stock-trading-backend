@@ -74,9 +74,35 @@ public class RealTimeDataProcessor : IRealTimeDataProcessor
         }
     }
 
+    // private void ProcessStockExecutionData(string bodyData, int dataCount)
+    // {
+    //     var processedCount = 0;
+    //
+    //     foreach (var recordFields in _stockDataParser.ParseRecords(bodyData, dataCount))
+    //     {
+    //         var transactionInfo = _stockDataConverter.ConvertToTransactionInfo(recordFields, processedCount + 1);
+    //
+    //         if (transactionInfo != null)
+    //         {
+    //             _logger.LogInformation("주가 데이터 발생: {Symbol} - {Price}원 ({ChangeType})",
+    //                 transactionInfo.Symbol, transactionInfo.Price, transactionInfo.ChangeType);
+    //
+    //             StockPriceReceived?.Invoke(this, transactionInfo);
+    //         }
+    //
+    //         processedCount++;
+    //     }
+    //
+    //     _logger.LogDebug("주식 체결 데이터 처리 완료: {ProcessedCount}/{TotalCount}", processedCount, dataCount);
+    // }
+
+    // RealTimeDataProcessor.cs의 ProcessStockExecutionData 메서드 수정
+
     private void ProcessStockExecutionData(string bodyData, int dataCount)
     {
         var processedCount = 0;
+
+        _logger.LogInformation("📊 [DataProcessor] 주식 체결 데이터 처리 시작: 총 {DataCount}건", dataCount);
 
         foreach (var recordFields in _stockDataParser.ParseRecords(bodyData, dataCount))
         {
@@ -84,16 +110,33 @@ public class RealTimeDataProcessor : IRealTimeDataProcessor
 
             if (transactionInfo != null)
             {
-                _logger.LogInformation("주가 데이터 발생: {Symbol} - {Price}원 ({ChangeType})",
+                _logger.LogInformation("💹 [DataProcessor] 주가 데이터 변환 완료: {Symbol} - {Price}원 ({ChangeType})",
                     transactionInfo.Symbol, transactionInfo.Price, transactionInfo.ChangeType);
 
-                StockPriceReceived?.Invoke(this, transactionInfo);
+                try
+                {
+                    // 이벤트 발생 - 여기서 브로드캐스터가 호출됨
+                    StockPriceReceived?.Invoke(this, transactionInfo);
+
+                    _logger.LogInformation("✅ [DataProcessor] StockPriceReceived 이벤트 발생: {Symbol}",
+                        transactionInfo.Symbol);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "❌ [DataProcessor] StockPriceReceived 이벤트 처리 중 오류: {Symbol} - {Error}",
+                        transactionInfo.Symbol, ex.Message);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("⚠️ [DataProcessor] 레코드 {Index} 변환 실패", processedCount + 1);
             }
 
             processedCount++;
         }
 
-        _logger.LogDebug("주식 체결 데이터 처리 완료: {ProcessedCount}/{TotalCount}", processedCount, dataCount);
+        _logger.LogInformation("🏁 [DataProcessor] 주식 체결 데이터 처리 완료: {ProcessedCount}/{TotalCount}",
+            processedCount, dataCount);
     }
 
     private void ProcessTradeExecutionData(string bodyData)
