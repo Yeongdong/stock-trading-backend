@@ -12,7 +12,7 @@ public class KisApiSettings
     /// <summary>
     /// API 엔드포인트들
     /// </summary>
-    public ApiEndpoints Endpoints { get; init; } = new();
+    public KisApiEndpoints Endpoints { get; init; } = new();
 
     /// <summary>
     /// 기본 설정값들

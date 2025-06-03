@@ -24,6 +24,7 @@
 
     <ItemGroup>
       <Folder Include="DTOs\Common\" />
+      <Folder Include="DTOs\External\KRX\Requests\" />
     </ItemGroup>
 
 </Project>

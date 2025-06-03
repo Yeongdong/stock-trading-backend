@@ -1,6 +1,6 @@
 namespace StockTrading.Domain.Settings;
 
-public class ApiEndpoints
+public class KisApiEndpoints
 {
     public string TokenPath { get; set; } = "/oauth2/tokenP";
     public string WebSocketApprovalPath { get; set; } = "/oauth2/Approval";

@@ -11,15 +11,17 @@ public class StockController : BaseController
 {
     private readonly IOrderService _orderService;
     private readonly IBalanceService _balanceService;
+    private readonly IStockService _stockService;
     private readonly ICurrentPriceService _currentPriceService;
     private readonly ILogger<StockController> _logger;
 
-    public StockController(IOrderService orderService, IBalanceService balanceService,
+    public StockController(IOrderService orderService, IBalanceService balanceService, IStockService stockService,
         ICurrentPriceService currentPriceService,
         IUserContextService userContextService, ILogger<StockController> logger) : base(userContextService)
     {
         _orderService = orderService;
         _balanceService = balanceService;
+        _stockService = stockService;
         _currentPriceService = currentPriceService;
         _logger = logger;
     }
@@ -60,5 +62,58 @@ public class StockController : BaseController
         var response = await _currentPriceService.GetCurrentPriceAsync(request, user);
 
         return Ok(response);
+    }
+    
+    /// <summary>
+    /// 주식 검색
+    /// </summary>
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchStocks([FromQuery] string searchTerm, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+            return BadRequest("검색어를 입력해주세요.");
+
+        if (page < 1) page = 1;
+        if (pageSize is < 1 or > 100) pageSize = 20;
+
+        var results = await _stockService.SearchStocksAsync(searchTerm, page, pageSize);
+        return Ok(results);
+    }
+
+    /// <summary>
+    /// 종목 코드로 주식 정보 조회
+    /// </summary>
+    [HttpGet("{code}")]
+    public async Task<IActionResult> GetStockByCode(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
+            return BadRequest("유효한 6자리 종목코드를 입력해주세요.");
+
+        var stock = await _stockService.GetStockByCodeAsync(code);
+    
+        if (stock == null)
+            return NotFound($"종목코드 {code}를 찾을 수 없습니다.");
+
+        return Ok(stock);
+    }
+
+    /// <summary>
+    /// 주식 검색 요약 정보
+    /// </summary>
+    [HttpGet("search/summary")]
+    public async Task<IActionResult> GetSearchSummary()
+    {
+        var summary = await _stockService.GetSearchSummaryAsync();
+        return Ok(summary);
+    }
+
+    /// <summary>
+    /// KRX 데이터 업데이트 (관리자용)
+    /// </summary>
+    [HttpPost("update-from-krx")]
+    public async Task<IActionResult> UpdateStockDataFromKrx()
+    {
+        await _stockService.UpdateStockDataFromKrxAsync();
+        return Ok(new { message = "KRX 데이터 업데이트가 완료되었습니다." });
     }
 }    

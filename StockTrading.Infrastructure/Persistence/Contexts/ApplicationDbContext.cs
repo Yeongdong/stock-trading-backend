@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
+using StockTrading.Domain.Extensions;
 using StockTrading.Infrastructure.Security.Encryption;
 
 namespace StockTrading.Infrastructure.Persistence.Contexts;
@@ -16,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<KisToken> KisTokens { get; set; }
     public DbSet<StockOrder> StockOrders { get; set; } = null!;
+    public DbSet<StockOrder> Stocks { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -150,6 +153,54 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        modelBuilder.Entity<Stock>(entity =>
+        {
+            entity.ToTable("stocks");
+            entity.HasKey(e => e.Code);
+
+            entity.Property(e => e.Code)
+                .HasColumnName("code")
+                .HasMaxLength(6)
+                .IsRequired();
+
+            entity.Property(e => e.Name)
+                .HasColumnName("name")
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(e => e.EnglishName)
+                .HasColumnName("english_name")
+                .HasMaxLength(200)
+                .IsRequired(false);
+
+            entity.Property(e => e.Sector)
+                .HasColumnName("sector")
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(e => e.Market)
+                .HasColumnName("market")
+                .HasMaxLength(20)
+                .HasConversion(
+                    v => v.GetDescription(),
+                    v => EnumExtensions.GetEnumFromDescription<Market>(v))
+                .IsRequired();
+
+            entity.Property(e => e.LastUpdated)
+                .HasColumnName("last_updated")
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            entity.HasIndex(e => e.Name)
+                .HasDatabaseName("ix_stocks_name");
+
+            entity.HasIndex(e => e.Market)
+                .HasDatabaseName("ix_stocks_market");
+
+            entity.HasIndex(e => e.Sector)
+                .HasDatabaseName("ix_stocks_sector");
         });
     }
 }

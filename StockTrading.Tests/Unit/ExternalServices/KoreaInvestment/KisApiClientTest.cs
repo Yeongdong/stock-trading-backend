@@ -254,7 +254,7 @@ public class KisApiClientTest
         {
             BaseUrl = "https://openapivts.koreainvestment.com:29443",
             WebSocketUrl = "ws://ops.koreainvestment.com:31000",
-            Endpoints = new ApiEndpoints
+            Endpoints = new KisApiEndpoints
             {
                 TokenPath = "/oauth2/tokenP",
                 WebSocketApprovalPath = "/oauth2/Approval",
