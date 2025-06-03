@@ -1,8 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -15,12 +13,14 @@ using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
-using StockTrading.Infrastructure.ExternalServices.KRX;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 중요: EUC-KR 인코딩 지원(KRX 종목 조회용)
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 // 로깅 설정 개선
 ConfigureLogging(builder);
@@ -236,7 +236,7 @@ static void ConfigureAuthentication(IServiceCollection services, IConfiguration 
 static void ConfigureHttpClients(IServiceCollection services, IConfiguration configuration)
 {
     var kisBaseUrl = configuration["KoreaInvestment:BaseUrl"];
-    var krsBaseUrl = configuration["Krx:BaseUrl"];
+    var krxBaseUrl = configuration["KrxApi:BaseUrl"];
 
     services.AddHttpClient();
 
@@ -263,9 +263,7 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
     
     services.AddHttpClient<KrxApiClient>(client =>
     {
-        client.BaseAddress = new Uri(krsBaseUrl);
-        client.Timeout = TimeSpan.FromSeconds(30);
-        client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
+        client.BaseAddress = new Uri(krxBaseUrl);
     });
 
     services.AddScoped<IKisApiClient>(provider => provider.GetRequiredService<KisApiClient>());
@@ -302,6 +300,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
 
     // 설정 등록
     services.Configure<KisApiSettings>(configuration.GetSection(KisApiSettings.SectionName));
+    services.Configure<KrxApiSettings>(configuration.GetSection(KrxApiSettings.SectionName));
     
     // Converter 등록
     services.AddScoped<StockDataConverter>();
