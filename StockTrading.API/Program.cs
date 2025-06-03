@@ -278,6 +278,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     services.AddScoped<IUserService, UserService>();
     services.AddScoped<IOrderService, OrderService>();
     services.AddScoped<IBalanceService, BalanceService>();
+    services.AddScoped<IStockService, StockService>();
     services.AddScoped<IKisTokenService, KisTokenService>();
     services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
     services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
