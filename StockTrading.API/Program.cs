@@ -15,6 +15,7 @@ using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
+using StockTrading.Infrastructure.ExternalServices.KRX;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Services;
@@ -235,6 +236,7 @@ static void ConfigureAuthentication(IServiceCollection services, IConfiguration 
 static void ConfigureHttpClients(IServiceCollection services, IConfiguration configuration)
 {
     var kisBaseUrl = configuration["KoreaInvestment:BaseUrl"];
+    var krsBaseUrl = configuration["Krx:BaseUrl"];
 
     services.AddHttpClient();
 
@@ -258,6 +260,13 @@ static void ConfigureHttpClients(IServiceCollection services, IConfiguration con
         client.Timeout = TimeSpan.FromSeconds(30);
         client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
     });
+    
+    services.AddHttpClient<KrxApiClient>(client =>
+    {
+        client.BaseAddress = new Uri(krsBaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(30);
+        client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
+    });
 
     services.AddScoped<IKisApiClient>(provider => provider.GetRequiredService<KisApiClient>());
 }
@@ -269,6 +278,7 @@ static void ConfigureBusinessServices(IServiceCollection services, IConfiguratio
     services.AddScoped<IOrderRepository, OrderRepository>();
     services.AddScoped<ITokenRepository, TokenRepository>();
     services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
+    services.AddScoped<IStockRepository, StockRepository>();
 
     // Infrastructure 계층
     services.AddScoped<IDbContextWrapper, DbContextWrapper>();
