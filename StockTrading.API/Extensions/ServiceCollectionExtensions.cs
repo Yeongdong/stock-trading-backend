@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Implementations;
@@ -178,9 +179,10 @@ public static class ServiceCollectionExtensions
         // Validator 계층
         services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
 
-        // 설정 등록
-        services.Configure<KisApiSettings>(configuration.GetSection(KisApiSettings.SectionName));
-        services.Configure<KrxApiSettings>(configuration.GetSection(KrxApiSettings.SectionName));
+        // 통합 설정 등록 및 검증
+        services.AddSettingsWithValidation(configuration);
+        services.ValidateAllSettingsOnStartup();
+        services.AddSettingsSummary();
 
         // Converter 등록
         services.AddScoped<StockDataConverter>();
@@ -199,7 +201,7 @@ public static class ServiceCollectionExtensions
             var logger = provider.GetRequiredService<ILogger<RealTimeDataBroadcaster>>();
             var broadcaster = new RealTimeDataBroadcaster(hubContext, logger);
 
-            logger.LogInformation("🔧 [DI] RealTimeDataBroadcaster 인스턴스 생성됨");
+            logger.LogInformation("[DI] RealTimeDataBroadcaster 인스턴스 생성됨");
             return broadcaster;
         });
         services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
@@ -208,25 +210,27 @@ public static class ServiceCollectionExtensions
         {
             var logger = provider.GetRequiredService<ILogger<RealTimeDataProcessor>>();
             var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+            var settings = provider.GetRequiredService<IOptions<RealTimeDataSettings>>();
+            var converter = provider.GetRequiredService<StockDataConverter>();
             var broadcaster = provider.GetRequiredService<IRealTimeDataBroadcaster>();
 
-            var processor = new RealTimeDataProcessor(logger, loggerFactory);
+            var processor = new RealTimeDataProcessor(logger, loggerFactory, settings, converter);
 
-            logger.LogInformation("🔧 [DI] RealTimeDataProcessor 이벤트 핸들러 연결 시작");
+            logger.LogInformation("[DI] RealTimeDataProcessor 이벤트 핸들러 연결 시작");
 
             processor.StockPriceReceived += async (sender, data) =>
             {
-                logger.LogInformation("🎯 [DI] StockPriceReceived 이벤트 발생: {Symbol}", data.Symbol);
+                logger.LogInformation("[DI] StockPriceReceived 이벤트 발생: {Symbol}", data.Symbol);
                 await broadcaster.BroadcastStockPriceAsync(data);
             };
 
             processor.TradeExecutionReceived += async (sender, data) =>
             {
-                logger.LogInformation("🎯 [DI] TradeExecutionReceived 이벤트 발생");
+                logger.LogInformation("[DI] TradeExecutionReceived 이벤트 발생");
                 await broadcaster.BroadcastTradeExecutionAsync(data);
             };
 
-            logger.LogInformation("✅ [DI] RealTimeDataProcessor 이벤트 핸들러 연결 완료");
+            logger.LogInformation("[DI] RealTimeDataProcessor 이벤트 핸들러 연결 완료");
             return processor;
         });
         services.AddSingleton<IRealTimeDataProcessor>(provider => provider.GetRequiredService<RealTimeDataProcessor>());

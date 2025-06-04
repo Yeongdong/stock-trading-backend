@@ -1,23 +1,23 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
+using StockTrading.Domain.Settings;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
 
-/// <summary>
-/// 주식 데이터 파서
-/// </summary>
 public class StockDataParser
 {
     private readonly ILogger<StockDataParser> _logger;
+    private readonly RealTimeDataSettings _settings;
 
-    public StockDataParser(ILogger<StockDataParser> logger)
+    public StockDataParser(ILogger<StockDataParser> logger, RealTimeDataSettings settings)
     {
         _logger = logger;
+        _settings = settings;
     }
 
     public IEnumerable<string[]> ParseRecords(string bodyData, int dataCount)
     {
-        var allFields = bodyData.Split(KisRealTimeConstants.Parsing.FieldDelimiter);
+        var parsing = _settings.Parsing;
+        var allFields = bodyData.Split(parsing.FieldDelimiter);
 
         if (allFields.Length == 0 || dataCount <= 0)
         {
@@ -43,7 +43,7 @@ public class StockDataParser
 
             var recordFields = allFields.Skip(startIndex).Take(fieldsPerRecord).ToArray();
 
-            if (recordFields.Length < KisRealTimeConstants.Parsing.MinimumFieldsForProcessing)
+            if (recordFields.Length < parsing.MinimumFieldsForProcessing)
             {
                 _logger.LogWarning("레코드 {RecordIndex} 건너뜀 - 필드 부족: {FieldCount}",
                     recordIndex + 1, recordFields.Length);

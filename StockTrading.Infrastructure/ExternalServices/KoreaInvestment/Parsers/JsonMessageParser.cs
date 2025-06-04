@@ -1,19 +1,18 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
+using StockTrading.Domain.Settings;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
 
-/// <summary>
-/// JSON 메시지 파서
-/// </summary>
 public class JsonMessageParser
 {
     private readonly ILogger<JsonMessageParser> _logger;
+    private readonly RealTimeDataSettings _settings;
 
-    public JsonMessageParser(ILogger<JsonMessageParser> logger)
+    public JsonMessageParser(ILogger<JsonMessageParser> logger, RealTimeDataSettings settings)
     {
         _logger = logger;
+        _settings = settings;
     }
 
     public MessageParseResult Parse(string? messageJson)
@@ -30,6 +29,7 @@ public class JsonMessageParser
 
             if (!TryGetSubscriptionResponse(root, out var subscriptionMessage))
                 return MessageParseResult.Success(trId, messageJson);
+            
             _logger.LogInformation("구독 응답: {Message}", subscriptionMessage);
             return MessageParseResult.Success(trId, subscriptionMessage);
         }
@@ -44,8 +44,8 @@ public class JsonMessageParser
     {
         trId = string.Empty;
 
-        return root.TryGetProperty(KisRealTimeConstants.JsonProperties.Header, out var header) &&
-               header.TryGetProperty(KisRealTimeConstants.JsonProperties.TrId, out var trIdElement) &&
+        return root.TryGetProperty("header", out var header) &&
+               header.TryGetProperty("tr_id", out var trIdElement) &&
                !string.IsNullOrEmpty(trId = trIdElement.GetString());
     }
 
@@ -53,17 +53,17 @@ public class JsonMessageParser
     {
         message = string.Empty;
 
-        if (!root.TryGetProperty(KisRealTimeConstants.JsonProperties.Body, out var body))
+        if (!root.TryGetProperty("body", out var body))
             return false;
 
-        if (!body.TryGetProperty(KisRealTimeConstants.JsonProperties.ReturnCode, out var rtCd) ||
-            rtCd.GetString() != KisRealTimeConstants.JsonProperties.SuccessCode)
+        if (!body.TryGetProperty("rt_cd", out var rtCd) ||
+            rtCd.GetString() != "0")
             return false;
 
-        if (!body.TryGetProperty(KisRealTimeConstants.JsonProperties.Message, out var msg1))
+        if (!body.TryGetProperty("msg1", out var msg1))
             return false;
 
         message = msg1.GetString() ?? string.Empty;
-        return message == KisRealTimeConstants.Parsing.SubscribeSuccessMessage;
+        return message == "SUBSCRIBE SUCCESS";
     }
 }

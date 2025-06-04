@@ -13,7 +13,6 @@ using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
-using static StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants.KisMarketConstants;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -23,11 +22,11 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 public class KisApiClient : IKisApiClient
 {
     private readonly HttpClient _httpClient;
-    private readonly KisApiSettings _settings;
+    private readonly KoreaInvestmentSettings _settings;
     private readonly ILogger<KisApiClient> _logger;
     private readonly StockDataConverter _converter;
 
-    public KisApiClient(HttpClient httpClient, IOptions<KisApiSettings> settings, ILogger<KisApiClient> logger, StockDataConverter converter)
+    public KisApiClient(HttpClient httpClient, IOptions<KoreaInvestmentSettings> settings, ILogger<KisApiClient> logger, StockDataConverter converter)
     {
         _httpClient = httpClient;
         _settings = settings.Value;
@@ -71,17 +70,18 @@ public class KisApiClient : IKisApiClient
 
     public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
     {
+        var defaults = _settings.DefaultValues;
         var queryParams = new Dictionary<string, string>
         {
             ["CANO"] = user.AccountNumber,
-            ["ACNT_PRDT_CD"] = _settings.Defaults.AccountProductCode,
-            ["AFHR_FLPR_YN"] = _settings.Defaults.AfterHoursForeignPrice,
-            ["OFL_YN"] = _settings.Defaults.OfflineYn,
-            ["INQR_DVSN"] = _settings.Defaults.InquiryDivision,
-            ["UNPR_DVSN"] = _settings.Defaults.UnitPriceDivision,
-            ["FUND_STTL_ICLD_YN"] = _settings.Defaults.FundSettlementInclude,
-            ["FNCG_AMT_AUTO_RDPT_YN"] = _settings.Defaults.FinancingAmountAutoRedemption,
-            ["PRCS_DVSN"] = _settings.Defaults.ProcessDivision,
+            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
+            ["AFHR_FLPR_YN"] = defaults.AfterHoursForeignPrice,
+            ["OFL_YN"] = defaults.OfflineYn,
+            ["INQR_DVSN"] = defaults.InquiryDivision,
+            ["UNPR_DVSN"] = defaults.UnitPriceDivision,
+            ["FUND_STTL_ICLD_YN"] = defaults.FundSettlementInclude,
+            ["FNCG_AMT_AUTO_RDPT_YN"] = defaults.FinancingAmountAutoRedemption,
+            ["PRCS_DVSN"] = defaults.ProcessDivision,
             ["CTX_AREA_FK100"] = "",
             ["CTX_AREA_NK100"] = ""
         };
@@ -89,7 +89,7 @@ public class KisApiClient : IKisApiClient
         var url = BuildGetUrl(_settings.Endpoints.BalancePath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetStandardHeaders(httpRequest, _settings.Defaults.BalanceTransactionId, user);
+        SetStandardHeaders(httpRequest, defaults.BalanceTransactionId, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
@@ -110,10 +110,11 @@ public class KisApiClient : IKisApiClient
     public async Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request,
         UserInfo user)
     {
+        var defaults = _settings.DefaultValues;
         var queryParams = new Dictionary<string, string>
         {
             ["CANO"] = user.AccountNumber,
-            ["ACNT_PRDT_CD"] = _settings.Defaults.AccountProductCode,
+            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
             ["INQR_STRT_DT"] = request.StartDate,
             ["INQR_END_DT"] = request.EndDate,
             ["SLL_BUY_DVSN_CD"] = _converter.ConvertOrderTypeToKisCode(request.OrderType, _settings),
@@ -131,7 +132,7 @@ public class KisApiClient : IKisApiClient
         var url = BuildGetUrl(_settings.Endpoints.OrderExecutionPath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetOrderExecutionHeaders(httpRequest, _settings.Defaults.OrderExecutionTransactionId, user);
+        SetOrderExecutionHeaders(httpRequest, defaults.OrderExecutionTransactionId, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         var responseContent = await response.Content.ReadAsStringAsync();
@@ -156,10 +157,11 @@ public class KisApiClient : IKisApiClient
 
     public async Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo user)
     {
+        var defaults = _settings.DefaultValues;
         var queryParams = new Dictionary<string, string>
         {
             ["CANO"] = user.AccountNumber,
-            ["ACNT_PRDT_CD"] = _settings.Defaults.AccountProductCode,
+            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
             ["PDNO"] = request.StockCode,
             ["ORD_UNPR"] = request.OrderPrice.ToString("F0"),
             ["ORD_DVSN"] = request.OrderType,
@@ -170,7 +172,7 @@ public class KisApiClient : IKisApiClient
         var url = BuildGetUrl(_settings.Endpoints.BuyableInquiryPath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetStandardHeaders(httpRequest, _settings.Defaults.BuyableInquiryTransactionId, user);
+        SetStandardHeaders(httpRequest, defaults.BuyableInquiryTransactionId, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         response.EnsureSuccessStatusCode();
@@ -187,16 +189,17 @@ public class KisApiClient : IKisApiClient
 
     public async Task<CurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo user)
     {
+        var marketConstants = _settings.MarketConstants;
         var queryParams = new Dictionary<string, string>
         {
-            ["FID_COND_MRKT_DIV_CODE"] = DOMESTIC_STOCK,
+            ["FID_COND_MRKT_DIV_CODE"] = marketConstants.DomesticStock,
             ["FID_INPUT_ISCD"] = request.StockCode
         };
 
         var url = BuildGetUrl(_settings.Endpoints.CurrentPricePath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetStandardHeaders(httpRequest, _settings.Defaults.CurrentPriceTransactionId, user);
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.CurrentPriceTransactionId, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         var responseContent = await response.Content.ReadAsStringAsync();

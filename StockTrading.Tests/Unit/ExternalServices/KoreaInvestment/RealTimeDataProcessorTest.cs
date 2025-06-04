@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
+using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
@@ -11,12 +13,30 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
     {
         private readonly Mock<ILogger<RealTimeDataProcessor>> _mockLogger;
         private readonly Mock<ILoggerFactory> _mockLoggerFactory;
+        private readonly Mock<StockDataConverter> _mockStockDataConverter;
         private readonly RealTimeDataProcessor _processor;
 
         public RealTimeDataProcessorTest()
         {
             _mockLogger = new Mock<ILogger<RealTimeDataProcessor>>();
             _mockLoggerFactory = new Mock<ILoggerFactory>();
+            _mockStockDataConverter = new Mock<StockDataConverter>(
+                Mock.Of<ILogger<StockDataConverter>>()
+            );
+
+            var messageTypes = new MessageTypeSettings
+            {
+                StockExecution = "H0STASP0",
+                TradeNotification = "H0STCNI0",
+                TradeNotificationDemo = "H0STCNI9",
+                StockAskBid = "H0ASKBID0",
+                PingPong = "PINGPONG"
+            };
+
+            var options = Options.Create(new RealTimeDataSettings
+            {
+                MessageTypes = messageTypes
+            });
 
             _mockLoggerFactory.Setup(x => x.CreateLogger<JsonMessageParser>())
                 .Returns(Mock.Of<ILogger<JsonMessageParser>>());
@@ -24,10 +44,13 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
                 .Returns(Mock.Of<ILogger<PipeDelimitedMessageParser>>());
             _mockLoggerFactory.Setup(x => x.CreateLogger<StockDataParser>())
                 .Returns(Mock.Of<ILogger<StockDataParser>>());
-            _mockLoggerFactory.Setup(x => x.CreateLogger<StockDataConverter>())
-                .Returns(Mock.Of<ILogger<StockDataConverter>>());
 
-            _processor = new RealTimeDataProcessor(_mockLogger.Object, _mockLoggerFactory.Object);
+            _processor = new RealTimeDataProcessor(
+                _mockLogger.Object,
+                _mockLoggerFactory.Object,
+                options,
+                _mockStockDataConverter.Object
+            );
         }
 
         [Fact]

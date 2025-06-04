@@ -21,7 +21,7 @@ public class KisApiClientTest
 {
     private Mock<HttpMessageHandler> _mockHttpMessageHandler;
     private HttpClient _httpClient;
-    private Mock<IOptions<KisApiSettings>> _mockSettings;
+    private Mock<IOptions<KoreaInvestmentSettings>> _mockSettings;
     private Mock<ILogger<KisApiClient>> _mockLogger;
     private Mock<StockDataConverter> _mockConverter;
     private KisApiClient _kisApiClient;
@@ -34,7 +34,7 @@ public class KisApiClientTest
         {
             BaseAddress = new Uri("https://openapivts.koreainvestment.com:29443")
         };
-        _mockSettings = new Mock<IOptions<KisApiSettings>>();
+        _mockSettings = new Mock<IOptions<KoreaInvestmentSettings>>();
         _mockLogger = new Mock<ILogger<KisApiClient>>();
         _mockConverter = new Mock<StockDataConverter>(Mock.Of<ILogger<StockDataConverter>>());
         _mockSettings.Setup(x => x.Value).Returns(CreateTestSettings());
@@ -248,20 +248,20 @@ public class KisApiClientTest
             _kisApiClient.GetStockBalanceAsync(_testUser));
     }
 
-    private static KisApiSettings CreateTestSettings()
+    private static KoreaInvestmentSettings CreateTestSettings()
     {
-        return new KisApiSettings
+        return new KoreaInvestmentSettings
         {
             BaseUrl = "https://openapivts.koreainvestment.com:29443",
             WebSocketUrl = "ws://ops.koreainvestment.com:31000",
-            Endpoints = new KisApiEndpoints
+            Endpoints = new KisEndpoints
             {
                 TokenPath = "/oauth2/tokenP",
                 WebSocketApprovalPath = "/oauth2/Approval",
                 OrderPath = "/uapi/domestic-stock/v1/trading/order-cash",
                 BalancePath = "/uapi/domestic-stock/v1/trading/inquire-balance"
             },
-            Defaults = new DefaultValues
+            DefaultValues = new KisDefaultValues
             {
                 AccountProductCode = "01",
                 BalanceTransactionId = "VTTC8434R",

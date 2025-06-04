@@ -1,30 +1,27 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.DTOs.Trading.Inquiry;
 using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Domain.Settings;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
 
-/// <summary>
-/// 주식 데이터 변환기
-/// </summary>
 public class StockDataConverter
 {
     private readonly ILogger<StockDataConverter> _logger;
+    private readonly RealTimeDataSettings _realTimeSettings;
 
-    public StockDataConverter(ILogger<StockDataConverter> logger)
+    public StockDataConverter(ILogger<StockDataConverter> logger, IOptions<RealTimeDataSettings> realTimeSettings)
     {
         _logger = logger;
+        _realTimeSettings = realTimeSettings.Value;
     }
 
-    /// <summary>
-    /// 필드 배열을 KisTransactionInfo로 변환
-    /// </summary>
     public KisTransactionInfo? ConvertToTransactionInfo(string[] fields, int recordIndex)
     {
-        var stockCode = fields[KisRealTimeConstants.FieldIndices.StockCode];
+        var parsing = _realTimeSettings.Parsing;
+        var stockCode = fields[FieldIndices.StockCode];
 
         if (!IsValidStockCode(stockCode))
         {
@@ -40,9 +37,6 @@ public class StockDataConverter
         return priceData;
     }
 
-    /// <summary>
-    /// KIS 현재가 조회 응답을 Application DTO로 변환
-    /// </summary>
     public CurrentPriceResponse ConvertToStockPriceResponse(KisCurrentPriceData kisData, string stockCode)
     {
         return new CurrentPriceResponse
@@ -61,13 +55,14 @@ public class StockDataConverter
         };
     }
 
-    public string ConvertOrderTypeToKisCode(string orderType, KisApiSettings settings)
+    public string ConvertOrderTypeToKisCode(string orderType, KoreaInvestmentSettings settings)
     {
+        var defaults = settings.DefaultValues;
         return orderType switch
         {
-            "01" => settings.Defaults.SellOrderCode, // 매도
-            "02" => settings.Defaults.BuyOrderCode, // 매수  
-            _ => settings.Defaults.AllOrderCode // 전체
+            "01" => defaults.SellOrderCode, // 매도
+            "02" => defaults.BuyOrderCode, // 매수  
+            _ => defaults.AllOrderCode // 전체
         };
     }
 
@@ -118,18 +113,20 @@ public class StockDataConverter
         };
     }
 
+    #region Private Helper Methods
+
     private KisTransactionInfo CreateTransactionInfo(string[] fields, string stockCode)
     {
-        var tradeTime = fields[KisRealTimeConstants.FieldIndices.TradeTime];
-        var currentPrice = ParseDecimalSafely(fields[KisRealTimeConstants.FieldIndices.CurrentPrice]);
-        var changeSign = fields[KisRealTimeConstants.FieldIndices.ChangeSign];
-        var priceChange = ParseDecimalSafely(fields[KisRealTimeConstants.FieldIndices.PriceChange]);
-        var changeRate = ParseDecimalSafely(fields[KisRealTimeConstants.FieldIndices.ChangeRate]);
-        var openPrice = ParseDecimalSafely(fields[KisRealTimeConstants.FieldIndices.OpenPrice]);
-        var highPrice = ParseDecimalSafely(fields[KisRealTimeConstants.FieldIndices.HighPrice]);
-        var lowPrice = ParseDecimalSafely(fields[KisRealTimeConstants.FieldIndices.LowPrice]);
-        var volume = ParseLongSafely(fields[KisRealTimeConstants.FieldIndices.Volume]);
-        var totalVolume = ParseLongSafely(fields[KisRealTimeConstants.FieldIndices.TotalVolume]);
+        var tradeTime = fields[FieldIndices.TradeTime];
+        var currentPrice = ParseDecimalSafely(fields[FieldIndices.CurrentPrice]);
+        var changeSign = fields[FieldIndices.ChangeSign];
+        var priceChange = ParseDecimalSafely(fields[FieldIndices.PriceChange]);
+        var changeRate = ParseDecimalSafely(fields[FieldIndices.ChangeRate]);
+        var openPrice = ParseDecimalSafely(fields[FieldIndices.OpenPrice]);
+        var highPrice = ParseDecimalSafely(fields[FieldIndices.HighPrice]);
+        var lowPrice = ParseDecimalSafely(fields[FieldIndices.LowPrice]);
+        var volume = ParseLongSafely(fields[FieldIndices.Volume]);
+        var totalVolume = ParseLongSafely(fields[FieldIndices.TotalVolume]);
 
         return new KisTransactionInfo
         {
@@ -149,17 +146,21 @@ public class StockDataConverter
 
     private string ConvertChangeType(string changeSign)
     {
-        if (KisRealTimeConstants.ChangeTypes.RiseCodes.Contains(changeSign))
-            return KisRealTimeConstants.ChangeTypes.Rise;
+        var riseCode = new[] { "1", "2" };
+        var fallCodes = new[] { "4", "5" };
 
-        return KisRealTimeConstants.ChangeTypes.FallCodes.Contains(changeSign)
-            ? KisRealTimeConstants.ChangeTypes.Fall
-            : KisRealTimeConstants.ChangeTypes.Unchanged;
+        if (riseCode.Contains(changeSign))
+            return "상승";
+
+        return fallCodes.Contains(changeSign) ? "하락" : "보합";
     }
 
     private DateTime ParseTradeTime(string tradeTime)
     {
-        if (tradeTime.Length != KisRealTimeConstants.Parsing.TradeTimeLength) return DateTime.Now;
+        var parsing = _realTimeSettings.Parsing;
+
+        if (tradeTime.Length != parsing.TradeTimeLength)
+            return DateTime.Now;
 
         var hour = int.Parse(tradeTime[..2]);
         var minute = int.Parse(tradeTime.Substring(2, 2));
@@ -191,8 +192,34 @@ public class StockDataConverter
 
     private bool IsValidStockCode(string stockCode)
     {
+        var parsing = _realTimeSettings.Parsing;
         return !string.IsNullOrWhiteSpace(stockCode) &&
-               stockCode.Length == KisRealTimeConstants.Parsing.StockCodeLength &&
+               stockCode.Length == parsing.StockCodeLength &&
                stockCode.All(char.IsDigit);
     }
+
+    #endregion
+
+    #region Field Indices (H0STCNT0 기준)
+
+    private static class FieldIndices
+    {
+        public const int StockCode = 0;
+        public const int TradeTime = 1;
+        public const int CurrentPrice = 2;
+        public const int ChangeSign = 3;
+        public const int PriceChange = 4;
+        public const int ChangeRate = 5;
+        public const int WeightedAvgPrice = 6;
+        public const int OpenPrice = 7;
+        public const int HighPrice = 8;
+        public const int LowPrice = 9;
+        public const int AskPrice1 = 10;
+        public const int BidPrice1 = 11;
+        public const int Volume = 12;
+        public const int TotalVolume = 13;
+        public const int TotalTradeAmount = 14;
+    }
+
+    #endregion
 }

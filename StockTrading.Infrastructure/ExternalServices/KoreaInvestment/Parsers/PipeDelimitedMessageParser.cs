@@ -1,25 +1,25 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Constants;
+using StockTrading.Domain.Settings;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
 
-/// <summary>
-/// 파이프 구분 메시지 파서
-/// </summary>
 public class PipeDelimitedMessageParser
 {
     private readonly ILogger<PipeDelimitedMessageParser> _logger;
+    private readonly RealTimeDataSettings _settings;
 
-    public PipeDelimitedMessageParser(ILogger<PipeDelimitedMessageParser> logger)
+    public PipeDelimitedMessageParser(ILogger<PipeDelimitedMessageParser> logger, RealTimeDataSettings settings)
     {
         _logger = logger;
+        _settings = settings;
     }
 
     public MessageParseResult Parse(string messageText)
     {
-        string?[] parts = messageText.Split(KisRealTimeConstants.Parsing.PipeDelimiter);
+        var parsing = _settings.Parsing;
+        string?[] parts = messageText.Split(parsing.PipeDelimiter);
 
-        if (parts.Length < KisRealTimeConstants.Parsing.MinimumPipeSegments)
+        if (parts.Length < parsing.MinimumPipeSegments)
         {
             return MessageParseResult.Failure($"메시지 형식이 올바르지 않음. 세그먼트 수: {parts.Length}");
         }
