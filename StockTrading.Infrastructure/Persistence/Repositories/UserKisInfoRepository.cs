@@ -15,7 +15,7 @@ public class UserKisInfoRepository : IUserKisInfoRepository
         _logger = logger;
     }
 
-    public async Task UpdateUserKisInfoAsync(int userId, string appKey, string appSecret, string accountNumber)
+    public async Task UpdateKisCredentialsAsync(int userId, string appKey, string appSecret, string accountNumber)
     {
         var user = await _context.Users.FindAsync(userId);
 

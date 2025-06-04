@@ -24,7 +24,7 @@ public class AccountController : BaseController
 
         var user = await GetCurrentUserAsync();
 
-        var result = await _kisTokenService.UpdateUserKisInfoAndTokensAsync(
+        var result = await _kisTokenService.UpdateKisCredentialsAndTokensAsync(
             user.Id,
             request.AppKey,
             request.AppSecret,

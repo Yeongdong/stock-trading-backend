@@ -36,121 +36,38 @@ public class KisApiClient : IKisApiClient
 
     public async Task<OrderResponse> PlaceOrderAsync(OrderRequest request, UserInfo user)
     {
-        var kisRequest = new KisOrderRequest
-        {
-            CANO = user.AccountNumber,
-            ACNT_PRDT_CD = "01",
-            PDNO = request.PDNO,
-            ORD_DVSN = request.ORD_DVSN,
-            ORD_QTY = request.ORD_QTY,
-            ORD_UNPR = request.ORD_UNPR,
-        };
-
-        var content = new StringContent(JsonSerializer.Serialize(kisRequest), Encoding.UTF8, "application/json");
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.OrderPath)
-            { Content = content };
-        SetStandardHeaders(httpRequest, request.tr_id, user);
+        var kisRequest = CreateKisOrderRequest(request, user);
+        var httpRequest = CreateOrderHttpRequest(kisRequest, request.tr_id, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         response.EnsureSuccessStatusCode();
 
-        var responseContent = await response.Content.ReadAsStringAsync();
-        _logger.LogInformation("KIS 주문 응답: {Response}", responseContent);
-
-        var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
-
-        if (!orderResponse.IsSuccess)
-            throw new Exception($"주문 실패: {orderResponse.Message}");
-
-        if (!orderResponse.HasData)
-            throw new Exception("주문 응답 데이터가 없습니다.");
-
-        return orderResponse;
+        return await ProcessOrderResponse(response);
     }
 
     public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
     {
-        var defaults = _settings.DefaultValues;
-        var queryParams = new Dictionary<string, string>
-        {
-            ["CANO"] = user.AccountNumber,
-            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
-            ["AFHR_FLPR_YN"] = defaults.AfterHoursForeignPrice,
-            ["OFL_YN"] = defaults.OfflineYn,
-            ["INQR_DVSN"] = defaults.InquiryDivision,
-            ["UNPR_DVSN"] = defaults.UnitPriceDivision,
-            ["FUND_STTL_ICLD_YN"] = defaults.FundSettlementInclude,
-            ["FNCG_AMT_AUTO_RDPT_YN"] = defaults.FinancingAmountAutoRedemption,
-            ["PRCS_DVSN"] = defaults.ProcessDivision,
-            ["CTX_AREA_FK100"] = "",
-            ["CTX_AREA_NK100"] = ""
-        };
-
-        var url = BuildGetUrl(_settings.Endpoints.BalancePath, queryParams);
-        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
-
-        SetStandardHeaders(httpRequest, defaults.BalanceTransactionId, user);
-
+        var queryParams = CreateBalanceQueryParams(user);
+        var httpRequest = CreateBalanceHttpRequest(queryParams, user);
+        
         var response = await _httpClient.SendAsync(httpRequest);
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
 
-        if (!kisResponse.IsSuccess)
-            throw new Exception($"잔고조회 실패: {kisResponse.Message}");
+        ValidateBalanceResponse(kisResponse);
 
-        if (!kisResponse.HasData)
-            throw new Exception("잔고조회 데이터가 없습니다.");
-
-        return new AccountBalance
-        {
-            Positions = kisResponse.Positions,
-            Summary = kisResponse.Summary.FirstOrDefault() ?? new KisAccountSummaryResponse()
-        };
+        return CreateAccountBalance(kisResponse);
     }
 
-    public async Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request,
-        UserInfo user)
+    public async Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request, UserInfo user)
     {
-        var defaults = _settings.DefaultValues;
-        var queryParams = new Dictionary<string, string>
-        {
-            ["CANO"] = user.AccountNumber,
-            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
-            ["INQR_STRT_DT"] = request.StartDate,
-            ["INQR_END_DT"] = request.EndDate,
-            ["SLL_BUY_DVSN_CD"] = _converter.ConvertOrderTypeToKisCode(request.OrderType, _settings),
-            ["INQR_DVSN"] = "00", // 조회구분
-            ["PDNO"] = request.StockCode ?? "", // 종목코드
-            ["CCLD_DVSN"] = "01", // 체결구분 (01:체결)
-            ["ORD_GNO_BRNO"] = "", // 주문채번지점번호
-            ["ODNO"] = "", // 주문번호
-            ["INQR_DVSN_3"] = "00", // 조회구분3
-            ["INQR_DVSN_1"] = "", // 조회구분1
-            ["CTX_AREA_FK100"] = "", // 연속조회검색조건100
-            ["CTX_AREA_NK100"] = "" // 연속조회키100
-        };
-
-        var url = BuildGetUrl(_settings.Endpoints.OrderExecutionPath, queryParams);
-        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
-
-        SetOrderExecutionHeaders(httpRequest, defaults.OrderExecutionTransactionId, user);
+        var queryParams = CreateOrderExecutionQueryParams(request, user);
+        var httpRequest = CreateOrderExecutionHttpRequest(queryParams, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
-        var responseContent = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError("KIS API 호출 실패: StatusCode={StatusCode}, Content={Content}",
-                response.StatusCode, responseContent);
-            throw new Exception($"KIS API 호출 실패 ({response.StatusCode}): {responseContent}");
-        }
+        var responseContent = await ValidateAndReadResponse(response);
 
         var kisResponse = JsonSerializer.Deserialize<KisOrderExecutionInquiryResponse>(responseContent);
-
-        if (!kisResponse.IsSuccess)
-            throw new Exception($"주문체결조회 실패: {kisResponse.Message}");
-
-        if (!kisResponse.HasData)
-            throw new Exception("주문체결조회 데이터가 없습니다.");
+        ValidateOrderExecutionResponse(kisResponse);
 
         return _converter.ConvertToOrderExecutionResponse(kisResponse);
     }
@@ -220,6 +137,140 @@ public class KisApiClient : IKisApiClient
             throw new Exception("현재가 조회 데이터가 없습니다.");
 
         return _converter.ConvertToStockPriceResponse(kisResponse.Output, request.StockCode);
+    }
+
+    private static KisOrderRequest CreateKisOrderRequest(OrderRequest request, UserInfo user)
+    {
+        return new KisOrderRequest
+        {
+            CANO = user.AccountNumber,
+            ACNT_PRDT_CD = "01",
+            PDNO = request.PDNO,
+            ORD_DVSN = request.ORD_DVSN,
+            ORD_QTY = request.ORD_QTY,
+            ORD_UNPR = request.ORD_UNPR,
+        };
+    }
+
+    private HttpRequestMessage CreateOrderHttpRequest(KisOrderRequest kisRequest, string trId, UserInfo user)
+    {
+        var content = new StringContent(JsonSerializer.Serialize(kisRequest), Encoding.UTF8, "application/json");
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.OrderPath) { Content = content };
+    
+        SetStandardHeaders(httpRequest, trId, user);
+        return httpRequest;
+    }
+
+    private async Task<OrderResponse> ProcessOrderResponse(HttpResponseMessage response)
+    {
+        var responseContent = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation("KIS 주문 응답: {Response}", responseContent);
+
+        var orderResponse = JsonSerializer.Deserialize<OrderResponse>(responseContent);
+
+        if (!orderResponse.IsSuccess)
+            throw new Exception($"주문 실패: {orderResponse.Message}");
+
+        if (!orderResponse.HasData)
+            throw new Exception("주문 응답 데이터가 없습니다.");
+
+        return orderResponse;
+    }
+
+    private static void ValidateBalanceResponse(KisBalanceResponse? kisResponse)
+    {
+        if (!kisResponse.IsSuccess)
+            throw new Exception($"잔고조회 실패: {kisResponse.Message}");
+
+        if (!kisResponse.HasData)
+            throw new Exception("잔고조회 데이터가 없습니다.");
+    }
+
+    private static AccountBalance CreateAccountBalance(KisBalanceResponse? kisResponse)
+    {
+        return new AccountBalance
+        {
+            Positions = kisResponse.Positions,
+            Summary = kisResponse.Summary.FirstOrDefault() ?? new KisAccountSummaryResponse()
+        };
+    }
+
+    private HttpRequestMessage CreateBalanceHttpRequest(Dictionary<string,string> queryParams, UserInfo user)
+    {
+        var url = BuildGetUrl(_settings.Endpoints.BalancePath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+    
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.BalanceTransactionId, user);
+        return httpRequest;
+    }
+
+    private Dictionary<string, string> CreateBalanceQueryParams(UserInfo user)
+    {
+        var defaults = _settings.DefaultValues;
+        return new Dictionary<string, string>
+        {
+            ["CANO"] = user.AccountNumber,
+            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
+            ["AFHR_FLPR_YN"] = defaults.AfterHoursForeignPrice,
+            ["OFL_YN"] = defaults.OfflineYn,
+            ["INQR_DVSN"] = defaults.InquiryDivision,
+            ["UNPR_DVSN"] = defaults.UnitPriceDivision,
+            ["FUND_STTL_ICLD_YN"] = defaults.FundSettlementInclude,
+            ["FNCG_AMT_AUTO_RDPT_YN"] = defaults.FinancingAmountAutoRedemption,
+            ["PRCS_DVSN"] = defaults.ProcessDivision,
+            ["CTX_AREA_FK100"] = "",
+            ["CTX_AREA_NK100"] = ""
+        };
+    }
+
+    private Dictionary<string, string> CreateOrderExecutionQueryParams(OrderExecutionInquiryRequest request, UserInfo user)
+    {
+        var defaults = _settings.DefaultValues;
+        return new Dictionary<string, string>
+        {
+            ["CANO"] = user.AccountNumber,
+            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
+            ["INQR_STRT_DT"] = request.StartDate,
+            ["INQR_END_DT"] = request.EndDate,
+            ["SLL_BUY_DVSN_CD"] = _converter.ConvertOrderTypeToKisCode(request.OrderType, _settings),
+            ["INQR_DVSN"] = "00",
+            ["PDNO"] = request.StockCode ?? "",
+            ["CCLD_DVSN"] = "01",
+            ["ORD_GNO_BRNO"] = "",
+            ["ODNO"] = "",
+            ["INQR_DVSN_3"] = "00",
+            ["INQR_DVSN_1"] = "",
+            ["CTX_AREA_FK100"] = "",
+            ["CTX_AREA_NK100"] = ""
+        };
+    }
+
+    private HttpRequestMessage CreateOrderExecutionHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
+    {
+        var url = BuildGetUrl(_settings.Endpoints.OrderExecutionPath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+    
+        SetOrderExecutionHeaders(httpRequest, _settings.DefaultValues.OrderExecutionTransactionId, user);
+        return httpRequest;
+    }
+
+    private async Task<string> ValidateAndReadResponse(HttpResponseMessage response)
+    {
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new Exception($"KIS API 호출 실패 ({response.StatusCode}): {responseContent}");
+
+        return responseContent;
+    }
+
+    private static void ValidateOrderExecutionResponse(KisOrderExecutionInquiryResponse kisResponse)
+    {
+        if (!kisResponse.IsSuccess)
+            throw new Exception($"주문체결조회 실패: {kisResponse.Message}");
+
+        if (!kisResponse.HasData)
+            throw new Exception("주문체결조회 데이터가 없습니다.");
     }
 
     private void SetStandardHeaders(HttpRequestMessage httpRequestMessage, string trId, UserInfo user)

@@ -53,7 +53,7 @@ public class UserKisInfoRepositoryTest
         var appSecret = "test-app-secret";
         var accountNumber = "123456789";
 
-        await repository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
+        await repository.UpdateKisCredentialsAsync(userId, appKey, appSecret, accountNumber);
 
         var updatedUser = await context.Users.FindAsync(userId);
         Assert.NotNull(updatedUser);
@@ -74,7 +74,7 @@ public class UserKisInfoRepositoryTest
         var accountNumber = "123456789";
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => 
-            repository.UpdateUserKisInfoAsync(nonExistentUserId, appKey, appSecret, accountNumber));
+            repository.UpdateKisCredentialsAsync(nonExistentUserId, appKey, appSecret, accountNumber));
     }
     
     [Fact]
@@ -99,7 +99,7 @@ public class UserKisInfoRepositoryTest
         var appSecret = "test-app-secret";
         var accountNumber = "123456789";
 
-        await repository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
+        await repository.UpdateKisCredentialsAsync(userId, appKey, appSecret, accountNumber);
 
         var updatedUser = await context.Users.FindAsync(userId);
         Assert.NotNull(updatedUser);
@@ -200,7 +200,7 @@ public class UserKisInfoRepositoryTest
         var repository = new UserKisInfoRepository(mockContext, _logger);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => 
-            repository.UpdateUserKisInfoAsync(1, "key", "secret", "account"));
+            repository.UpdateKisCredentialsAsync(1, "key", "secret", "account"));
     }
     
     [Fact]

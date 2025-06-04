@@ -5,6 +5,6 @@ namespace StockTrading.Application.Services;
 
 public interface IUserService
 {
-    Task<UserInfo> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload);
+    Task<UserInfo> CreateOrGetGoogleUserAsync(GoogleJsonWebSignature.Payload payload);
     Task<UserInfo> GetUserByEmailAsync(string email);
 }

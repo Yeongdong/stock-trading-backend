@@ -28,7 +28,7 @@ public class KisTokenService : IKisTokenService
         _httpClient = httpClientFactory.CreateClient(nameof(KisTokenService));
     }
 
-    public async Task<TokenInfo> UpdateUserKisInfoAndTokensAsync(int userId, string appKey, string appSecret,
+    public async Task<TokenInfo> UpdateKisCredentialsAndTokensAsync(int userId, string appKey, string appSecret,
         string accountNumber)
     {
         KisValidationHelper.ValidateTokenRequest(userId, appKey, appSecret, accountNumber);
@@ -37,14 +37,14 @@ public class KisTokenService : IKisTokenService
 
         await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
 
-        var tokenResponse = await GetKisTokenAsync(userId, appKey, appSecret, accountNumber);
-        await GetWebSocketTokenAsync(userId, appKey, appSecret);
+        var tokenResponse = await GetKisAccessTokenAsync(userId, appKey, appSecret, accountNumber);
+        await GetKisWebSocketTokenAsync(userId, appKey, appSecret);
         await transaction.CommitAsync();
 
         return tokenResponse;
     }
 
-    public async Task<TokenInfo> GetKisTokenAsync(int userId, string appKey, string appSecret, string accountNumber)
+    public async Task<TokenInfo> GetKisAccessTokenAsync(int userId, string appKey, string appSecret, string accountNumber)
     {
         var bodyData = new
         {
@@ -59,12 +59,12 @@ public class KisTokenService : IKisTokenService
         var tokenResponse = await response.Content.ReadFromJsonAsync<TokenInfo>();
 
         await _tokenRepository.SaveKisTokenAsync(userId, tokenResponse);
-        await _userKisInfoRepository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);
+        await _userKisInfoRepository.UpdateKisCredentialsAsync(userId, appKey, appSecret, accountNumber);
 
         return tokenResponse;
     }
 
-    public async Task<string> GetWebSocketTokenAsync(int userId, string appKey, string appSecret)
+    public async Task<string> GetKisWebSocketTokenAsync(int userId, string appKey, string appSecret)
     {
         var content = new
         {
@@ -76,11 +76,11 @@ public class KisTokenService : IKisTokenService
         var response = await _httpClient.PostAsJsonAsync("/oauth2/Approval", content);
         response.EnsureSuccessStatusCode();
 
-        var WebTokenResponse = await response.Content.ReadFromJsonAsync<KisWebSocketApprovalResponse>();
-        _logger.LogInformation("WebSocket 토큰 발급 성공: {WebSocketToken}", WebTokenResponse);
+        var webSocketTokenResponse = await response.Content.ReadFromJsonAsync<KisWebSocketApprovalResponse>();
+        _logger.LogInformation("WebSocket 토큰 발급 성공: {WebSocketToken}", webSocketTokenResponse);
 
-        await _userKisInfoRepository.SaveWebSocketTokenAsync(userId, WebTokenResponse.ApprovalKey);
+        await _userKisInfoRepository.SaveWebSocketTokenAsync(userId, webSocketTokenResponse.ApprovalKey);
 
-        return WebTokenResponse.ApprovalKey;
+        return webSocketTokenResponse.ApprovalKey;
     }
 }

@@ -6,7 +6,22 @@ namespace StockTrading.API.Extensions;
 
 public static class SettingsConfigurationExtensions
 {
-    public static IServiceCollection AddSettingsWithValidation(this IServiceCollection services, IConfiguration configuration)
+    public static void AddSettingsWithValidation(this IServiceCollection services, IConfiguration configuration)
+    {
+        AddAllSettings(services, configuration);
+    }
+
+    public static void ValidateAllSettingsOnStartup(this IServiceCollection services)
+    {
+        AddSettingsValidation(services);
+    }
+
+    public static void AddSettingsSummary(this IServiceCollection services)
+    {
+        services.AddSingleton<ISettingsSummaryService, SettingsSummaryService>();
+    }
+
+    private static void AddAllSettings(IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptionsWithValidation<JwtSettings>(configuration, JwtSettings.SectionName);
         services.AddOptionsWithValidation<KrxApiSettings>(configuration, KrxApiSettings.SectionName);
@@ -16,21 +31,16 @@ public static class SettingsConfigurationExtensions
         services.AddOptionsWithValidation<ApplicationSettings>(configuration, ApplicationSettings.SectionName);
         services.AddOptionsWithValidation<SecuritySettings>(configuration, SecuritySettings.SectionName);
         services.AddOptionsWithValidation<SignalRSettings>(configuration, SignalRSettings.SectionName);
-
-        return services;
     }
 
-    private static IServiceCollection AddOptionsWithValidation<TOptions>(this IServiceCollection services, IConfiguration configuration, string sectionName) where TOptions : class
+    private static void AddOptionsWithValidation<TOptions>(this IServiceCollection services,
+        IConfiguration configuration, string sectionName) where TOptions : class
     {
         services.Configure<TOptions>(configuration.GetSection(sectionName));
-        
-        // 설정 검증 활성화
         services.AddSingleton<IValidateOptions<TOptions>>(_ => new ValidateOptionsResult<TOptions>());
-
-        return services;
     }
 
-    public static IServiceCollection ValidateAllSettingsOnStartup(this IServiceCollection services)
+    private static void AddSettingsValidation(IServiceCollection services)
     {
         services.AddOptions<KoreaInvestmentSettings>()
             .ValidateDataAnnotations()
@@ -51,36 +61,66 @@ public static class SettingsConfigurationExtensions
         services.AddOptions<KrxApiSettings>()
             .ValidateDataAnnotations()
             .ValidateOnStart();
-
-        return services;
-    }
-
-    public static IServiceCollection AddSettingsSummary(this IServiceCollection services)
-    {
-        services.AddSingleton<ISettingsSummaryService, SettingsSummaryService>();
-        return services;
     }
 }
 
-/// <summary>
-/// 설정 검증 결과를 제공하는 클래스
-/// </summary>
 public class ValidateOptionsResult<TOptions> : IValidateOptions<TOptions>
     where TOptions : class
 {
     public ValidateOptionsResult Validate(string name, TOptions options)
     {
-        if (options is not IValidatableObject validatable) return ValidateOptionsResult.Success;
-        var results = validatable.Validate(new ValidationContext(options));
-        var errors = results.Select(r => r.ErrorMessage).Where(e => !string.IsNullOrEmpty(e));
-            
-        return errors.Any() ? ValidateOptionsResult.Fail($"Configuration validation failed for {typeof(TOptions).Name}: {string.Join(", ", errors)}") : ValidateOptionsResult.Success;
+        var errors = new List<string>();
+
+        if (options is IValidatableObject validatable)
+        {
+            var results = validatable.Validate(new ValidationContext(options));
+            errors.AddRange(results.Select(r => r.ErrorMessage).Where(e => !string.IsNullOrEmpty(e)));
+        }
+
+        ValidateEnvironmentSpecificSettings(options, errors);
+
+        return errors.Any()
+            ? ValidateOptionsResult.Fail(
+                $"Configuration validation failed for {typeof(TOptions).Name}: {string.Join(", ", errors)}")
+            : ValidateOptionsResult.Success;
+    }
+
+    private static void ValidateEnvironmentSpecificSettings<T>(T options, List<string> errors)
+    {
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+        if (environment != "Production") return;
+
+        switch (options)
+        {
+            case KoreaInvestmentSettings kisSettings:
+                ValidateProductionKisSettings(kisSettings, errors);
+                break;
+            case JwtSettings jwtSettings:
+                ValidateProductionJwtSettings(jwtSettings, errors);
+                break;
+        }
+    }
+
+    private static void ValidateProductionKisSettings(KoreaInvestmentSettings settings, List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(settings.AppKey))
+            errors.Add("AppKey is required in production environment");
+
+        if (string.IsNullOrWhiteSpace(settings.AppSecret))
+            errors.Add("AppSecret is required in production environment");
+    }
+
+    private static void ValidateProductionJwtSettings(JwtSettings settings, List<string> errors)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Key))
+            errors.Add("JWT Key is required in production environment");
+
+        if (settings.Key?.Length < 32)
+            errors.Add("JWT Key must be at least 32 characters long in production");
     }
 }
 
-/// <summary>
-/// 설정 요약 정보 서비스
-/// </summary>
 public interface ISettingsSummaryService
 {
     Dictionary<string, object> GetSettingsSummary();

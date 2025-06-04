@@ -87,7 +87,7 @@ public class AuthControllerTest
             .ReturnsAsync(payload);
 
         _mockUserService
-            .Setup(x => x.GetOrCreateGoogleUserAsync(payload))
+            .Setup(x => x.CreateOrGetGoogleUserAsync(payload))
             .ReturnsAsync(user);
 
         _mockJwtService

@@ -153,40 +153,12 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddBusinessServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Repository 계층
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IOrderRepository, OrderRepository>();
-        services.AddScoped<ITokenRepository, TokenRepository>();
-        services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
-        services.AddScoped<IStockRepository, StockRepository>();
-
-        // Infrastructure 계층
-        services.AddScoped<IDbContextWrapper, DbContextWrapper>();
-
-        // Application 서비스 계층
-        services.AddScoped<IJwtService, JwtService>();
-        services.AddScoped<IUserService, UserService>();
-        services.AddScoped<IOrderService, OrderService>();
-        services.AddScoped<IBalanceService, BalanceService>();
-        services.AddScoped<IStockService, StockService>();
-        services.AddScoped<IKisTokenService, KisTokenService>();
-        services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
-        services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
-        services.AddScoped<ICurrentPriceService, CurrentPriceService>();
-
-        // API 계층
-        services.AddScoped<IUserContextService, UserContextService>();
-
-        // Validator 계층
-        services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
-
-        // 통합 설정 등록 및 검증
-        services.AddSettingsWithValidation(configuration);
-        services.ValidateAllSettingsOnStartup();
-        services.AddSettingsSummary();
-
-        // Converter 등록
-        services.AddScoped<StockDataConverter>();
+        AddRepositories(services);
+        AddInfrastructureServices(services);
+        AddApplicationServices(services);
+        AddApiServices(services);
+        AddValidators(services);
+        AddConvertersAndSettings(services, configuration);
 
         return services;
     }
@@ -275,12 +247,56 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddHealthCheckServices(this IServiceCollection services)
+    public static void AddHealthCheckServices(this IServiceCollection services)
     {
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
+    }
 
-        return services;
+    private static void AddConvertersAndSettings(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSettingsWithValidation(configuration);
+        services.ValidateAllSettingsOnStartup();
+        services.AddSettingsSummary();
+
+        services.AddScoped<StockDataConverter>();
+    }
+
+    private static void AddValidators(IServiceCollection services)
+    {
+        services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
+    }
+
+    private static void AddApiServices(IServiceCollection services)
+    {
+        services.AddScoped<IUserContextService, UserContextService>();
+    }
+
+    private static void AddApplicationServices(IServiceCollection services)
+    {
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IBalanceService, BalanceService>();
+        services.AddScoped<IStockService, StockService>();
+        services.AddScoped<IKisTokenService, KisTokenService>();
+        services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
+        services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
+        services.AddScoped<ICurrentPriceService, CurrentPriceService>();
+    }
+
+    private static void AddInfrastructureServices(IServiceCollection services)
+    {
+        services.AddScoped<IDbContextWrapper, DbContextWrapper>();
+    }
+
+    private static void AddRepositories(IServiceCollection services)
+    {
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<ITokenRepository, TokenRepository>();
+        services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
+        services.AddScoped<IStockRepository, StockRepository>();
     }
 
     #region Private Helper Methods

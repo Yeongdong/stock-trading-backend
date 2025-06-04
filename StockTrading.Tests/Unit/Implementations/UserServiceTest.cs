@@ -48,7 +48,7 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async Task GetOrCreateGoogleUserAsync_ExistingUser_ReturnsUserDto()
+    public async Task CreateOrGetGoogleUserAsync_ExistingUser_ReturnsUserDto()
     {
         var googleId = "google123";
         var existingUser = new User
@@ -71,7 +71,7 @@ public class UserServiceTest
         _mockUserRepository.Setup(repo => repo.GetByGoogleIdAsync(googleId))
             .ReturnsAsync(existingUser);
 
-        var result = await _userService.GetOrCreateGoogleUserAsync(payload);
+        var result = await _userService.CreateOrGetGoogleUserAsync(payload);
 
         Assert.NotNull(result);
         Assert.Equal(existingUser.Id, result.Id);
@@ -109,7 +109,7 @@ public class UserServiceTest
         _mockUserRepository.Setup(repo => repo.AddAsync(It.IsAny<User>()))
             .ReturnsAsync(newUser);
 
-        var result = await _userService.GetOrCreateGoogleUserAsync(payload);
+        var result = await _userService.CreateOrGetGoogleUserAsync(payload);
 
         Assert.NotNull(result);
         Assert.Equal(payload.Email, result.Email);
@@ -123,7 +123,7 @@ public class UserServiceTest
     public async Task GetOrCreateGoogleUserAsync_NullPayload_ThrowsArgumentException()
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _userService.GetOrCreateGoogleUserAsync(null));
+            _userService.CreateOrGetGoogleUserAsync(null));
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class UserServiceTest
         _mockUserRepository.Setup(repo => repo.AddAsync(It.IsAny<User>()))
             .ReturnsAsync(newUser);
 
-        var result = await _userService.GetOrCreateGoogleUserAsync(payload);
+        var result = await _userService.CreateOrGetGoogleUserAsync(payload);
 
         _mockDbTransactionWrapper.Verify(t => t.CommitAsync(), Times.Once);
         _mockDbTransactionWrapper.Verify(t => t.RollbackAsync(), Times.Never);

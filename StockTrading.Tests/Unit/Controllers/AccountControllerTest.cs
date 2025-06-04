@@ -57,7 +57,7 @@ public class AccountControllerTest
         };
 
         _mockKisTokenService
-            .Setup(x => x.UpdateUserKisInfoAndTokensAsync(
+            .Setup(x => x.UpdateKisCredentialsAndTokensAsync(
                 _testUser.Id,
                 userInfoRequest.AppKey,
                 userInfoRequest.AppSecret,

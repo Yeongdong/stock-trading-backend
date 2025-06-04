@@ -37,7 +37,7 @@ public class AuthController : BaseController
             request.Credential,
             _configuration["Authentication:Google:ClientId"]);
 
-        var user = await _userService.GetOrCreateGoogleUserAsync(payload);
+        var user = await _userService.CreateOrGetGoogleUserAsync(payload);
         var token = _jwtService.GenerateToken(user);
 
         SetAuthCookie(token);

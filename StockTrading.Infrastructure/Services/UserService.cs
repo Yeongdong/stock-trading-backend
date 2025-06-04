@@ -20,7 +20,7 @@ public class UserService : IUserService
         _dbContextWrapper = dbContextWrapper;
     }
 
-    public async Task<UserInfo> GetOrCreateGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
+    public async Task<UserInfo> CreateOrGetGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
     {
         if (payload?.Subject == null || payload.Email == null || payload.Name == null)
             throw new ArgumentException("유효하지 않은 Google 사용자 정보입니다.");
