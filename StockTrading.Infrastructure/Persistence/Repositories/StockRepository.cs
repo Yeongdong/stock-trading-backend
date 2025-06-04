@@ -43,25 +43,30 @@ public class StockRepository : BaseRepository<Stock, string>, IStockRepository
             .ToListAsync();
     }
 
-    public async Task<bool> BulkUpsertAsync(List<Stock> stocks)
+    public Task<bool> BulkUpsertAsync(List<Stock> stocks)
     {
-        Logger.LogInformation("대량 업데이트 시작: {Count}개 종목", stocks.Count);
-
-        foreach (var stock in stocks)
-        {
-            var existing = await DbSet.FindAsync(stock.Code);
-            
-            if (existing != null)
-                existing.UpdateInfo(stock.Name, stock.Sector, stock.Market, stock.EnglishName);
-            else
-                await DbSet.AddAsync(stock);
-        }
-
-        var affectedRows = await Context.SaveChangesAsync();
-        Logger.LogInformation("대량 업데이트 완료: {AffectedRows}개 행 처리", affectedRows);
-
-        return true;
+        throw new NotImplementedException();
     }
+
+    // public async Task<bool> BulkUpsertAsync(List<Stock> stocks)
+    // {
+    //     Logger.LogInformation("대량 업데이트 시작: {Count}개 종목", stocks.Count);
+    //
+    //     foreach (var stock in stocks)
+    //     {
+    //         var existing = await DbSet.FindAsync(stock.Code);
+    //         
+    //         if (existing != null)
+    //             existing.UpdateInfo(stock.Name, stock.Sector, stock.Market, stock.EnglishName);
+    //         else
+    //             await DbSet.AddAsync(stock);
+    //     }
+    //
+    //     var affectedRows = await Context.SaveChangesAsync();
+    //     Logger.LogInformation("대량 업데이트 완료: {AffectedRows}개 행 처리", affectedRows);
+    //
+    //     return true;
+    // }
 
     public async Task<DateTime?> GetLastUpdatedAsync()
     {

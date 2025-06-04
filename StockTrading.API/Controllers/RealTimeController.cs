@@ -257,4 +257,45 @@ public class RealTimeController : BaseController
             return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
         }
     }
+    
+    [HttpPost("debug/test-full-pipeline")]
+    public async Task<IActionResult> TestFullPipeline(string symbol = "005930")
+    {
+        try
+        {
+            _logger.LogInformation("🧪 [Debug] 전체 파이프라인 테스트 시작: {Symbol}", symbol);
+        
+            // 1. Processor 직접 테스트
+            var processor = HttpContext.RequestServices.GetService<IRealTimeDataProcessor>();
+            if (processor == null)
+            {
+                return BadRequest("RealTimeDataProcessor를 찾을 수 없습니다.");
+            }
+        
+            // 2. KIS 형태의 파이프 메시지 생성 (실제 형태와 동일)
+            var currentTime = DateTime.Now.ToString("HHmmss");
+            var kisMessage = $"0|H0STCNT0|1|{symbol}^{currentTime}^76800^2^300^0.39^76800^76500^77200^76200^76750^76850^45000^3500000^268800000000";
+        
+            _logger.LogInformation("📤 [Debug] KIS 시뮬레이션 메시지: {Message}", kisMessage);
+        
+            // 3. Processor로 메시지 처리
+            processor.ProcessMessage(kisMessage);
+        
+            _logger.LogInformation("✅ [Debug] 파이프라인 테스트 완료");
+        
+            return Ok(new 
+            { 
+                message = "전체 파이프라인 테스트 완료",
+                kisMessage = kisMessage,
+                symbol = symbol,
+                timestamp = DateTime.UtcNow,
+                note = "이 테스트는 KIS 메시지 → Processor → Broadcaster → SignalR 전체 흐름을 확인합니다."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [Debug] 파이프라인 테스트 실패");
+            return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
+    }
 }

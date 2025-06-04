@@ -1,4 +1,3 @@
-using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
 namespace StockTrading.Application.Services;

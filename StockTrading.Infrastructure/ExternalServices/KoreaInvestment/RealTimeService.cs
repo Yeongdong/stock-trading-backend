@@ -7,7 +7,7 @@ using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.State;
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 /// <summary>
-/// KIS 실시간 서비스 (리팩토링 버전)
+/// KIS 실시간 서비스
 /// </summary>
 public class RealTimeService : IRealTimeService
 {
@@ -109,8 +109,8 @@ public class RealTimeService : IRealTimeService
     {
         _webSocketClient.MessageReceived += (_, msg) => _dataProcessor.ProcessMessage(msg);
         _webSocketClient.ConnectionLost += OnConnectionLostEvent;
-        // _dataProcessor.StockPriceReceived += (_, data) => _ = _broadcaster.BroadcastStockPriceAsync(data);
-        // _dataProcessor.TradeExecutionReceived += (_, data) => _ = _broadcaster.BroadcastTradeExecutionAsync(data);
+        _dataProcessor.StockPriceReceived += (_, data) => _ = _broadcaster.BroadcastStockPriceAsync(data);
+        _dataProcessor.TradeExecutionReceived += (_, data) => _ = _broadcaster.BroadcastTradeExecutionAsync(data);
     }
 
     private async void OnConnectionLostEvent(object? sender, EventArgs e)

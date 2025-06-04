@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
@@ -310,6 +311,18 @@ static void ConfigureRealTimeServices(IServiceCollection services)
 {
     services.AddSingleton<WebSocketClient>();
     services.AddSingleton<IWebSocketClient>(provider => provider.GetRequiredService<WebSocketClient>());
+    
+    services.AddSingleton<RealTimeDataBroadcaster>(provider =>
+    {
+        var hubContext = provider.GetRequiredService<IHubContext<StockHub>>();
+        var logger = provider.GetRequiredService<ILogger<RealTimeDataBroadcaster>>();
+        var broadcaster = new RealTimeDataBroadcaster(hubContext, logger);
+        
+        logger.LogInformation("🔧 [DI] RealTimeDataBroadcaster 인스턴스 생성됨");
+        return broadcaster;
+    });
+    services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
+    
     services.AddSingleton<RealTimeDataProcessor>(provider =>
     {
         var logger = provider.GetRequiredService<ILogger<RealTimeDataProcessor>>();
@@ -318,41 +331,25 @@ static void ConfigureRealTimeServices(IServiceCollection services)
         
         var processor = new RealTimeDataProcessor(logger, loggerFactory);
         
-        // 🔥 핵심: 이벤트 핸들러 연결
+        logger.LogInformation("🔧 [DI] RealTimeDataProcessor 이벤트 핸들러 연결 시작");
+        
         processor.StockPriceReceived += async (sender, data) =>
         {
-            logger.LogInformation("📡 [Program] StockPriceReceived 이벤트 - 브로드캐스터로 전달: {Symbol} - {Price}원", 
-                data.Symbol, data.Price);
-            
-            try
-            {
-                await broadcaster.BroadcastStockPriceAsync(data);
-                logger.LogInformation("✅ [Program] 브로드캐스트 완료: {Symbol}", data.Symbol);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "❌ [Program] 브로드캐스트 실패: {Symbol} - {Error}", data.Symbol, ex.Message);
-            }
+            logger.LogInformation("🎯 [DI] StockPriceReceived 이벤트 발생: {Symbol}", data.Symbol);
+            await broadcaster.BroadcastStockPriceAsync(data);
         };
         
         processor.TradeExecutionReceived += async (sender, data) =>
         {
-            logger.LogInformation("📡 [Program] TradeExecutionReceived 이벤트");
-            try
-            {
-                await broadcaster.BroadcastTradeExecutionAsync(data);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "❌ [Program] 거래체결 브로드캐스트 실패: {Error}", ex.Message);
-            }
+            logger.LogInformation("🎯 [DI] TradeExecutionReceived 이벤트 발생");
+            await broadcaster.BroadcastTradeExecutionAsync(data);
         };
         
+        logger.LogInformation("✅ [DI] RealTimeDataProcessor 이벤트 핸들러 연결 완료");
         return processor;
     });
     services.AddSingleton<IRealTimeDataProcessor>(provider => provider.GetRequiredService<RealTimeDataProcessor>());
-    services.AddSingleton<RealTimeDataBroadcaster>();
-    services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
+    
     services.AddSingleton<SubscriptionManager>();
     services.AddSingleton<ISubscriptionManager>(provider => provider.GetRequiredService<SubscriptionManager>());
     
