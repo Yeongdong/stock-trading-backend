@@ -28,7 +28,6 @@ public abstract class BaseRepository<TEntity, TKey> : IBaseRepository<TEntity, T
     {
         var entry = await DbSet.AddAsync(entity);
         await Context.SaveChangesAsync();
-        Logger.LogInformation("엔티티 추가 완료. ID: {Id}", entry.Entity);
         return entry.Entity;
     }
 
@@ -36,7 +35,6 @@ public abstract class BaseRepository<TEntity, TKey> : IBaseRepository<TEntity, T
     {
         DbSet.Update(entity);
         await Context.SaveChangesAsync();
-        Logger.LogInformation("엔티티 업데이트 완료");
         return entity;
     }
 
@@ -50,7 +48,6 @@ public abstract class BaseRepository<TEntity, TKey> : IBaseRepository<TEntity, T
         
         DbSet.Remove(entity);
         await Context.SaveChangesAsync();
-        Logger.LogInformation("엔티티 삭제 완료. ID: {Id}", id);
     }
 
     public virtual async Task<bool> ExistsAsync(TKey id)

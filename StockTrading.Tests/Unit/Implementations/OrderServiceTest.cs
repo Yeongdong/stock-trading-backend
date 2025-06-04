@@ -18,7 +18,6 @@ public class OrderServiceTest
     private readonly Mock<IDbContextWrapper> _mockDbContextWrapper;
     private readonly Mock<IDbTransactionWrapper> _mockDbTransaction;
     private readonly Mock<IOrderRepository> _mockOrderRepository;
-    private readonly Mock<ILogger<OrderService>> _mockLogger;
     private readonly OrderService _orderService;
 
     public OrderServiceTest()
@@ -27,18 +26,13 @@ public class OrderServiceTest
         _mockDbContextWrapper = new Mock<IDbContextWrapper>();
         _mockDbTransaction = new Mock<IDbTransactionWrapper>();
         _mockOrderRepository = new Mock<IOrderRepository>();
-        _mockLogger = new Mock<ILogger<OrderService>>();
 
         _mockDbContextWrapper
             .Setup(db => db.BeginTransactionAsync())
             .ReturnsAsync(_mockDbTransaction.Object);
 
-        _orderService = new OrderService(
-            _mockKisApiClient.Object,
-            _mockDbContextWrapper.Object,
-            _mockOrderRepository.Object,
-            _mockLogger.Object
-        );
+        _orderService = new OrderService(_mockKisApiClient.Object, _mockDbContextWrapper.Object,
+            _mockOrderRepository.Object);
     }
 
     [Fact]

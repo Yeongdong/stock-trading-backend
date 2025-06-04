@@ -13,18 +13,13 @@ namespace StockTrading.Tests.Unit.Implementations;
 public class BalanceServiceTest
 {
     private readonly Mock<IKisApiClient> _mockKisApiClient;
-    private readonly Mock<ILogger<BalanceService>> _mockLogger;
     private readonly BalanceService _balanceService;
 
     public BalanceServiceTest()
     {
         _mockKisApiClient = new Mock<IKisApiClient>();
-        _mockLogger = new Mock<ILogger<BalanceService>>();
 
-        _balanceService = new BalanceService(
-            _mockKisApiClient.Object,
-            _mockLogger.Object
-        );
+        _balanceService = new BalanceService(_mockKisApiClient.Object);
     }
 
     [Fact]
@@ -152,7 +147,7 @@ public class BalanceServiceTest
         var userDto = CreateTestUser();
         var emptyBalance = new AccountBalance
         {
-            Positions = new List<KisPositionResponse>(),
+            Positions = [],
             Summary = new KisAccountSummaryResponse
             {
                 TotalDeposit = "1000000",
@@ -198,9 +193,9 @@ public class BalanceServiceTest
     {
         return new AccountBalance
         {
-            Positions = new List<KisPositionResponse>
-            {
-                new KisPositionResponse
+            Positions =
+            [
+                new KisPositionResponse()
                 {
                     StockCode = "005930",
                     StockName = "삼성전자",
@@ -210,7 +205,7 @@ public class BalanceServiceTest
                     ProfitLoss = "50000",
                     ProfitLossRate = "7.69"
                 }
-            },
+            ],
             Summary = new KisAccountSummaryResponse
             {
                 TotalDeposit = "1000000",

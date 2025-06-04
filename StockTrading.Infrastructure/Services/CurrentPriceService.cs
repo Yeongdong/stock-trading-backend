@@ -9,21 +9,16 @@ namespace StockTrading.Infrastructure.Services;
 public class CurrentPriceService: ICurrentPriceService
 {
     private readonly IKisApiClient _kisApiClient;
-    private readonly ILogger<CurrentPriceService> _logger;
 
-    public CurrentPriceService(IKisApiClient kisApiClient, ILogger<CurrentPriceService> logger)
+    public CurrentPriceService(IKisApiClient kisApiClient)
     {
         _kisApiClient = kisApiClient;
-        _logger = logger;
     }
     
     public async Task<CurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo userInfo)
     {
         ValidateUserForKisApi(userInfo);
-
-        _logger.LogInformation("주식 현재가 조회 시작: 사용자 {UserId}, 종목 {StockCode}", userInfo.Id, request.StockCode);
         var response = await _kisApiClient.GetCurrentPriceAsync(request, userInfo);
-        _logger.LogInformation("주식 현재가 조회 완료: 사용자 {UserId}, 종목 {StockCode}, 현재가 {Price}원", userInfo.Id, request.StockCode, response.CurrentPrice);
 
         return response;
     }

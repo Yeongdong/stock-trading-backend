@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.Repositories;
@@ -13,15 +12,12 @@ public class OrderService : IOrderService
     private readonly IKisApiClient _kisApiClient;
     private readonly IDbContextWrapper _dbContextWrapper;
     private readonly IOrderRepository _orderRepository;
-    private readonly ILogger<OrderService> _logger;
 
-    public OrderService(IKisApiClient kisApiClient, IDbContextWrapper dbContextWrapper,
-        IOrderRepository orderRepository, ILogger<OrderService> logger)
+    public OrderService(IKisApiClient kisApiClient, IDbContextWrapper dbContextWrapper, IOrderRepository orderRepository)
     {
         _kisApiClient = kisApiClient;
         _dbContextWrapper = dbContextWrapper;
         _orderRepository = orderRepository;
-        _logger = logger;
     }
 
     public async Task<OrderResponse> PlaceOrderAsync(OrderRequest order, UserInfo user)

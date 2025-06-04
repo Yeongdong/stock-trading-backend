@@ -57,7 +57,6 @@ public class KisTokenService : IKisTokenService
         response.EnsureSuccessStatusCode();
 
         var tokenResponse = await response.Content.ReadFromJsonAsync<TokenInfo>();
-        _logger.LogInformation("KIS 토큰 발급 성공: {UserId}", userId);
 
         await _tokenRepository.SaveKisTokenAsync(userId, tokenResponse);
         await _userKisInfoRepository.UpdateUserKisInfoAsync(userId, appKey, appSecret, accountNumber);

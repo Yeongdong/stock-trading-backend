@@ -9,22 +9,15 @@ namespace StockTrading.Infrastructure.Services;
 public class BuyableInquiryService: IBuyableInquiryService
 {
     private readonly IKisApiClient _kisApiClient;
-    private readonly ILogger<BuyableInquiryService> _logger;
 
-    public BuyableInquiryService(IKisApiClient kisApiClient, ILogger<BuyableInquiryService> logger)
+    public BuyableInquiryService(IKisApiClient kisApiClient)
     {
         _kisApiClient = kisApiClient;
-        _logger = logger;
     }
     
     public async Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo userInfo)
     {
         ValidateUserForKisApi(userInfo);
-
-        _logger.LogInformation("매수가능조회 시작: 사용자 {UserId}, 종목 {StockCode}", userInfo.Id, request.StockCode);
-        var response = await _kisApiClient.GetBuyableInquiryAsync(request, userInfo);
-        _logger.LogInformation("매수가능조회 완료: 사용자 {UserId}, 종목 {StockCode}", userInfo.Id, request.StockCode);
-
-        return response;
+        return await _kisApiClient.GetBuyableInquiryAsync(request, userInfo);
     }
 }

@@ -72,7 +72,7 @@ public static class WebApplicationExtensions
     public static WebApplication ConfigureProductionSecurity(this WebApplication app)
     {
         app.UseHsts();
-        
+
         app.Use(async (context, next) =>
         {
             // SignalR 경로가 아닌 경우에만 보안 헤더 추가
@@ -93,74 +93,38 @@ public static class WebApplicationExtensions
 
     public static WebApplication ConfigureRequestLogging(this WebApplication app)
     {
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
-
-        if (app.Environment.IsDevelopment())
-        {
-            // 개발 환경: 상세 로깅
-            app.Use(async (context, next) =>
-            {
-                var startTime = DateTime.UtcNow;
-                
-                // SignalR 연결은 로깅에서 제외 (너무 많은 로그 방지)
-                if (!context.Request.Path.StartsWithSegments("/stockhub"))
-                {
-                    await next();
-                    var duration = DateTime.UtcNow - startTime;
-
-                    logger.LogDebug("HTTP {Method} {Path} - {StatusCode} ({Duration}ms)",
-                        context.Request.Method,
-                        context.Request.Path,
-                        context.Response.StatusCode,
-                        duration.TotalMilliseconds);
-                }
-                else
-                {
-                    await next();
-                }
-            });
-        }
-
-        // SignalR 연결 전용 로깅
-        app.ConfigureSignalRLogging();
-
-        return app;
-    }
-
-    public static WebApplication ConfigureSignalRLogging(this WebApplication app)
-    {
-        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        if (!app.Environment.IsDevelopment())
+            return app;
 
         app.Use(async (context, next) =>
         {
+            // SignalR 연결은 별도 처리
             if (context.Request.Path.StartsWithSegments("/stockhub"))
             {
-                logger.LogInformation("[SignalR] 연결 요청: {Method} {Path} | User-Agent: {UserAgent} | Origin: {Origin}",
+                var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("SignalR 요청: {Method} {Path}", context.Request.Method, context.Request.Path);
+                await next();
+                return;
+            }
+
+            var startTime = DateTime.UtcNow;
+            await next();
+            var duration = DateTime.UtcNow - startTime;
+
+            // 오류나 느린 요청만 로깅
+            if (context.Response.StatusCode >= 400 || duration.TotalMilliseconds > 1000)
+            {
+                app.Logger.LogWarning("HTTP {Method} {Path} - {StatusCode} ({Duration}ms)",
                     context.Request.Method,
                     context.Request.Path,
-                    context.Request.Headers.UserAgent.ToString(),
-                    context.Request.Headers.Origin.ToString());
+                    context.Response.StatusCode,
+                    duration.TotalMilliseconds);
             }
-            else
-            {
-                logger.LogInformation("Request: {Method} {Path}", context.Request.Method, context.Request.Path);
-            }
-
-            await next();
-
-            logger.LogInformation(
-                context.Request.Path.StartsWithSegments("/stockhub")
-                    ? "📡 [SignalR] 응답: {StatusCode}"
-                    : "📨 Response: {StatusCode}", 
-                context.Response.StatusCode);
         });
 
         return app;
     }
 
-    /// <summary>
-    /// CORS 설정
-    /// </summary>
     public static WebApplication ConfigureCors(this WebApplication app)
     {
         app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
@@ -203,7 +167,7 @@ public static class WebApplicationExtensions
             // 개발 환경에서 더 관대한 설정
             if (!app.Environment.IsDevelopment()) return;
             options.ApplicationMaxBufferSize = 64 * 1024; // 64KB
-            options.TransportMaxBufferSize = 64 * 1024;   // 64KB
+            options.TransportMaxBufferSize = 64 * 1024; // 64KB
         });
 
         return app;
@@ -281,7 +245,7 @@ public static class WebApplicationExtensions
 
         return builder;
     }
-    
+
     /// EUC-KR 인코딩 지원 설정 (KRX API용)
     public static void RegisterEncodingProviders()
     {

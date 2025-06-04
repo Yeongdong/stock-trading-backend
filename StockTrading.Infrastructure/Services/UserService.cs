@@ -25,10 +25,7 @@ public class UserService : IUserService
         if (payload?.Subject == null || payload.Email == null || payload.Name == null)
             throw new ArgumentException("유효하지 않은 Google 사용자 정보입니다.");
 
-        _logger.LogInformation("Google 사용자 조회 또는 생성: {GoogleId}", payload.Subject);
-
         var existingUser = await _userRepository.GetByGoogleIdAsync(payload.Subject);
-
         if (existingUser != null)
             return ToUserDto(existingUser);
 
@@ -39,8 +36,6 @@ public class UserService : IUserService
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("이메일은 필수입니다.", nameof(email));
-
-        _logger.LogInformation("이메일로 사용자 조회: {Email}", email);
 
         var user = await _userRepository.GetByEmailWithTokenAsync(email);
         if (user == null)
@@ -67,7 +62,6 @@ public class UserService : IUserService
         var createdUser = await _userRepository.AddAsync(newUser);
         await transaction.CommitAsync();
 
-        _logger.LogInformation("새 사용자 생성 완료: {UserId}", createdUser.Id);
         return ToUserDto(createdUser);
     }
 

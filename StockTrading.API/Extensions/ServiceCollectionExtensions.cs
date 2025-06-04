@@ -12,6 +12,7 @@ using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
+using StockTrading.Infrastructure.ExternalServices.KRX;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -199,7 +200,7 @@ public static class ServiceCollectionExtensions
         {
             var hubContext = provider.GetRequiredService<IHubContext<StockHub>>();
             var logger = provider.GetRequiredService<ILogger<RealTimeDataBroadcaster>>();
-            var broadcaster = new RealTimeDataBroadcaster(hubContext, logger);
+            var broadcaster = new RealTimeDataBroadcaster(hubContext);
 
             logger.LogInformation("[DI] RealTimeDataBroadcaster 인스턴스 생성됨");
             return broadcaster;
