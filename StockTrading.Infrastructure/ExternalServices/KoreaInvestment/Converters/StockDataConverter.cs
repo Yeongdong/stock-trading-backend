@@ -36,9 +36,9 @@ public class StockDataConverter
         return priceData;
     }
 
-    public CurrentPriceResponse ConvertToStockPriceResponse(KisCurrentPriceData kisData, string stockCode)
+    public KisCurrentPriceResponse ConvertToStockPriceResponse(KisCurrentPriceData kisData, string stockCode)
     {
-        return new CurrentPriceResponse
+        return new KisCurrentPriceResponse
         {
             StockCode = stockCode,
             StockName = kisData.StockName,

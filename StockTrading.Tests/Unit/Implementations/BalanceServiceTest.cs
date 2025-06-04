@@ -4,6 +4,7 @@ using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.DTOs.Trading.Portfolio;
 using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Services;
 using StockTrading.Infrastructure.Services;
 
@@ -12,12 +13,12 @@ namespace StockTrading.Tests.Unit.Implementations;
 [TestSubject(typeof(BalanceService))]
 public class BalanceServiceTest
 {
-    private readonly Mock<IKisApiClient> _mockKisApiClient;
+    private readonly Mock<IKisBalanceApiClient> _mockKisApiClient;
     private readonly BalanceService _balanceService;
 
     public BalanceServiceTest()
     {
-        _mockKisApiClient = new Mock<IKisApiClient>();
+        _mockKisApiClient = new Mock<IKisBalanceApiClient>();
 
         _balanceService = new BalanceService(_mockKisApiClient.Object);
     }

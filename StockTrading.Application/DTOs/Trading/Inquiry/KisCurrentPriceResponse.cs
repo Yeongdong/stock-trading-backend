@@ -3,7 +3,7 @@ namespace StockTrading.Application.DTOs.Trading.Inquiry;
 /// <summary>
 /// 주식 현재가 조회 응답 DTO
 /// </summary>
-public class CurrentPriceResponse
+public class KisCurrentPriceResponse
 {
     /// <summary>종목코드</summary>
     public string StockCode { get; init; } = string.Empty;

@@ -11,5 +11,5 @@ public interface ICurrentPriceService
     /// <summary>
     /// 주식 현재가 조회
     /// </summary>
-    Task<CurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo userInfo);
+    Task<KisCurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo userInfo);
 }

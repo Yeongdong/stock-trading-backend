@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Implementations;
 using StockTrading.API.Validator.Interfaces;
+using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
@@ -31,7 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.AddSignalR();
         services.AddMemoryCache();
-        
+
         return services;
     }
 
@@ -71,13 +72,14 @@ public static class ServiceCollectionExtensions
             options.Key = Environment.GetEnvironmentVariable("ENCRYPTION:KEY") ?? config["Key"];
             options.IV = Environment.GetEnvironmentVariable("ENCRYPTION:IV") ?? config["IV"];
         });
-        
+
         services.AddSingleton<IEncryptionService, AesEncryptionService>();
 
         return services;
     }
 
-    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services,
+        IConfiguration configuration)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
         var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]);
@@ -113,42 +115,35 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddHttpClientServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddHttpClientServices(this IServiceCollection services,
+        IConfiguration configuration)
     {
         var kisBaseUrl = configuration["KoreaInvestment:BaseUrl"];
         var krxBaseUrl = configuration["KrxApi:BaseUrl"];
 
         services.AddHttpClient();
 
-        services.AddHttpClient<KisApiClient>(client =>
-        {
-            client.BaseAddress = new Uri(kisBaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
-            client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
-        });
+        AddKisHttpClient<KisOrderApiClient>(services, kisBaseUrl);
+        AddKisHttpClient<KisBalanceApiClient>(services, kisBaseUrl);
+        AddKisHttpClient<KisPriceApiClient>(services, kisBaseUrl);
 
-        services.AddHttpClient<OrderService>(client =>
-        {
-            client.BaseAddress = new Uri(kisBaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
-            client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
-        });
-
-        services.AddHttpClient(nameof(KisTokenService), client =>
-        {
-            client.BaseAddress = new Uri(kisBaseUrl);
-            client.Timeout = TimeSpan.FromSeconds(30);
-            client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
-        });
-
-        services.AddHttpClient<KrxApiClient>(client =>
-        {
-            client.BaseAddress = new Uri(krxBaseUrl);
-        });
-
-        services.AddScoped<IKisApiClient>(provider => provider.GetRequiredService<KisApiClient>());
+        services.AddHttpClient<OrderService>(client => ConfigureKisHttpClient(client, kisBaseUrl));
+        services.AddHttpClient(nameof(KisTokenService), client => ConfigureKisHttpClient(client, kisBaseUrl));
+        services.AddHttpClient<KrxApiClient>(client => { client.BaseAddress = new Uri(krxBaseUrl); });
 
         return services;
+    }
+
+    private static void AddKisHttpClient<T>(IServiceCollection services, string baseUrl) where T : class
+    {
+        services.AddHttpClient<T>(client => ConfigureKisHttpClient(client, baseUrl));
+    }
+
+    private static void ConfigureKisHttpClient(HttpClient client, string? kisBaseUrl)
+    {
+        client.BaseAddress = new Uri(kisBaseUrl);
+        client.Timeout = TimeSpan.FromSeconds(30);
+        client.DefaultRequestHeaders.Add("User-Agent", "StockTradingApp/1.0");
     }
 
     public static IServiceCollection AddBusinessServices(this IServiceCollection services, IConfiguration configuration)
@@ -177,7 +172,8 @@ public static class ServiceCollectionExtensions
             logger.LogInformation("[DI] RealTimeDataBroadcaster 인스턴스 생성됨");
             return broadcaster;
         });
-        services.AddSingleton<IRealTimeDataBroadcaster>(provider => provider.GetRequiredService<RealTimeDataBroadcaster>());
+        services.AddSingleton<IRealTimeDataBroadcaster>(provider =>
+            provider.GetRequiredService<RealTimeDataBroadcaster>());
 
         services.AddSingleton<RealTimeDataProcessor>(provider =>
         {
@@ -270,6 +266,9 @@ public static class ServiceCollectionExtensions
     private static void AddApiServices(IServiceCollection services)
     {
         services.AddScoped<IUserContextService, UserContextService>();
+        services.AddScoped<IKisOrderApiClient>(provider => provider.GetRequiredService<KisOrderApiClient>());
+        services.AddScoped<IKisBalanceApiClient>(provider => provider.GetRequiredService<KisBalanceApiClient>());
+        services.AddScoped<IKisPriceApiClient>(provider => provider.GetRequiredService<KisPriceApiClient>());
     }
 
     private static void AddApplicationServices(IServiceCollection services)

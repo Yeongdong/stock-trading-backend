@@ -1,11 +1,10 @@
 using JetBrains.Annotations;
-using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Repositories;
-using StockTrading.Application.Services;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Services;
 
@@ -14,7 +13,7 @@ namespace StockTrading.Tests.Unit.Implementations;
 [TestSubject(typeof(OrderService))]
 public class OrderServiceTest
 {
-    private readonly Mock<IKisApiClient> _mockKisApiClient;
+    private readonly Mock<IKisOrderApiClient> _mockKisOrderApiClient;
     private readonly Mock<IDbContextWrapper> _mockDbContextWrapper;
     private readonly Mock<IDbTransactionWrapper> _mockDbTransaction;
     private readonly Mock<IOrderRepository> _mockOrderRepository;
@@ -22,7 +21,7 @@ public class OrderServiceTest
 
     public OrderServiceTest()
     {
-        _mockKisApiClient = new Mock<IKisApiClient>();
+        _mockKisOrderApiClient = new Mock<IKisOrderApiClient>();
         _mockDbContextWrapper = new Mock<IDbContextWrapper>();
         _mockDbTransaction = new Mock<IDbTransactionWrapper>();
         _mockOrderRepository = new Mock<IOrderRepository>();
@@ -31,7 +30,7 @@ public class OrderServiceTest
             .Setup(db => db.BeginTransactionAsync())
             .ReturnsAsync(_mockDbTransaction.Object);
 
-        _orderService = new OrderService(_mockKisApiClient.Object, _mockDbContextWrapper.Object,
+        _orderService = new OrderService(_mockKisOrderApiClient.Object, _mockDbContextWrapper.Object,
             _mockOrderRepository.Object);
     }
 
@@ -42,7 +41,7 @@ public class OrderServiceTest
         var order = CreateTestOrder();
         var expectedResponse = CreateTestOrderResponse();
 
-        _mockKisApiClient
+        _mockKisOrderApiClient
             .Setup(client => client.PlaceOrderAsync(It.IsAny<OrderRequest>(), It.IsAny<UserInfo>()))
             .ReturnsAsync(expectedResponse);
         _mockOrderRepository
@@ -55,7 +54,7 @@ public class OrderServiceTest
         Assert.Equal("0", result.ReturnCode);
         Assert.Equal("123456789", result.Output.OrderNumber);
 
-        _mockKisApiClient.Verify(client => client.PlaceOrderAsync(order, userDto), Times.Once);
+        _mockKisOrderApiClient.Verify(client => client.PlaceOrderAsync(order, userDto), Times.Once);
         _mockOrderRepository.Verify(repo => repo.AddAsync(It.IsAny<StockOrder>()), Times.Once);
         _mockDbTransaction.Verify(t => t.CommitAsync(), Times.Once);
     }
@@ -108,7 +107,7 @@ public class OrderServiceTest
         var userDto = CreateTestUser();
         var order = CreateTestOrder();
 
-        _mockKisApiClient
+        _mockKisOrderApiClient
             .Setup(client => client.PlaceOrderAsync(It.IsAny<OrderRequest>(), It.IsAny<UserInfo>()))
             .ThrowsAsync(new HttpRequestException("API 호출 실패"));
 
