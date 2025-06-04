@@ -10,14 +10,12 @@ public class RealTimeController : BaseController
 {
     private readonly IRealTimeService _realTimeService;
     private readonly ILogger<RealTimeController> _logger;
-    private readonly IRealTimeDataBroadcaster _broadcaster;
 
     public RealTimeController(IRealTimeService realTimeService, IUserContextService userContextService,
-        ILogger<RealTimeController> logger, IRealTimeDataBroadcaster broadcaster) : base(userContextService)
+        ILogger<RealTimeController> logger) : base(userContextService)
     {
         _realTimeService = realTimeService;
         _logger = logger;
-        _broadcaster = broadcaster;
     }
 
     /// <summary>
@@ -90,12 +88,12 @@ public class RealTimeController : BaseController
         var subscriptions = _realTimeService.GetSubscribedSymbols();
         return Ok(new { symbols = subscriptions });
     }
-    
+
     [HttpGet("status")]
     public IActionResult GetRealTimeStatus()
     {
         var subscribedSymbols = _realTimeService.GetSubscribedSymbols();
-    
+
         return Ok(new
         {
             subscribedSymbols = subscribedSymbols,
@@ -105,197 +103,274 @@ public class RealTimeController : BaseController
         });
     }
 
-    [HttpPost("test-data/{symbol}")]
-    public async Task<IActionResult> SendTestData(string symbol = "005930")
+    [HttpPost("debug/test-kis-message")]
+    public async Task<IActionResult> TestKisMessage(string symbol = "005930")
     {
         try
         {
-            _logger.LogInformation("🧪 [RealTimeController] 테스트 데이터 전송 시작: {Symbol}", symbol);
-        
-            // 테스트 데이터 생성
-            var testData = new KisTransactionInfo
+            _logger.LogInformation("🧪 [Debug] KIS 메시지 시뮬레이션 시작: {Symbol}", symbol);
+
+            // 실제 KIS WebSocket에서 오는 메시지 형태 시뮬레이션
+            // 1. JSON 형태 (구독 응답)
+            var subscriptionResponse = @"{
+            ""header"": {
+                ""tr_id"": ""H0STASP0"",
+                ""tr_key"": """ + symbol + @""",
+                ""encrypt"": ""N""
+            },
+            ""body"": {
+                ""rt_cd"": ""0"",
+                ""msg_cd"": ""MCA00000"",
+                ""msg1"": ""SUBSCRIBE SUCCESS""
+            }
+        }";
+
+            // 2. 파이프 구분 형태 (실제 실시간 데이터)
+            var currentTime = DateTime.Now.ToString("HHmmss");
+            var realTimeData =
+                $"0|H0STCNT0|1|{symbol}^{currentTime}^76800^2^300^0.39^76800^76500^77200^76200^76750^76850^45000^3500000^268800000000";
+
+            var processor = HttpContext.RequestServices.GetService<IRealTimeDataProcessor>();
+            if (processor == null)
             {
-                Symbol = symbol,
-                Price = 76000 + new Random().Next(-2000, 2000),
-                PriceChange = new Random().Next(-1000, 1000),
-                ChangeType = "상승",
-                ChangeRate = 1.33m,
-                Volume = 100000,
-                TotalVolume = 5000000,
-                TransactionTime = DateTime.Now
-            };
+                return BadRequest("RealTimeDataProcessor를 찾을 수 없습니다.");
+            }
 
-            _logger.LogInformation("📊 [RealTimeController] 테스트 데이터: {@TestData}", testData);
+            _logger.LogInformation("📤 [Debug] 구독 응답 처리: {Message}", subscriptionResponse);
+            processor.ProcessMessage(subscriptionResponse);
 
-            // 브로드캐스터를 통해 전송
-            await _broadcaster.BroadcastStockPriceAsync(testData);
-        
-            _logger.LogInformation("✅ [RealTimeController] 테스트 데이터 전송 완료");
-        
-            return Ok(new { 
-                message = "테스트 데이터 전송 완료", 
-                data = testData,
+            await Task.Delay(500); // 메시지 처리 간격
+
+            _logger.LogInformation("📤 [Debug] 실시간 데이터 처리: {Message}", realTimeData);
+            processor.ProcessMessage(realTimeData);
+
+            _logger.LogInformation("✅ [Debug] KIS 메시지 시뮬레이션 완료");
+
+            return Ok(new
+            {
+                message = "KIS 메시지 시뮬레이션 완료",
+                subscriptionResponse = subscriptionResponse,
+                realTimeData = realTimeData,
+                symbol = symbol,
                 timestamp = DateTime.UtcNow
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ [RealTimeController] 테스트 데이터 전송 실패");
+            _logger.LogError(ex, "❌ [Debug] KIS 메시지 시뮬레이션 실패");
             return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
         }
     }
 
-    [HttpGet("debug/kis-status")]
-    public IActionResult GetKisWebSocketStatus()
-    {
-        // KIS WebSocket 상태 확인 (추후 구현)
-        return Ok(new
-        {
-            message = "KIS WebSocket 상태 확인용 엔드포인트",
-            timestamp = DateTime.UtcNow,
-            note = "실제 KIS 연결 상태는 RealTimeService에서 확인 필요"
-        });
-    }
-    
-    [HttpGet("debug/kis-connection")]
-    public IActionResult GetKisConnectionStatus()
+    [HttpPost("debug/test-websocket-message")]
+    public async Task<IActionResult> TestWebSocketMessage()
     {
         try
         {
-            // RealTimeService의 실제 상태를 확인하기 위한 정보 수집
-            var subscribedSymbols = _realTimeService.GetSubscribedSymbols();
-        
+            _logger.LogInformation("🧪 [Debug] WebSocket 메시지 직접 주입 시작");
+
+            var webSocketClient = HttpContext.RequestServices.GetService<IWebSocketClient>();
+            if (webSocketClient == null)
+            {
+                return BadRequest("WebSocketClient를 찾을 수 없습니다.");
+            }
+
+            // WebSocketClient의 MessageReceived 이벤트를 직접 발생시키기
+            var testMessage = @"{
+            ""header"": {
+                ""tr_id"": ""H0STCNT0"",
+                ""tr_key"": ""005930""
+            },
+            ""body"": {
+                ""mksc_shrn_iscd"": ""005930"",
+                ""stck_prpr"": ""76800"",
+                ""prdy_vrss"": ""300"",
+                ""prdy_ctrt"": ""0.39""
+            }
+        }";
+
+            _logger.LogInformation("📤 [Debug] 테스트 메시지 주입: {Message}", testMessage);
+
+            // Reflection을 사용해서 MessageReceived 이벤트를 직접 발생시킴
+            var messageReceivedField = webSocketClient.GetType()
+                .GetEvent("MessageReceived");
+
+            if (messageReceivedField != null)
+            {
+                // 이벤트 핸들러 직접 호출
+                var eventField = webSocketClient.GetType()
+                    .GetField("MessageReceived",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+                if (eventField?.GetValue(webSocketClient) is EventHandler<string> eventHandler)
+                {
+                    eventHandler.Invoke(webSocketClient, testMessage);
+                    _logger.LogInformation("✅ [Debug] MessageReceived 이벤트 직접 발생 완료");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ [Debug] MessageReceived 이벤트 핸들러를 찾을 수 없음");
+                }
+            }
+
             return Ok(new
             {
-                subscribedSymbols = subscribedSymbols,
-                subscribedCount = subscribedSymbols.Count,
-                kisWebSocketUrl = "ws://ops.koreainvestment.com:31000",
-                serviceStatus = "running",
-                timestamp = DateTime.UtcNow,
-                note = "KIS WebSocket 연결 상태 - 실제 데이터 수신 여부 확인 필요"
+                message = "WebSocket 메시지 직접 주입 완료",
+                testMessage = testMessage,
+                timestamp = DateTime.UtcNow
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "KIS 연결 상태 확인 중 오류");
+            _logger.LogError(ex, "❌ [Debug] WebSocket 메시지 주입 실패");
+            return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
+        }
+    }
+
+    [HttpGet("debug/check-services")]
+    public IActionResult CheckServices()
+    {
+        try
+        {
+            var services = new List<object>();
+
+            // 각 서비스가 제대로 등록되었는지 확인
+            var webSocketClient = HttpContext.RequestServices.GetService<IWebSocketClient>();
+            var processor = HttpContext.RequestServices.GetService<IRealTimeDataProcessor>();
+            var broadcaster = HttpContext.RequestServices.GetService<IRealTimeDataBroadcaster>();
+            var subscriptionManager = HttpContext.RequestServices.GetService<ISubscriptionManager>();
+            var realTimeService = HttpContext.RequestServices.GetService<IRealTimeService>();
+
+            _logger.LogInformation("🔍 [Debug] 서비스 상태 확인:");
+            _logger.LogInformation("- WebSocketClient: {Status}", webSocketClient != null ? "등록됨" : "누락");
+            _logger.LogInformation("- RealTimeDataProcessor: {Status}", processor != null ? "등록됨" : "누락");
+            _logger.LogInformation("- RealTimeDataBroadcaster: {Status}", broadcaster != null ? "등록됨" : "누락");
+            _logger.LogInformation("- SubscriptionManager: {Status}", subscriptionManager != null ? "등록됨" : "누락");
+            _logger.LogInformation("- RealTimeService: {Status}", realTimeService != null ? "등록됨" : "누락");
+
+            return Ok(new
+            {
+                services = new
+                {
+                    webSocketClient = webSocketClient != null,
+                    processor = processor != null,
+                    broadcaster = broadcaster != null,
+                    subscriptionManager = subscriptionManager != null,
+                    realTimeService = realTimeService != null
+                },
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [Debug] 서비스 확인 중 오류");
             return BadRequest(new { error = ex.Message });
         }
     }
 
-    [HttpPost("debug/force-kis-data")]
-    public async Task<IActionResult> ForceKisDataSimulation()
+    [HttpPost("debug/test-various-subscriptions/{symbol}")]
+    public async Task<IActionResult> TestVariousSubscriptions(string symbol = "005930")
     {
         try
         {
-            _logger.LogInformation("🧪 [Debug] KIS 데이터 시뮬레이션 시작");
-        
-            // KIS 형태의 파이프 구분 메시지 시뮬레이션
-            var kisSimulatedMessage = "0|H0STCNT0|1|005930^090000^76500^2^500^0.66^76500^76000^77000^75500^76400^76600^150000^5000000^380000000000";
-        
-            // RealTimeDataProcessor에 직접 메시지 전달
-            var processor = HttpContext.RequestServices.GetService<IRealTimeDataProcessor>();
-        
-            if (processor != null)
+            var subscriptionManager = HttpContext.RequestServices.GetService<ISubscriptionManager>();
+            if (subscriptionManager == null)
             {
-                processor.ProcessMessage(kisSimulatedMessage);
-                _logger.LogInformation("✅ [Debug] KIS 시뮬레이션 메시지 처리 완료");
-            
-                return Ok(new 
-                { 
-                    message = "KIS 데이터 시뮬레이션 완료",
-                    simulatedMessage = kisSimulatedMessage,
-                    timestamp = DateTime.UtcNow
-                });
+                return BadRequest("SubscriptionManager를 찾을 수 없습니다.");
             }
-            else
+
+            _logger.LogInformation("🧪 [Debug] 다양한 구독 방식 테스트 시작: {Symbol}", symbol);
+
+            // SubscriptionManager의 TestVariousSubscriptionsAsync 메서드 호출
+            var method = subscriptionManager.GetType().GetMethod("TestVariousSubscriptionsAsync");
+            if (method != null)
             {
-                return BadRequest("RealTimeDataProcessor를 찾을 수 없습니다.");
+                await (Task)method.Invoke(subscriptionManager, new object[] { symbol });
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ [Debug] KIS 데이터 시뮬레이션 실패");
-            return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
-        }
-    }
-    
-    [HttpPost("debug/test-processor")]
-    public async Task<IActionResult> TestProcessorDirectly()
-    {
-        try
-        {
-            _logger.LogInformation("🧪 [Debug] Processor 직접 테스트 시작");
-        
-            var processor = HttpContext.RequestServices.GetService<IRealTimeDataProcessor>();
-        
-            if (processor == null)
+
+            return Ok(new
             {
-                return BadRequest("RealTimeDataProcessor를 찾을 수 없습니다.");
-            }
-        
-            // KIS 형태의 실제 메시지 시뮬레이션
-            var kisMessage = "0|H0STCNT0|1|005930^153000^76800^2^300^0.39^76800^76500^77200^76200^76750^76850^45000^3500000^268800000000";
-        
-            _logger.LogInformation("📤 [Debug] Processor에 메시지 전달: {Message}", kisMessage);
-        
-            // 메시지 처리
-            processor.ProcessMessage(kisMessage);
-        
-            _logger.LogInformation("✅ [Debug] Processor 테스트 완료");
-        
-            return Ok(new 
-            { 
-                message = "Processor 직접 테스트 완료",
-                kisMessage = kisMessage,
-                timestamp = DateTime.UtcNow,
-                note = "이 테스트는 KIS 메시지를 직접 처리하여 브로드캐스터까지 연결되는지 확인합니다."
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ [Debug] Processor 테스트 실패");
-            return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
-        }
-    }
-    
-    [HttpPost("debug/test-full-pipeline")]
-    public async Task<IActionResult> TestFullPipeline(string symbol = "005930")
-    {
-        try
-        {
-            _logger.LogInformation("🧪 [Debug] 전체 파이프라인 테스트 시작: {Symbol}", symbol);
-        
-            // 1. Processor 직접 테스트
-            var processor = HttpContext.RequestServices.GetService<IRealTimeDataProcessor>();
-            if (processor == null)
-            {
-                return BadRequest("RealTimeDataProcessor를 찾을 수 없습니다.");
-            }
-        
-            // 2. KIS 형태의 파이프 메시지 생성 (실제 형태와 동일)
-            var currentTime = DateTime.Now.ToString("HHmmss");
-            var kisMessage = $"0|H0STCNT0|1|{symbol}^{currentTime}^76800^2^300^0.39^76800^76500^77200^76200^76750^76850^45000^3500000^268800000000";
-        
-            _logger.LogInformation("📤 [Debug] KIS 시뮬레이션 메시지: {Message}", kisMessage);
-        
-            // 3. Processor로 메시지 처리
-            processor.ProcessMessage(kisMessage);
-        
-            _logger.LogInformation("✅ [Debug] 파이프라인 테스트 완료");
-        
-            return Ok(new 
-            { 
-                message = "전체 파이프라인 테스트 완료",
-                kisMessage = kisMessage,
+                message = "다양한 구독 방식 테스트 완료",
                 symbol = symbol,
                 timestamp = DateTime.UtcNow,
-                note = "이 테스트는 KIS 메시지 → Processor → Broadcaster → SignalR 전체 흐름을 확인합니다."
+                note = "H0STCNT0, H0STASP0, H0STCNI0 순서로 테스트"
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ [Debug] 파이프라인 테스트 실패");
-            return BadRequest(new { error = ex.Message, stackTrace = ex.StackTrace });
+            _logger.LogError(ex, "❌ [Debug] 다양한 구독 테스트 실패");
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("debug/wait-for-kis-data/{symbol}")]
+    public async Task<IActionResult> WaitForKisData(string symbol = "005930", int waitSeconds = 30)
+    {
+        try
+        {
+            _logger.LogInformation("⏰ [Debug] KIS 데이터 대기 시작: {Symbol}, {Seconds}초", symbol, waitSeconds);
+
+            // 실제 구독 실행
+            await _realTimeService.SubscribeSymbolAsync(symbol);
+
+            _logger.LogInformation("📡 [Debug] 구독 완료. {Seconds}초 동안 데이터 대기 중...", waitSeconds);
+
+            // 지정된 시간만큼 대기하면서 로그 모니터링
+            for (int i = 0; i < waitSeconds; i++)
+            {
+                await Task.Delay(1000);
+
+                if (i % 5 == 0) // 5초마다 상태 로그
+                {
+                    _logger.LogInformation("⏳ [Debug] 대기 중... {Current}/{Total}초", i + 1, waitSeconds);
+                }
+            }
+
+            _logger.LogInformation("✅ [Debug] 대기 완료. KIS 데이터 수신 여부를 로그에서 확인하세요.");
+
+            return Ok(new
+            {
+                message = "KIS 데이터 대기 완료",
+                symbol = symbol,
+                waitedSeconds = waitSeconds,
+                timestamp = DateTime.UtcNow,
+                note = "실제 KIS 데이터가 수신되었는지 로그를 확인하세요."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [Debug] KIS 데이터 대기 중 오류");
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("debug/subscription-status")]
+    public IActionResult GetSubscriptionStatus()
+    {
+        try
+        {
+            var subscribedSymbols = _realTimeService.GetSubscribedSymbols();
+
+            _logger.LogInformation("📊 [Debug] 현재 구독 상태 확인");
+            _logger.LogInformation("- 구독 중인 종목 수: {Count}", subscribedSymbols.Count);
+
+            foreach (var symbol in subscribedSymbols)
+            {
+                _logger.LogInformation("- 구독 종목: {Symbol}", symbol);
+            }
+
+            return Ok(new
+            {
+                subscribedSymbols = subscribedSymbols,
+                subscribedCount = subscribedSymbols.Count,
+                timestamp = DateTime.UtcNow,
+                status = subscribedSymbols.Count > 0 ? "구독 중" : "구독 없음"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [Debug] 구독 상태 확인 중 오류");
+            return BadRequest(new { error = ex.Message });
         }
     }
 }

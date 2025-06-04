@@ -21,8 +21,8 @@ public class RealTimeControllerTest
     public RealTimeControllerTest()
     {
         _mockRealTimeService = new Mock<IRealTimeService>();
-        _mockUserContextService = new Mock<IUserContextService>();
         _mockLogger = new Mock<ILogger<RealTimeController>>();
+        _mockUserContextService = new Mock<IUserContextService>();
 
         _testUser = new UserInfo
         {
