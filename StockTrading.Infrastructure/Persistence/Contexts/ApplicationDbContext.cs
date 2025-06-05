@@ -170,6 +170,11 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(200)
                 .IsRequired();
 
+            entity.Property(e => e.FullName)
+                .HasColumnName("full_name")
+                .HasMaxLength(200)
+                .IsRequired();
+
             entity.Property(e => e.EnglishName)
                 .HasColumnName("english_name")
                 .HasMaxLength(200)
@@ -179,6 +184,26 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("sector")
                 .HasMaxLength(100)
                 .IsRequired();
+
+            entity.Property(e => e.StockType)
+                .HasColumnName("stock_type")
+                .HasMaxLength(50)
+                .IsRequired(false);
+
+            entity.Property(e => e.ParValue)
+                .HasColumnName("par_value")
+                .HasMaxLength(20)
+                .IsRequired(false);
+
+            entity.Property(e => e.ListedShares)
+                .HasColumnName("listed_shares")
+                .HasMaxLength(20)
+                .IsRequired(false);
+
+            entity.Property(e => e.ListedDate)
+                .HasColumnName("listed_date")
+                .HasColumnType("timestamp with time zone")
+                .IsRequired(false);
 
             entity.Property(e => e.Market)
                 .HasColumnName("market")

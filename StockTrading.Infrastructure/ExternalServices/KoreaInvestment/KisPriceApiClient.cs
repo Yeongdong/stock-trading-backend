@@ -13,7 +13,7 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
 {
     public KisPriceApiClient(HttpClient httpClient, IOptions<KoreaInvestmentSettings> settings,
-        StockDataConverter converter, ILogger logger) : base(httpClient, settings, converter, logger)
+        StockDataConverter converter, ILogger<KisPriceApiClient> logger) : base(httpClient, settings, converter, logger)
     {
     }
 

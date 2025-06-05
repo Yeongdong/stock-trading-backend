@@ -15,7 +15,7 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
 public class KisOrderApiClient : KisApiClientBase, IKisOrderApiClient
 {
-    public KisOrderApiClient(HttpClient httpClient, IOptions<KoreaInvestmentSettings> settings, StockDataConverter converter, ILogger logger) : base(httpClient, settings, converter, logger)
+    public KisOrderApiClient(HttpClient httpClient, IOptions<KoreaInvestmentSettings> settings, StockDataConverter converter, ILogger<KisOrderApiClient> logger) : base(httpClient, settings, converter, logger)
     {
     }
 

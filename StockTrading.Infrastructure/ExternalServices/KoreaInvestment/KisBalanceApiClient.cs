@@ -14,7 +14,7 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 {
     public KisBalanceApiClient(HttpClient httpClient, IOptions<KoreaInvestmentSettings> settings,
-        StockDataConverter converter, ILogger logger) : base(httpClient, settings, converter, logger)
+        StockDataConverter converter, ILogger<KisBalanceApiClient> logger) : base(httpClient, settings, converter, logger)
     {
     }
 
