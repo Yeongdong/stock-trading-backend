@@ -158,10 +158,11 @@ public static class ServiceCollectionExtensions
         AddValidators(services);
         AddConvertersAndSettings(services, configuration);
         AddCacheServices(services, configuration);
+        AddBackgroundServices(services, configuration);
 
         return services;
     }
-    
+
     public static IServiceCollection AddRealTimeServices(this IServiceCollection services)
     {
         services.AddSingleton<WebSocketClient>();
@@ -251,6 +252,15 @@ public static class ServiceCollectionExtensions
     {
         services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
+    }
+
+    private static IServiceCollection AddBackgroundServices(IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<StockDataSyncSettings>(configuration.GetSection(StockDataSyncSettings.SectionName));
+
+        services.AddHostedService<StockDataSyncService>();
+
+        return services;
     }
 
     private static void AddConvertersAndSettings(IServiceCollection services, IConfiguration configuration)

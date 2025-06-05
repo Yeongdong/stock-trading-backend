@@ -13,15 +13,17 @@ public class StockController : BaseController
     private readonly IBalanceService _balanceService;
     private readonly IStockService _stockService;
     private readonly ICurrentPriceService _currentPriceService;
+    private readonly IStockCacheService _stockCacheService;
     private readonly ILogger<StockController> _logger;
 
     public StockController(IOrderService orderService, IBalanceService balanceService, IStockService stockService,
-        ICurrentPriceService currentPriceService,
+        ICurrentPriceService currentPriceService, IStockCacheService stockCacheService,
         IUserContextService userContextService, ILogger<StockController> logger) : base(userContextService)
     {
         _orderService = orderService;
         _balanceService = balanceService;
         _stockService = stockService;
+        _stockCacheService = stockCacheService;
         _currentPriceService = currentPriceService;
         _logger = logger;
     }
@@ -103,5 +105,33 @@ public class StockController : BaseController
     {
         await _stockService.UpdateStockDataFromKrxAsync();
         return Ok(new { message = "KRX 데이터 업데이트가 완료되었습니다." });
+    }
+    
+    [HttpPost("/admin/sync")]
+    public async Task<IActionResult> SyncStockData()
+    {
+        _logger.LogInformation("수동 종목 데이터 동기화 요청");
+    
+        var startTime = DateTime.Now;
+    
+        // KRX 데이터 업데이트
+        await _stockService.UpdateStockDataFromKrxAsync();
+    
+        // 캐시 성능 메트릭 조회
+        var metrics = await _stockCacheService.GetCacheMetricsAsync();
+    
+        var duration = DateTime.Now - startTime;
+    
+        return Ok(new
+        {
+            message = "종목 데이터 동기화 완료",
+            syncTime = startTime.ToString("yyyy-MM-dd HH:mm:ss"),
+            duration = duration.TotalSeconds,
+            cacheMetrics = new
+            {
+                hitRatio = metrics.HitRatio,
+                totalRequests = metrics.TotalHits + metrics.TotalMisses
+            }
+        });
     }
 }    
