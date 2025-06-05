@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -33,16 +32,15 @@ public class KrxApiClient
         {
             var requestData = CreateStockListRequest();
             var response = await _httpClient.PostAsync(_settings.StockListEndpoint, requestData);
-
+            
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await ReadResponseContentAsync(response);
+                var errorContent = await response.Content.ReadAsStringAsync();
                 throw new HttpRequestException($"KRX API 호출 실패: {response.StatusCode} - {errorContent}");
             }
 
-            var jsonContent = await ReadResponseContentAsync(response);
+            var jsonContent = await response.Content.ReadAsStringAsync();
             var result = ParseStockListResponse(jsonContent);
-
             _logger.LogInformation("KRX 주식종목 목록 조회 완료: {Count}개 종목", result.Stocks.Count);
             return result;
         }
@@ -64,12 +62,6 @@ public class KrxApiClient
         _httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
     }
 
-    private async Task<string> ReadResponseContentAsync(HttpResponseMessage response)
-    {
-        var contentBytes = await response.Content.ReadAsByteArrayAsync();
-        return Encoding.GetEncoding("EUC-KR").GetString(contentBytes);
-    }
-
     private FormUrlEncodedContent CreateStockListRequest()
     {
         return new FormUrlEncodedContent([
@@ -84,13 +76,13 @@ public class KrxApiClient
     {
         using var jsonDoc = JsonDocument.Parse(jsonContent);
         var root = jsonDoc.RootElement;
-
+    
         if (!root.TryGetProperty("OutBlock_1", out var dataArray))
             throw new InvalidOperationException("KRX API 응답에서 'OutBlock_1' 속성을 찾을 수 없습니다.");
-
+    
         var stocks = new List<KrxStockItem>();
         var invalidCount = 0;
-
+    
         foreach (var stock in dataArray.EnumerateArray()
                      .Select(item => JsonSerializer.Deserialize<KrxStockItem>(item.GetRawText())))
         {
@@ -99,10 +91,10 @@ public class KrxApiClient
             else
                 invalidCount++;
         }
-
+    
         if (invalidCount > 0)
             _logger.LogWarning("유효하지 않은 종목 데이터: {InvalidCount}개", invalidCount);
-
+    
         return new KrxStockListResponse { Stocks = stocks };
     }
 }

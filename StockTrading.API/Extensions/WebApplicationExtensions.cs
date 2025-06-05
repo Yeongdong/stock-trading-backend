@@ -245,10 +245,4 @@ public static class WebApplicationExtensions
 
         return builder;
     }
-
-    /// EUC-KR 인코딩 지원 설정 (KRX API용)
-    public static void RegisterEncodingProviders()
-    {
-        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-    }
 }

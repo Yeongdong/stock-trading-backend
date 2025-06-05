@@ -6,9 +6,6 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        // EUC-KR 인코딩 지원 (KRX API용)
-        WebApplicationExtensions.RegisterEncodingProviders();
-
         var builder = WebApplication.CreateBuilder(args);
 
         // 로깅 설정

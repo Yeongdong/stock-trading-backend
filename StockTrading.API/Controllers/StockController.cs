@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
 using StockTrading.Application.DTOs.Trading.Inquiry;
@@ -101,6 +102,7 @@ public class StockController : BaseController
     }
 
     [HttpPost("update-from-krx")]
+    [AllowAnonymous]
     public async Task<IActionResult> UpdateStockDataFromKrx()
     {
         await _stockService.UpdateStockDataFromKrxAsync();
@@ -110,16 +112,11 @@ public class StockController : BaseController
     [HttpPost("/admin/sync")]
     public async Task<IActionResult> SyncStockData()
     {
-        _logger.LogInformation("수동 종목 데이터 동기화 요청");
-    
         var startTime = DateTime.Now;
     
-        // KRX 데이터 업데이트
         await _stockService.UpdateStockDataFromKrxAsync();
     
-        // 캐시 성능 메트릭 조회
         var metrics = await _stockCacheService.GetCacheMetricsAsync();
-    
         var duration = DateTime.Now - startTime;
     
         return Ok(new

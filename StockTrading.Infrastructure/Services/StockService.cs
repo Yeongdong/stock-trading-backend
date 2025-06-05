@@ -28,8 +28,7 @@ public class StockService : IStockService
     public async Task<List<StockSearchResult>> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
         var cachedResult = await _stockCacheService.GetSearchResultAsync(searchTerm, page, pageSize);
-        if (cachedResult != null)
-            return cachedResult.Stocks;
+        if (cachedResult != null) return cachedResult.Stocks;
 
         var stocks = await _stockRepository.SearchByNameAsync(searchTerm, page, pageSize);
 
@@ -51,8 +50,7 @@ public class StockService : IStockService
     public async Task<StockSearchResult?> GetStockByCodeAsync(string code)
     {
         var cachedResult = await _stockCacheService.GetStockByCodeAsync(code);
-        if (cachedResult != null)
-            return cachedResult;
+        if (cachedResult != null) return cachedResult;
 
         var stock = await _stockRepository.GetByCodeAsync(code);
 
@@ -75,21 +73,20 @@ public class StockService : IStockService
         _logger.LogInformation("KRX 데이터 업데이트 시작");
 
         await _stockCacheService.InvalidateAllStockCacheAsync();
-
         var krxResponse = await _krxApiClient.GetStockListAsync();
-
+        
         var validStocks = krxResponse.Stocks
             .Where(item => item.IsValid())
             .Select(item => new Stock(
                 code: item.Code,
                 name: item.Name,
                 fullName: item.FullName,
-                sector: item.Sector ?? "기타",
+                sector: NormalizeSector(item.Sector),
                 market: NormalizeMarketName(item.SecurityGroup),
                 englishName: item.EnglishName,
-                stockType: item.StockType,
-                parValue: item.ParValue,
-                listedShares: item.ListedShares,
+                stockType: ExtractStockType(item.StockTypedShares),
+                parValue: null,
+                listedShares: ExtractListedShares(item.StockTypedShares),
                 listedDate: ParseListedDate(item.ListedDate)))
             .ToList();
 
@@ -136,9 +133,30 @@ public class StockService : IStockService
 
     private async Task<int> GetSearchTotalCountAsync(string searchTerm)
     {
-        // 전체 검색 결과 수를 구하는 로직 (간단 구현)
         var allResults = await _stockRepository.SearchByNameAsync(searchTerm, 1, int.MaxValue);
         return allResults.Count;
+    }
+
+    private static string NormalizeSector(string? sector)
+    {
+        if (string.IsNullOrWhiteSpace(sector)) return "기타";
+
+        var normalizedSector = sector.Trim();
+        return string.IsNullOrEmpty(normalizedSector) ? "기타" : normalizedSector;
+    }
+
+    private static string? ExtractStockType(string? stockTypedShares)
+    {
+        return string.IsNullOrWhiteSpace(stockTypedShares) ? null : "보통주";
+    }
+
+
+    private static string? ExtractListedShares(string? stockTypedShares)
+    {
+        if (string.IsNullOrWhiteSpace(stockTypedShares)) return null;
+
+        var cleanedShares = stockTypedShares.Replace(",", "").Trim();
+        return cleanedShares.All(char.IsDigit) ? cleanedShares : null;
     }
 
     private static DateTime? ParseListedDate(string? listedDateStr)
@@ -146,7 +164,7 @@ public class StockService : IStockService
         if (string.IsNullOrWhiteSpace(listedDateStr) || listedDateStr.Length != 8)
             return null;
 
-        if (DateTime.TryParseExact(listedDateStr, "yyyyMMdd", null,
+        if (DateTime.TryParseExact(listedDateStr, "yyyy/MM/dd", null,
                 System.Globalization.DateTimeStyles.None, out var date))
             return date;
 
@@ -155,14 +173,14 @@ public class StockService : IStockService
 
     private static Market NormalizeMarketName(string? securityGroup)
     {
-        if (string.IsNullOrEmpty(securityGroup))
-            return Market.Kospi;
+        if (string.IsNullOrEmpty(securityGroup)) return Market.Kospi;
 
         return securityGroup switch
         {
             _ when securityGroup.Contains("코스피") || securityGroup.Contains("KOSPI") => Market.Kospi,
             _ when securityGroup.Contains("코스닥") || securityGroup.Contains("KOSDAQ") => Market.Kosdaq,
             _ when securityGroup.Contains("코넥스") || securityGroup.Contains("KONEX") => Market.Konex,
+            _ when securityGroup.Contains("주권") => Market.Kospi,
             _ => Market.Kospi
         };
     }
