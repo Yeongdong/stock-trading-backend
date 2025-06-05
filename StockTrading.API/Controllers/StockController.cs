@@ -64,9 +64,6 @@ public class StockController : BaseController
         return Ok(response);
     }
     
-    /// <summary>
-    /// 주식 검색
-    /// </summary>
     [HttpGet("search")]
     public async Task<IActionResult> SearchStocks([FromQuery] string searchTerm, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
@@ -80,9 +77,6 @@ public class StockController : BaseController
         return Ok(results);
     }
 
-    /// <summary>
-    /// 종목 코드로 주식 정보 조회
-    /// </summary>
     [HttpGet("{code}")]
     public async Task<IActionResult> GetStockByCode(string code)
     {
@@ -97,9 +91,6 @@ public class StockController : BaseController
         return Ok(stock);
     }
 
-    /// <summary>
-    /// 주식 검색 요약 정보
-    /// </summary>
     [HttpGet("search/summary")]
     public async Task<IActionResult> GetSearchSummary()
     {
@@ -107,9 +98,6 @@ public class StockController : BaseController
         return Ok(summary);
     }
 
-    /// <summary>
-    /// KRX 데이터 업데이트 (관리자용)
-    /// </summary>
     [HttpPost("update-from-krx")]
     public async Task<IActionResult> UpdateStockDataFromKrx()
     {

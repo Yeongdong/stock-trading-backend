@@ -13,20 +13,27 @@ public class StockService : IStockService
 {
     private readonly IStockRepository _stockRepository;
     private readonly KrxApiClient _krxApiClient;
+    private readonly IStockCacheService _stockCacheService;
     private readonly ILogger<StockService> _logger;
 
-    public StockService(IStockRepository stockRepository, KrxApiClient krxApiClient, ILogger<StockService> logger)
+    public StockService(IStockRepository stockRepository, KrxApiClient krxApiClient,
+        IStockCacheService stockCacheService, ILogger<StockService> logger)
     {
         _stockRepository = stockRepository;
         _krxApiClient = krxApiClient;
+        _stockCacheService = stockCacheService;
         _logger = logger;
     }
 
     public async Task<List<StockSearchResult>> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
+        var cachedResult = await _stockCacheService.GetSearchResultAsync(searchTerm, page, pageSize);
+        if (cachedResult != null)
+            return cachedResult.Stocks;
+
         var stocks = await _stockRepository.SearchByNameAsync(searchTerm, page, pageSize);
 
-        return stocks.Select(stock => new StockSearchResult
+        var results = stocks.Select(stock => new StockSearchResult
         {
             Code = stock.Code,
             Name = stock.Name,
@@ -34,16 +41,40 @@ public class StockService : IStockService
             Sector = stock.Sector,
             Market = stock.Market.GetDescription()
         }).ToList();
+
+        var totalCount = await GetSearchTotalCountAsync(searchTerm);
+        await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, results, totalCount);
+
+        return results;
     }
 
-    public async Task<Stock?> GetStockByCodeAsync(string code)
+    public async Task<StockSearchResult?> GetStockByCodeAsync(string code)
     {
-        return await _stockRepository.GetByCodeAsync(code);
+        var cachedResult = await _stockCacheService.GetStockByCodeAsync(code);
+        if (cachedResult != null)
+            return cachedResult;
+
+        var stock = await _stockRepository.GetByCodeAsync(code);
+
+        if (stock == null) return null;
+        var result = new StockSearchResult
+        {
+            Code = stock.Code,
+            Name = stock.Name,
+            EnglishName = stock.EnglishName,
+            Sector = stock.Sector,
+            Market = stock.Market.GetDescription()
+        };
+        await _stockCacheService.SetStockByCodeAsync(code, result);
+
+        return result;
     }
 
     public async Task UpdateStockDataFromKrxAsync()
     {
         _logger.LogInformation("KRX 데이터 업데이트 시작");
+
+        await _stockCacheService.InvalidateAllStockCacheAsync();
 
         var krxResponse = await _krxApiClient.GetStockListAsync();
 
@@ -64,11 +95,21 @@ public class StockService : IStockService
 
         await _stockRepository.BulkUpsertAsync(validStocks);
 
-        _logger.LogInformation("KRX 데이터 업데이트 완료: {Count}개 종목", validStocks.Count);
+        var summary = await GetSearchSummaryAsync();
+        await _stockCacheService.SetStockSummaryAsync(summary);
     }
 
     public async Task<StockSearchSummary> GetSearchSummaryAsync()
     {
+        var cachedSummary = await _stockCacheService.GetStockSummaryAsync();
+        if (cachedSummary != null)
+            return new StockSearchSummary
+            {
+                TotalCount = cachedSummary.TotalCount,
+                LastUpdated = cachedSummary.LastUpdated,
+                MarketCounts = cachedSummary.MarketCounts
+            };
+
         var totalCount = await _stockRepository.GetTotalCountAsync();
         var lastUpdated = await _stockRepository.GetLastUpdatedAsync();
 
@@ -79,12 +120,25 @@ public class StockService : IStockService
             marketCounts[market.GetDescription()] = stocks.Count;
         }
 
-        return new StockSearchSummary
+        var summary = new StockSearchSummary
         {
             TotalCount = totalCount,
             LastUpdated = lastUpdated,
             MarketCounts = marketCounts
         };
+
+        await _stockCacheService.SetStockSummaryAsync(summary);
+
+        return summary;
+    }
+
+    #region Private Helper Methods
+
+    private async Task<int> GetSearchTotalCountAsync(string searchTerm)
+    {
+        // 전체 검색 결과 수를 구하는 로직 (간단 구현)
+        var allResults = await _stockRepository.SearchByNameAsync(searchTerm, 1, int.MaxValue);
+        return allResults.Count;
     }
 
     private static DateTime? ParseListedDate(string? listedDateStr)
@@ -112,4 +166,6 @@ public class StockService : IStockService
             _ => Market.Kospi
         };
     }
+
+    #endregion
 }

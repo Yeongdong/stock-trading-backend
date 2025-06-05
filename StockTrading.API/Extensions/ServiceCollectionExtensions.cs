@@ -2,8 +2,10 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Implementations;
 using StockTrading.API.Validator.Interfaces;
@@ -11,6 +13,7 @@ using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Repositories;
 using StockTrading.Application.Services;
 using StockTrading.Domain.Settings;
+using StockTrading.Infrastructure.Cache;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
 using StockTrading.Infrastructure.ExternalServices.KRX;
@@ -154,10 +157,11 @@ public static class ServiceCollectionExtensions
         AddApiServices(services);
         AddValidators(services);
         AddConvertersAndSettings(services, configuration);
+        AddCacheServices(services, configuration);
 
         return services;
     }
-
+    
     public static IServiceCollection AddRealTimeServices(this IServiceCollection services)
     {
         services.AddSingleton<WebSocketClient>();
@@ -298,6 +302,33 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IStockRepository, StockRepository>();
     }
 
+    private static IServiceCollection AddCacheServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var redisSettings = configuration.GetSection(RedisSettings.SectionName).Get<RedisSettings>();
+        
+        services.AddSingleton<IConnectionMultiplexer>(provider =>
+        {
+            var configuration = ConfigurationOptions.Parse(redisSettings.ConnectionString);
+            configuration.ConnectTimeout = redisSettings.ConnectTimeoutSeconds * 1000;
+            configuration.SyncTimeout = redisSettings.SyncTimeoutMs;
+            configuration.ConnectRetry = redisSettings.RetryCount;
+            configuration.AbortOnConnectFail = false;
+            
+            return ConnectionMultiplexer.Connect(configuration);
+        });
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisSettings.ConnectionString;
+            options.InstanceName = redisSettings.InstanceName;
+        });
+
+        services.AddSingleton<CacheTtl>();
+        services.AddSingleton<CacheMetrics>();
+        services.AddScoped<IStockCacheService, StockCacheService>();
+
+        return services;
+    }
     #region Private Helper Methods
 
     private static JwtBearerEvents CreateJwtBearerEvents()
