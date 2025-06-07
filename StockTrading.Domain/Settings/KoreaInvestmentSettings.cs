@@ -71,6 +71,7 @@ public class KisEndpoints
     public string OrderExecutionPath { get; init; } = "/uapi/domestic-stock/v1/trading/inquire-daily-ccld";
     public string BuyableInquiryPath { get; init; } = "/uapi/domestic-stock/v1/trading/inquire-psbl-order";
     public string CurrentPricePath { get; init; } = "/uapi/domestic-stock/v1/quotations/inquire-price";
+    public string PeriodPricePath { get; set; } = "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
 }
 
 public class KisDefaultValues
@@ -90,6 +91,7 @@ public class KisDefaultValues
     public string SellOrderCode { get; init; } = "01";
     public string BuyOrderCode { get; init; } = "02";
     public string AllOrderCode { get; init; } = "00";
+    public string PeriodPriceTransactionId { get; set; } = "FHKST03010100";
 }
 
 public class KisMarketConstants

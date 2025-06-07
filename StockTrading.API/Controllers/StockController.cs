@@ -13,17 +13,20 @@ public class StockController : BaseController
     private readonly IOrderService _orderService;
     private readonly IBalanceService _balanceService;
     private readonly IStockService _stockService;
+    private readonly IPeriodPriceService _periodPriceService;
     private readonly ICurrentPriceService _currentPriceService;
     private readonly IStockCacheService _stockCacheService;
     private readonly ILogger<StockController> _logger;
 
     public StockController(IOrderService orderService, IBalanceService balanceService, IStockService stockService,
-        ICurrentPriceService currentPriceService, IStockCacheService stockCacheService,
+        IPeriodPriceService periodPriceService, ICurrentPriceService currentPriceService,
+        IStockCacheService stockCacheService,
         IUserContextService userContextService, ILogger<StockController> logger) : base(userContextService)
     {
         _orderService = orderService;
         _balanceService = balanceService;
         _stockService = stockService;
+        _periodPriceService = periodPriceService;
         _stockCacheService = stockCacheService;
         _currentPriceService = currentPriceService;
         _logger = logger;
@@ -66,9 +69,10 @@ public class StockController : BaseController
 
         return Ok(response);
     }
-    
+
     [HttpGet("search")]
-    public async Task<IActionResult> SearchStocks([FromQuery] string searchTerm, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> SearchStocks([FromQuery] string searchTerm, [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
     {
         if (string.IsNullOrWhiteSpace(searchTerm))
             return BadRequest("검색어를 입력해주세요.");
@@ -87,7 +91,7 @@ public class StockController : BaseController
             return BadRequest("유효한 6자리 종목코드를 입력해주세요.");
 
         var stock = await _stockService.GetStockByCodeAsync(code);
-    
+
         if (stock == null)
             return NotFound($"종목코드 {code}를 찾을 수 없습니다.");
 
@@ -108,17 +112,17 @@ public class StockController : BaseController
         await _stockService.UpdateStockDataFromKrxAsync();
         return Ok(new { message = "KRX 데이터 업데이트가 완료되었습니다." });
     }
-    
+
     [HttpPost("/admin/sync")]
     public async Task<IActionResult> SyncStockData()
     {
         var startTime = DateTime.Now;
-    
+
         await _stockService.UpdateStockDataFromKrxAsync();
-    
+
         var metrics = await _stockCacheService.GetCacheMetricsAsync();
         var duration = DateTime.Now - startTime;
-    
+
         return Ok(new
         {
             message = "종목 데이터 동기화 완료",
@@ -131,4 +135,19 @@ public class StockController : BaseController
             }
         });
     }
-}    
+
+    [HttpGet("periodPrice")]
+    public async Task<IActionResult> GetPeriodPrice([FromQuery] PeriodPriceRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await GetCurrentUserAsync();
+
+        _logger.LogInformation("기간별 시세 조회 요청: 사용자 {UserId}, 종목 {StockCode}, 기간 {Period}", user.Id, request.StockCode,
+            request.PeriodDivCode);
+        var response = await _periodPriceService.GetPeriodPriceAsync(request, user);
+
+        return Ok(response);
+    }
+}

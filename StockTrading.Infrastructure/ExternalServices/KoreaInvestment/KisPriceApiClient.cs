@@ -30,6 +30,19 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
         return _converter.ConvertToStockPriceResponse(kisResponse.Output, request.StockCode);
     }
 
+    public async Task<PeriodPriceResponse> GetPeriodPriceAsync(PeriodPriceRequest request, UserInfo user)
+    {
+        var queryParams = CreatePeriodPriceQueryParams(request);
+        var httpRequest = CreatePeriodPriceHttpRequest(queryParams, user);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        var kisResponse = await response.Content.ReadFromJsonAsync<KisPeriodPriceResponse>();
+
+        ValidatePeriodPriceResponse(kisResponse);
+
+        return _converter.ConvertToPeriodPriceResponse(kisResponse.Output, request.StockCode);
+    }
+
     private Dictionary<string, string> CreateCurrentPriceQueryParams(CurrentPriceRequest request, UserInfo user)
     {
         var marketConstants = _settings.MarketConstants;
@@ -56,5 +69,36 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
 
         if (!response.HasData)
             throw new Exception("현재가 조회 데이터가 없습니다.");
+    }
+    
+    private Dictionary<string, string> CreatePeriodPriceQueryParams(PeriodPriceRequest request)
+    {
+        return new Dictionary<string, string>
+        {
+            ["FID_COND_MRKT_DIV_CODE"] = request.MarketDivCode,
+            ["FID_INPUT_ISCD"] = request.StockCode,
+            ["FID_INPUT_DATE_1"] = request.StartDate,
+            ["FID_INPUT_DATE_2"] = request.EndDate,
+            ["FID_PERIOD_DIV_CODE"] = request.PeriodDivCode,
+            ["FID_ORG_ADJ_PRC"] = request.OrgAdjPrc
+        };
+    }
+
+    private HttpRequestMessage CreatePeriodPriceHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
+    {
+        var url = BuildGetUrl(_settings.Endpoints.PeriodPricePath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.PeriodPriceTransactionId, user);
+        return httpRequest;
+    }
+
+    private void ValidatePeriodPriceResponse(KisPeriodPriceResponse response)
+    {
+        if (!response.IsSuccess)
+            throw new Exception($"기간별 시세 조회 실패: {response.Message}");
+
+        if (!response.HasData)
+            throw new Exception("기간별 시세 조회 데이터가 없습니다.");
     }
 }

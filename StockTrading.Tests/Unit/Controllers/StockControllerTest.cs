@@ -18,6 +18,7 @@ public class StockControllerTest
     private readonly Mock<IOrderService> _mockKisOrderService;
     private readonly Mock<IBalanceService> _mockKisBalanceService;
     private readonly Mock<IStockService> _mockStockService;
+    private readonly Mock<IPeriodPriceService> _mockPeriodPriceService;
     private readonly Mock<ICurrentPriceService> _mockCurrentPriceService;
     private readonly Mock<IStockCacheService> _mockStockCacheService;
     private readonly Mock<IUserContextService> _mockUserContextService;
@@ -30,6 +31,7 @@ public class StockControllerTest
         _mockKisOrderService = new Mock<IOrderService>();
         _mockKisBalanceService = new Mock<IBalanceService>();
         _mockStockService = new Mock<IStockService>();
+        _mockPeriodPriceService = new Mock<IPeriodPriceService>();
         _mockCurrentPriceService = new Mock<ICurrentPriceService>();
         _mockStockCacheService = new Mock<IStockCacheService>();
         _mockUserContextService = new Mock<IUserContextService>();
@@ -46,6 +48,7 @@ public class StockControllerTest
             _mockKisOrderService.Object,
             _mockKisBalanceService.Object, 
             _mockStockService.Object,
+            _mockPeriodPriceService.Object,
             _mockCurrentPriceService.Object,
             _mockStockCacheService.Object,
             _mockUserContextService.Object,

@@ -111,6 +111,24 @@ public class StockDataConverter
             UnitQuantity = 1
         };
     }
+    
+    public PeriodPriceResponse ConvertToPeriodPriceResponse(KisPeriodPriceOutputData kisData, string stockCode)
+    {
+        var summary = kisData.Summary;
+        
+        return new PeriodPriceResponse
+        {
+            StockCode = stockCode,
+            StockName = summary?.StockName ?? string.Empty,
+            CurrentPrice = ConvertToDecimal(summary?.CurrentPrice),
+            PriceChange = ConvertToDecimal(summary?.PriceChange),
+            ChangeRate = ConvertToDecimal(summary?.ChangeRate),
+            ChangeSign = summary?.ChangeSign ?? string.Empty,
+            TotalVolume = ConvertToLong(summary?.Volume),
+            TotalTradingValue = ConvertToLong(summary?.TradingValue),
+            PriceData = ConvertToPeriodPriceDataList(kisData.PriceData)
+        };
+    }
 
     #region Private Helper Methods
 
@@ -169,6 +187,48 @@ public class StockDataConverter
             .AddHours(hour)
             .AddMinutes(minute)
             .AddSeconds(second);
+    }
+    
+    private List<PeriodPriceData> ConvertToPeriodPriceDataList(List<KisPeriodPriceData> kisDataList)
+    {
+        if (kisDataList == null || kisDataList.Count == 0)
+            return [];
+
+        return kisDataList.Select(ConvertToPeriodPriceData).ToList();
+    }
+    
+    private PeriodPriceData ConvertToPeriodPriceData(KisPeriodPriceData kisData)
+    {
+        return new PeriodPriceData
+        {
+            Date = kisData.BusinessDate,
+            OpenPrice = ConvertToDecimal(kisData.OpenPrice),
+            HighPrice = ConvertToDecimal(kisData.HighPrice),
+            LowPrice = ConvertToDecimal(kisData.LowPrice),
+            ClosePrice = ConvertToDecimal(kisData.ClosePrice),
+            Volume = ConvertToLong(kisData.Volume),
+            TradingValue = ConvertToLong(kisData.TradingValue),
+            PriceChange = ConvertToDecimal(kisData.PriceChange),
+            ChangeSign = kisData.ChangeSign,
+            FlagCode = kisData.FlagCode,
+            SplitRate = ConvertToDecimal(kisData.SplitRate)
+        };
+    }
+    
+    private decimal ConvertToDecimal(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return 0;
+
+        return decimal.TryParse(value, out var result) ? result : 0;
+    }
+
+    private long ConvertToLong(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return 0;
+
+        return long.TryParse(value, out var result) ? result : 0;
     }
 
     #endregion

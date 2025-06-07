@@ -1,10 +1,9 @@
 using StockTrading.Application.DTOs.Trading.Inquiry;
 using StockTrading.Application.DTOs.Users;
 
-namespace StockTrading.Application.ExternalServices;
+namespace StockTrading.Application.Services;
 
-public interface IKisPriceApiClient
+public interface IPeriodPriceService
 {
-    Task<KisCurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo user);
     Task<PeriodPriceResponse> GetPeriodPriceAsync(PeriodPriceRequest request, UserInfo user);
 }
