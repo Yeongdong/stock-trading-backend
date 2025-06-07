@@ -292,6 +292,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IStockService, StockService>();
+        services.AddScoped<IPeriodPriceService, PeriodPriceService>();
         services.AddScoped<IKisTokenService, KisTokenService>();
         services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
         services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
