@@ -25,53 +25,36 @@ public class JwtService : IJwtService
 
     public string GenerateToken(UserInfo user)
     {
-        try
+        var claims = new[]
         {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        };
 
-            };
-            
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-                signingCredentials: credentials);
+        var token = new JwtSecurityToken(
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+            signingCredentials: credentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "액세스 토큰 생성 중 오류 발생");
-            throw new TokenValidationException("토큰 생성 실패", ex);
-        }
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     public (string token, DateTime expiryDate) GenerateRefreshToken()
     {
-        try
-        {
-            var randomNumber = new byte[32];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(randomNumber);
+        var randomNumber = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
 
-            var refreshToken = Convert.ToBase64String(randomNumber);
-            var expiryDate = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
+        var refreshToken = Convert.ToBase64String(randomNumber);
+        var expiryDate = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
 
-            return (refreshToken, expiryDate);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "리프레시 토큰 생성 중 오류 발생");
-            throw new TokenValidationException("리프레시 토큰 생성 실패", ex);
-        }
+        return (refreshToken, expiryDate);
     }
 
     public ClaimsPrincipal ValidateToken(string token)
@@ -106,11 +89,6 @@ public class JwtService : IJwtService
         {
             _logger.LogWarning("잘못된 서명의 토큰");
             throw new TokenValidationException("토큰 서명이 유효하지 않습니다.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "토큰 검증 중 오류 발생");
-            throw new TokenValidationException("토큰 검증 실패", ex);
         }
     }
 }

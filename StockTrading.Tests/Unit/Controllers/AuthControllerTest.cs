@@ -23,7 +23,8 @@ public class AuthControllerTest
     private readonly Mock<IUserService> _mockUserService;
     private readonly Mock<IGoogleAuthValidator> _mockGoogleAuthValidator;
     private readonly Mock<IUserContextService> _mockUserContextService;
-    private readonly Mock<IOptions<JwtSettings>> _mockJwtSettingsOptions;
+    private readonly Mock<ICookieService> _mockCookieService;
+    private readonly Mock<IKisTokenRefreshService> _mockKisTokenRefreshService;
     private readonly AuthController _controller;
 
     public AuthControllerTest()
@@ -33,13 +34,10 @@ public class AuthControllerTest
         _mockUserService = new Mock<IUserService>();
         _mockGoogleAuthValidator = new Mock<IGoogleAuthValidator>();
         _mockUserContextService = new Mock<IUserContextService>();
-        _mockJwtSettingsOptions = new Mock<IOptions<JwtSettings>>();
+        _mockCookieService = new Mock<ICookieService>();
+        _mockKisTokenRefreshService = new Mock<IKisTokenRefreshService>();
 
         _mockConfiguration.Setup(x => x["Authentication:Google:ClientId"]).Returns("test-client-id");
-        _mockJwtSettingsOptions.Setup(x => x.Value).Returns(new JwtSettings
-        {
-            AccessTokenExpirationMinutes = 30
-        });
 
         _controller = new AuthController(
             _mockConfiguration.Object,
@@ -47,13 +45,15 @@ public class AuthControllerTest
             _mockUserService.Object,
             _mockGoogleAuthValidator.Object,
             _mockUserContextService.Object,
-            _mockJwtSettingsOptions.Object
-        );
-
-        // HttpContext 설정
-        _controller.ControllerContext = new ControllerContext
+            _mockCookieService.Object,
+            _mockKisTokenRefreshService.Object
+        )
         {
-            HttpContext = new DefaultHttpContext()
+            // HttpContext 설정
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
         };
     }
 
@@ -114,9 +114,9 @@ public class AuthControllerTest
         };
 
         var mockPrincipal = new System.Security.Claims.ClaimsPrincipal();
-        
+
         _controller.ControllerContext.HttpContext.Request.Headers.Cookie = "auth_token=valid-token";
-        
+
         _mockJwtService
             .Setup(x => x.ValidateToken("valid-token"))
             .Returns(mockPrincipal);

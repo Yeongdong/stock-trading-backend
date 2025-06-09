@@ -297,6 +297,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
         services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
         services.AddScoped<ICurrentPriceService, CurrentPriceService>();
+        services.AddScoped<IKisTokenRefreshService, KisTokenRefreshService>();
+        services.AddScoped<ICookieService, CookieService>();
     }
 
     private static void AddInfrastructureServices(IServiceCollection services)

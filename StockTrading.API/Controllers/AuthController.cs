@@ -1,11 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Interfaces;
 using StockTrading.Application.DTOs.Auth;
 using StockTrading.Application.Services;
-using StockTrading.Domain.Settings;
 
 namespace StockTrading.API.Controllers;
 
@@ -16,17 +14,19 @@ public class AuthController : BaseController
     private readonly IJwtService _jwtService;
     private readonly IUserService _userService;
     private readonly IGoogleAuthValidator _googleAuthValidator;
-    private readonly JwtSettings _jwtSettings;
+    private readonly ICookieService _cookieService;
+    private readonly IKisTokenRefreshService _kisTokenRefreshService;
 
     public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
         IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService,
-        IOptions<JwtSettings> jwtSettings) : base(userContextService)
+        ICookieService cookieService, IKisTokenRefreshService kisTokenRefreshService) : base(userContextService)
     {
         _configuration = configuration;
         _jwtService = jwtService;
         _userService = userService;
         _googleAuthValidator = googleAuthValidator;
-        _jwtSettings = jwtSettings.Value;
+        _cookieService = cookieService;
+        _kisTokenRefreshService = kisTokenRefreshService;
     }
 
     [HttpPost("google")]
@@ -40,7 +40,8 @@ public class AuthController : BaseController
         var user = await _userService.CreateOrGetGoogleUserAsync(payload);
         var token = _jwtService.GenerateToken(user);
 
-        SetAuthCookie(token);
+        _cookieService.SetAuthCookie(token);
+
         return Ok(new LoginResponse
         {
             User = user,
@@ -51,13 +52,7 @@ public class AuthController : BaseController
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        Response.Cookies.Delete("auth_token", new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/"
-        });
+        _cookieService.DeleteAuthCookie();
 
         return Ok(new { Message = "로그아웃 성공" });
     }
@@ -65,32 +60,19 @@ public class AuthController : BaseController
     [HttpGet("check")]
     public async Task<IActionResult> CheckAuth()
     {
-        if (!Request.Cookies.TryGetValue("auth_token", out var token))
-        {
+        var token = _cookieService.GetAuthToken();
+        if (token == null)
             return Unauthorized(new { Message = "인증되지 않음" });
-        }
 
         var principal = _jwtService.ValidateToken(token);
         var user = await GetCurrentUserAsync();
 
-        return Ok(new LoginResponse 
-        { 
-            User = user,
-            IsAuthenticated = true, 
-        });
-    }
+        await _kisTokenRefreshService.EnsureValidTokenAsync(user);
 
-    private void SetAuthCookie(string token)
-    {
-        var cookieOptions = new CookieOptions
+        return Ok(new LoginResponse
         {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
-            Path = "/"
-        };
-
-        Response.Cookies.Append("auth_token", token, cookieOptions);
+            User = user,
+            IsAuthenticated = true,
+        });
     }
 }

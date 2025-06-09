@@ -1,5 +1,6 @@
 using StockTrading.Application.DTOs.Trading.Orders;
 using StockTrading.Application.DTOs.Users;
+using StockTrading.Domain.Exceptions.Authentication;
 using StockTrading.Domain.Settings;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Helpers;
@@ -11,7 +12,12 @@ public static class KisValidationHelper
         ArgumentNullException.ThrowIfNull(user);
 
         ValidateKisCredentials(user.KisAppKey, user.KisAppSecret, user.AccountNumber);
-        ValidateKisToken(user.KisToken);
+        ValidateKisToken(user.KisToken, user.Id);
+    }
+
+    public static bool IsTokenValid(KisTokenInfo? token)
+    {
+        return token?.AccessToken != null && token.ExpiresIn > DateTime.UtcNow;
     }
 
     public static void ValidateTokenRequest(int userId, string appKey, string appSecret, string accountNumber)
@@ -37,13 +43,13 @@ public static class KisValidationHelper
         ValidateRequiredField(accountNumber, nameof(accountNumber), "계좌번호가 설정되지 않았습니다.");
     }
 
-    private static void ValidateKisToken(KisTokenInfo? token)
+    private static void ValidateKisToken(KisTokenInfo? token, int userId)
     {
         if (token?.AccessToken == null)
             throw new InvalidOperationException("KIS 액세스 토큰이 없습니다. 토큰을 먼저 발급받아주세요.");
 
         if (token.ExpiresIn <= DateTime.UtcNow)
-            throw new InvalidOperationException("KIS 액세스 토큰이 만료되었습니다. 토큰을 재발급받아주세요.");
+            throw new KisTokenExpiredException(userId);
     }
 
     private static void ValidateUserId(int userId)
