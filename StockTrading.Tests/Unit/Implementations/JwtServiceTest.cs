@@ -6,10 +6,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
-using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Domain.Exceptions.Authentication;
 using StockTrading.Domain.Settings;
+using StockTrading.Domain.Settings.Infrastructure;
 using StockTrading.Infrastructure.Services;
+using StockTrading.Infrastructure.Services.Auth;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

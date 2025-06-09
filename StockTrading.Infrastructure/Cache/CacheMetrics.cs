@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using StockTrading.Application.DTOs.Cache;
+using StockTrading.Application.Features.Market.DTOs.Cache;
 
 namespace StockTrading.Infrastructure.Cache;
 

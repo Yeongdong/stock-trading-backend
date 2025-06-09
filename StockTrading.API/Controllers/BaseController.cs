@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.API.Controllers;
 

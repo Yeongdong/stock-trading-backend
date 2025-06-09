@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using StockTrading.Application.DTOs.Users;
-using StockTrading.Application.Services;
+using StockTrading.Application.Features.Auth.Services;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.API.Services;
 

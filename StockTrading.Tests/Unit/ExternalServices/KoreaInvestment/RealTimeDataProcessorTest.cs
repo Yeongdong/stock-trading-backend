@@ -2,10 +2,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
-using StockTrading.Domain.Settings;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Converters;
-using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Parsers;
+using StockTrading.Domain.Settings.ExternalServices;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.Converters;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.Parsers;
 
 namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
 {
@@ -24,7 +24,7 @@ namespace StockTrading.Tests.Unit.ExternalServices.KoreaInvestment
                 Mock.Of<ILogger<StockDataConverter>>()
             );
 
-            var messageTypes = new MessageTypeSettings
+            var messageTypes = new MessageTypes
             {
                 StockExecution = "H0STASP0",
                 TradeNotification = "H0STCNI0",

@@ -6,11 +6,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;
 using StockTrading.API.Controllers;
+using StockTrading.API.Controllers.Auth;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Interfaces;
-using StockTrading.Application.DTOs.Auth;
-using StockTrading.Application.DTOs.Users;
-using StockTrading.Application.Services;
+using StockTrading.Application.Common.Interfaces;
+using StockTrading.Application.Features.Auth.DTOs;
+using StockTrading.Application.Features.Auth.Services;
+using StockTrading.Application.Features.Users.DTOs;
+using StockTrading.Application.Features.Users.Services;
 using StockTrading.Domain.Settings;
 
 namespace StockTrading.Tests.Unit.Controllers;

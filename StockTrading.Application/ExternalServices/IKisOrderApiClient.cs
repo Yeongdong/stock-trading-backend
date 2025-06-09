@@ -1,5 +1,5 @@
-using StockTrading.Application.DTOs.Trading.Orders;
-using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.Features.Trading.DTOs.Orders;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.Application.ExternalServices;
 

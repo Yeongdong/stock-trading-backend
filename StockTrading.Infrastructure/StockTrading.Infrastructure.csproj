@@ -8,32 +8,36 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\StockTrading.Application\StockTrading.Application.csproj" />
-      <ProjectReference Include="..\StockTrading.Domain\StockTrading.Domain.csproj" />
+        <ProjectReference Include="..\StockTrading.Application\StockTrading.Application.csproj"/>
+        <ProjectReference Include="..\StockTrading.Domain\StockTrading.Domain.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="BCrypt.Net-Core" Version="1.6.0" />
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.12" />
-      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.12" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.0" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.5" />
-      <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.12" />
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
-      <PackageReference Include="StackExchange.Redis" Version="2.8.37" />
+        <PackageReference Include="BCrypt.Net-Core" Version="1.6.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.12"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.12"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.11"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.12"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="9.0.5"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0"/>
+        <PackageReference Include="StackExchange.Redis" Version="2.8.37"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.11"/>
+        <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="8.0.1"/>
+        <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="8.0.1"/>
     </ItemGroup>
 
 </Project>

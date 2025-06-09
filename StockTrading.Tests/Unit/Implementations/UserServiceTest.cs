@@ -2,9 +2,11 @@ using Google.Apis.Auth;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
-using StockTrading.Application.Repositories;
+using StockTrading.Application.Common.Interfaces;
+using StockTrading.Application.Features.Users.Repositories;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Services;
+using StockTrading.Infrastructure.Services.Auth;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

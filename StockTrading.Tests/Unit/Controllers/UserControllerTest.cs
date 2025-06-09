@@ -2,8 +2,9 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using StockTrading.API.Controllers;
+using StockTrading.API.Controllers.User;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.Tests.Unit.Controllers;
 

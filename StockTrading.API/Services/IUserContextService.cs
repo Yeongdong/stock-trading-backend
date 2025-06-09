@@ -1,4 +1,4 @@
-using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.API.Services;
 

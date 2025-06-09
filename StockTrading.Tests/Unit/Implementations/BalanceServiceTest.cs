@@ -2,11 +2,11 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
-using StockTrading.Application.DTOs.Trading.Portfolio;
-using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.ExternalServices;
-using StockTrading.Application.Services;
+using StockTrading.Application.Features.Trading.DTOs.Portfolio;
+using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Infrastructure.Services;
+using StockTrading.Infrastructure.Services.Trading;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

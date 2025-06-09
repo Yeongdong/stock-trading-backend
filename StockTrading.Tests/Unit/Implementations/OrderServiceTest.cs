@@ -1,12 +1,14 @@
 using JetBrains.Annotations;
 using Moq;
+using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
-using StockTrading.Application.DTOs.Trading.Orders;
-using StockTrading.Application.DTOs.Users;
 using StockTrading.Application.ExternalServices;
-using StockTrading.Application.Repositories;
+using StockTrading.Application.Features.Trading.DTOs.Orders;
+using StockTrading.Application.Features.Trading.Repositories;
+using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Services;
+using StockTrading.Infrastructure.Services.Trading;
 
 namespace StockTrading.Tests.Unit.Implementations;
 

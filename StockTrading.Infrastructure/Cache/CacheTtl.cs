@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using StockTrading.Domain.Settings;
+using StockTrading.Domain.Settings.Infrastructure;
 
 namespace StockTrading.Infrastructure.Cache;
 

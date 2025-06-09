@@ -5,10 +5,12 @@ using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using StockTrading.Application.DTOs.Auth;
+using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.DTOs.External.KoreaInvestment;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
-using StockTrading.Application.Repositories;
+using StockTrading.Application.Features.Auth.DTOs;
+using StockTrading.Application.Features.Users.Repositories;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Auth;
 using StockTrading.Infrastructure.Services;
 
 namespace StockTrading.Tests.Unit.Implementations;

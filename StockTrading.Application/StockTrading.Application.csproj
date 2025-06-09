@@ -23,8 +23,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="DTOs\Common\" />
       <Folder Include="DTOs\External\KRX\Requests\" />
+      <Folder Include="Features\Market\DTOs\" />
+      <Folder Include="Features\Trading\DTOs\" />
     </ItemGroup>
 
 </Project>

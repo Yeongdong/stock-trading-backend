@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.Repositories;
+using StockTrading.Application.Features.Users.Repositories;
 using StockTrading.Infrastructure.Persistence.Contexts;
 
 namespace StockTrading.Infrastructure.Persistence.Repositories;

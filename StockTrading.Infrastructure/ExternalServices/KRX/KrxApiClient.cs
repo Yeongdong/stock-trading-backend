@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StockTrading.Application.DTOs.External.KRX.Responses;
 using StockTrading.Domain.Settings;
+using StockTrading.Domain.Settings.ExternalServices;
 
 namespace StockTrading.Infrastructure.ExternalServices.KRX;
 

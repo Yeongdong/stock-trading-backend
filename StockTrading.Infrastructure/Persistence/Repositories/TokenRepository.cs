@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.DTOs.Auth;
-using StockTrading.Application.Repositories;
+using StockTrading.Application.Features.Auth.DTOs;
+using StockTrading.Application.Features.Users.Repositories;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
 

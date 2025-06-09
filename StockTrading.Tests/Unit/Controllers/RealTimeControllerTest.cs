@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.API.Controllers;
+using StockTrading.API.Controllers.Market;
 using StockTrading.API.Services;
-using StockTrading.Application.DTOs.Users;
-using StockTrading.Application.Services;
+using StockTrading.Application.Features.Market.Services;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.Tests.Unit.Controllers;
 

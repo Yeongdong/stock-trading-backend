@@ -1,5 +1,5 @@
-using StockTrading.Application.DTOs.Trading.Inquiry;
-using StockTrading.Application.DTOs.Users;
+using StockTrading.Application.Features.Trading.DTOs.Inquiry;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.Application.ExternalServices;
 

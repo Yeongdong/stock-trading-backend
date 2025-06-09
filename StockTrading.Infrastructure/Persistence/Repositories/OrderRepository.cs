@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using StockTrading.Application.Repositories;
+using StockTrading.Application.Features.Trading.Repositories;
 using StockTrading.Domain.Entities;
 using StockTrading.Infrastructure.Persistence.Contexts;
 
