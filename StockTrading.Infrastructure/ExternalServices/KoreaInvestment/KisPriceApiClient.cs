@@ -19,7 +19,7 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
 
     public async Task<KisCurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo user)
     {
-        var queryParams = CreateCurrentPriceQueryParams(request, user);
+        var queryParams = CreateCurrentPriceQueryParams(request);
         var httpRequest = CreateCurrentPriceHttpRequest(queryParams, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
@@ -40,10 +40,10 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
 
         ValidatePeriodPriceResponse(kisResponse);
 
-        return _converter.ConvertToPeriodPriceResponse(kisResponse.Output, request.StockCode);
+        return _converter.ConvertToPeriodPriceResponse(kisResponse, request.StockCode);
     }
 
-    private Dictionary<string, string> CreateCurrentPriceQueryParams(CurrentPriceRequest request, UserInfo user)
+    private Dictionary<string, string> CreateCurrentPriceQueryParams(CurrentPriceRequest request)
     {
         var marketConstants = _settings.MarketConstants;
         return new Dictionary<string, string>
@@ -70,7 +70,7 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
         if (!response.HasData)
             throw new Exception("현재가 조회 데이터가 없습니다.");
     }
-    
+
     private Dictionary<string, string> CreatePeriodPriceQueryParams(PeriodPriceRequest request)
     {
         return new Dictionary<string, string>
@@ -96,9 +96,17 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
     private void ValidatePeriodPriceResponse(KisPeriodPriceResponse response)
     {
         if (!response.IsSuccess)
-            throw new Exception($"기간별 시세 조회 실패: {response.Message}");
+        {
+            var errorMessage = !string.IsNullOrEmpty(response.Message)
+                ? response.Message
+                : "기간별 시세 조회 API 호출 실패";
+            throw new Exception($"API 오류: {errorMessage} (코드: {response.ReturnCode})");
+        }
 
-        if (!response.HasData)
+        if (!response.HasData || response.CurrentInfo == null)
+            throw new Exception("기간별 시세 조회 응답 데이터가 없습니다.");
+
+        if (!response.HasPriceData)
             throw new Exception("기간별 시세 조회 데이터가 없습니다.");
     }
 }

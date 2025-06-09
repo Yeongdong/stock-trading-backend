@@ -111,22 +111,22 @@ public class StockDataConverter
             UnitQuantity = 1
         };
     }
-    
-    public PeriodPriceResponse ConvertToPeriodPriceResponse(KisPeriodPriceOutputData kisData, string stockCode)
+
+    public PeriodPriceResponse ConvertToPeriodPriceResponse(KisPeriodPriceResponse kisData, string stockCode)
     {
-        var summary = kisData.Summary;
-        
+        var currentInfo = kisData.CurrentInfo;
+
         return new PeriodPriceResponse
         {
             StockCode = stockCode,
-            StockName = summary?.StockName ?? string.Empty,
-            CurrentPrice = ConvertToDecimal(summary?.CurrentPrice),
-            PriceChange = ConvertToDecimal(summary?.PriceChange),
-            ChangeRate = ConvertToDecimal(summary?.ChangeRate),
-            ChangeSign = summary?.ChangeSign ?? string.Empty,
-            TotalVolume = ConvertToLong(summary?.Volume),
-            TotalTradingValue = ConvertToLong(summary?.TradingValue),
-            PriceData = ConvertToPeriodPriceDataList(kisData.PriceData)
+            StockName = currentInfo?.StockName ?? string.Empty,
+            CurrentPrice = ConvertToDecimal(currentInfo?.CurrentPrice),
+            PriceChange = ConvertToDecimal(currentInfo?.PriceChange),
+            ChangeRate = ConvertToDecimal(currentInfo?.ChangeRate),
+            ChangeSign = currentInfo?.ChangeSign ?? string.Empty,
+            TotalVolume = ConvertToLong(currentInfo?.AccumulatedVolume),
+            TotalTradingValue = ConvertToLong(currentInfo?.AccumulatedAmount),
+            PriceData = kisData.PriceData.Select(ConvertToPeriodPriceData).ToList()
         };
     }
 
@@ -166,8 +166,8 @@ public class StockDataConverter
         if (MessageTypeSettings.ChangeSign.RiseCodes.Contains(changeSign))
             return MessageTypeSettings.ChangeType.Rise;
 
-        return MessageTypeSettings.ChangeSign.FallCodes.Contains(changeSign) 
-            ? MessageTypeSettings.ChangeType.Fall 
+        return MessageTypeSettings.ChangeSign.FallCodes.Contains(changeSign)
+            ? MessageTypeSettings.ChangeType.Fall
             : MessageTypeSettings.ChangeType.Flat;
     }
 
@@ -188,16 +188,8 @@ public class StockDataConverter
             .AddMinutes(minute)
             .AddSeconds(second);
     }
-    
-    private List<PeriodPriceData> ConvertToPeriodPriceDataList(List<KisPeriodPriceData> kisDataList)
-    {
-        if (kisDataList == null || kisDataList.Count == 0)
-            return [];
 
-        return kisDataList.Select(ConvertToPeriodPriceData).ToList();
-    }
-    
-    private PeriodPriceData ConvertToPeriodPriceData(KisPeriodPriceData kisData)
+    private PeriodPriceData ConvertToPeriodPriceData(KisPeriodPriceOutput2 kisData)
     {
         return new PeriodPriceData
         {
@@ -207,14 +199,14 @@ public class StockDataConverter
             LowPrice = ConvertToDecimal(kisData.LowPrice),
             ClosePrice = ConvertToDecimal(kisData.ClosePrice),
             Volume = ConvertToLong(kisData.Volume),
-            TradingValue = ConvertToLong(kisData.TradingValue),
+            TradingValue = ConvertToLong(kisData.TradingAmount),
             PriceChange = ConvertToDecimal(kisData.PriceChange),
             ChangeSign = kisData.ChangeSign,
             FlagCode = kisData.FlagCode,
             SplitRate = ConvertToDecimal(kisData.SplitRate)
         };
     }
-    
+
     private decimal ConvertToDecimal(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))

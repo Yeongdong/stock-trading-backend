@@ -269,7 +269,7 @@ public static class ServiceCollectionExtensions
         services.ValidateAllSettingsOnStartup();
         services.AddSettingsSummary();
 
-        services.AddScoped<StockDataConverter>();
+        services.AddSingleton<StockDataConverter>();
     }
 
     private static void AddValidators(IServiceCollection services)
