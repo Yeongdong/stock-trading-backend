@@ -28,7 +28,8 @@ namespace StockTrading.API.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services,
+        IConfiguration configuration)
     {
         // 기본 서비스들
         services.AddBasicServices();
@@ -108,30 +109,30 @@ public static class ServiceCollectionExtensions
     {
         // WebSocket 클라이언트
         services.AddSingleton<WebSocketClient>();
-        services.AddSingleton<IWebSocketClient>(provider => 
+        services.AddSingleton<IWebSocketClient>(provider =>
             provider.GetRequiredService<WebSocketClient>());
 
         // 실시간 데이터 처리
         services.AddSingleton<RealTimeDataProcessor>();
-        services.AddSingleton<IRealTimeDataProcessor>(provider => 
+        services.AddSingleton<IRealTimeDataProcessor>(provider =>
             provider.GetRequiredService<RealTimeDataProcessor>());
 
         // 구독 관리
         services.AddSingleton<SubscriptionManager>();
-        services.AddSingleton<ISubscriptionManager>(provider => 
+        services.AddSingleton<ISubscriptionManager>(provider =>
             provider.GetRequiredService<SubscriptionManager>());
 
         // 데이터 브로드캐스터
         services.AddSingleton<RealTimeDataBroadcaster>();
-        services.AddSingleton<IRealTimeDataBroadcaster>(provider => 
+        services.AddSingleton<IRealTimeDataBroadcaster>(provider =>
             provider.GetRequiredService<RealTimeDataBroadcaster>());
 
         // 실시간 서비스
         services.AddSingleton<IRealTimeService, RealTimeService>();
-        
+
         return services;
     }
-    
+
 
     private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
     {
@@ -159,25 +160,30 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
     private static IServiceCollection AddCacheServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var redisSettings = configuration.GetSection("Redis").Get<RedisSettings>() ?? new RedisSettings();
-    
-        if (redisSettings.Enabled && !string.IsNullOrEmpty(redisSettings.ConnectionString))
+        services.Configure<CacheSettings>(configuration.GetSection(CacheSettings.SectionName));
+        services.Configure<RedisSettings>(configuration.GetSection(RedisSettings.SectionName));
+
+        var redisSettings = configuration.GetSection(RedisSettings.SectionName).Get<RedisSettings>();
+
+        // Redis 설정이 활성화되어 있으면 Redis 사용, 아니면 메모리 캐시
+        if (redisSettings?.Enabled == true && !string.IsNullOrEmpty(redisSettings.ConnectionString))
         {
+            // Redis ConnectionMultiplexer 등록
             services.AddSingleton<IConnectionMultiplexer>(provider =>
             {
-                var configurationOptions = ConfigurationOptions.Parse(redisSettings.ConnectionString);
-                configurationOptions.ConnectTimeout = redisSettings.ConnectTimeoutSeconds * 1000;
-                configurationOptions.SyncTimeout = redisSettings.SyncTimeoutMs;
-                configurationOptions.ConnectRetry = redisSettings.RetryCount;
-                configurationOptions.AbortOnConnectFail = false;
-            
-                return ConnectionMultiplexer.Connect(configurationOptions);
+                var config = ConfigurationOptions.Parse(redisSettings.ConnectionString);
+                config.ConnectTimeout = redisSettings.ConnectTimeoutSeconds * 1000;
+                config.SyncTimeout = redisSettings.SyncTimeoutMs;
+                config.ConnectRetry = redisSettings.RetryCount;
+                config.AbortOnConnectFail = false;
+
+                return ConnectionMultiplexer.Connect(config);
             });
 
-            // Redis 분산 캐시
+            // Redis 분산 캐시 등록
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redisSettings.ConnectionString;
@@ -186,19 +192,20 @@ public static class ServiceCollectionExtensions
         }
         else
         {
-            // Redis가 비활성화되거나 연결 문자열이 없으면 메모리 캐시 사용
             services.AddDistributedMemoryCache();
+            services.AddSingleton<IConnectionMultiplexer?>(provider => null);
         }
 
-        // 캐시 관련 서비스들
         services.AddSingleton<CacheTtl>();
         services.AddSingleton<CacheMetrics>();
+        services.AddScoped<IStockCacheService, StockCacheService>();
 
         return services;
     }
 
     private static IServiceCollection AddHealthCheckServices(this IServiceCollection services)
     {
+        services.AddHealthChecks();
         return services;
     }
 }
