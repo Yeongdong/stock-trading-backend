@@ -16,6 +16,7 @@ using StockTrading.Domain.Settings.Infrastructure;
 using StockTrading.Infrastructure.Cache;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Auth;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Market.Converters;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Services.Auth;
 using StockTrading.Infrastructure.Services.Trading;
@@ -23,6 +24,7 @@ using StockTrading.Infrastructure.Services.Market;
 using StockTrading.Infrastructure.Services.Common;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.Converters;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Trading.Converters;
 
 namespace StockTrading.API.Extensions;
 
@@ -54,9 +56,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// 기본 ASP.NET Core 서비스들
-    /// </summary>
     private static IServiceCollection AddBasicServices(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
@@ -88,7 +87,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
         services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
         services.AddScoped<ICurrentPriceService, CurrentPriceService>();
+        services.AddScoped<IPeriodPriceService, PeriodPriceService>();
         services.AddScoped<IStockCacheService, StockCacheService>();
+        services.AddScoped<IKisTokenRefreshService, KisTokenRefreshService>();
+        services.AddScoped<ICookieService, CookieService>();
 
         // Infrastructure Services
         services.AddScoped<IDbContextWrapper, DbContextWrapper>();
@@ -101,6 +103,8 @@ public static class ServiceCollectionExtensions
 
         // Converters
         services.AddSingleton<StockDataConverter>();
+        services.AddSingleton<PriceDataConverter>();
+        services.AddSingleton<OrderDataConverter>();
 
         return services;
     }
