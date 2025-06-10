@@ -4,7 +4,7 @@ using StockTrading.Application.Features.Market.Services;
 
 namespace StockTrading.API.Controllers.Market;
 
-[Route("api/[controller]")]
+[Route("api/market/[controller]")]
 public class RealTimeController : BaseController
 {
     private readonly IRealTimeService _realTimeService;

@@ -4,7 +4,7 @@ using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.Managers;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.State;
 
-namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
+namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime;
 
 /// <summary>
 /// KIS 실시간 서비스

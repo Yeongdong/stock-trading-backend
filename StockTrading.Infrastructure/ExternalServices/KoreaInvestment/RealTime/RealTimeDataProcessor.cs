@@ -47,7 +47,7 @@ public class RealTimeDataProcessor : IRealTimeDataProcessor
     private MessageParseResult DetermineMessageTypeAndParse(string messageText)
     {
         var trimmedMessage = messageText.TrimStart();
-        return trimmedMessage.StartsWith("{")
+        return trimmedMessage.StartsWith($"{{")
             ? _jsonParser.Parse(messageText)
             : _pipeParser.Parse(messageText);
     }

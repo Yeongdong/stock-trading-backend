@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Features.Market.Services;
 
-namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
+namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime;
 
 /*
  * SignalR을 통한 클라이언트 메시지 브로드캐스팅

@@ -30,7 +30,7 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         var response = await _httpClient.SendAsync(httpRequest);
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
-
+        
         ValidateBalanceResponse(kisResponse);
 
         return CreateAccountBalance(kisResponse);
@@ -43,7 +43,7 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         var response = await _httpClient.SendAsync(httpRequest);
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBuyableInquiryResponse>();
-
+        
         ValidateBuyableInquiryResponse(kisResponse);
 
         return _stockDataConverter.ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice,
@@ -116,7 +116,7 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         var url = BuildGetUrl(_settings.Endpoints.BuyableInquiryPath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetStandardHeaders(httpRequest, _settings.DefaultValues.BalanceTransactionId, user);
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.BuyableInquiryTransactionId, user);
         return httpRequest;
     }
 

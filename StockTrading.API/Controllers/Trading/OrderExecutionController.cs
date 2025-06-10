@@ -5,7 +5,7 @@ using StockTrading.Application.Features.Trading.Services;
 
 namespace StockTrading.API.Controllers.Trading;
 
-[Route("api/[controller]")]
+[Route("api/trading/[controller]")]
 public class OrderExecutionController : BaseController
 {
     private readonly IOrderExecutionInquiryService _orderExecutionService;
