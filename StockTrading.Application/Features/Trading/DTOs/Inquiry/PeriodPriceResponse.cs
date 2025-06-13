@@ -1,29 +1,31 @@
+using System.Text.Json.Serialization;
+
 namespace StockTrading.Application.Features.Trading.DTOs.Inquiry;
 
 public class PeriodPriceResponse
 {
-    public string StockCode { get; set; } = string.Empty;
-    public string StockName { get; set; } = string.Empty;
-    public decimal CurrentPrice { get; set; }
-    public decimal PriceChange { get; set; }
-    public decimal ChangeRate { get; set; }
-    public string ChangeSign { get; set; } = string.Empty;
-    public long TotalVolume { get; set; }
-    public long TotalTradingValue { get; set; }
-    public List<PeriodPriceData> PriceData { get; init; } = [];
+    [JsonPropertyName("stockCode")] public string StockCode { get; set; } = string.Empty;
+    [JsonPropertyName("stockName")] public string StockName { get; set; } = string.Empty;
+    [JsonPropertyName("currentPrice")] public decimal CurrentPrice { get; set; }
+    [JsonPropertyName("priceChange")] public decimal PriceChange { get; set; }
+    [JsonPropertyName("changeRate")] public decimal ChangeRate { get; set; }
+    [JsonPropertyName("changeSign")] public string ChangeSign { get; set; } = string.Empty;
+    [JsonPropertyName("totalVolume")] public long TotalVolume { get; set; }
+    [JsonPropertyName("totalTradingValue")] public long TotalTradingValue { get; set; }
+    [JsonPropertyName("priceData")] public List<PeriodPriceData> PriceData { get; init; } = [];
 }
 
 public class PeriodPriceData
 {
-    public string Date { get; set; } = string.Empty;
-    public decimal OpenPrice { get; set; }
-    public decimal HighPrice { get; set; }
-    public decimal LowPrice { get; set; }
-    public decimal ClosePrice { get; set; }
-    public long Volume { get; set; }
-    public long TradingValue { get; set; }
-    public decimal PriceChange { get; set; }
-    public string ChangeSign { get; set; } = string.Empty;
-    public string FlagCode { get; set; } = string.Empty;
-    public decimal SplitRate { get; set; }
+    [JsonPropertyName("date")] public string Date { get; set; } = string.Empty;
+    [JsonPropertyName("openPrice")] public decimal OpenPrice { get; set; }
+    [JsonPropertyName("highPrice")] public decimal HighPrice { get; set; }
+    [JsonPropertyName("lowPrice")] public decimal LowPrice { get; set; }
+    [JsonPropertyName("closePrice")] public decimal ClosePrice { get; set; }
+    [JsonPropertyName("volume")] public long Volume { get; set; }
+    [JsonPropertyName("tradingValue")] public long TradingValue { get; set; }
+    [JsonPropertyName("priceChange")] public decimal PriceChange { get; set; }
+    [JsonPropertyName("changeSign")] public string ChangeSign { get; set; } = string.Empty;
+    [JsonPropertyName("flagCode")] public string FlagCode { get; set; } = string.Empty;
+    [JsonPropertyName("splitRate")] public decimal SplitRate { get; set; }
 }
