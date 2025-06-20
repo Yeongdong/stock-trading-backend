@@ -3,9 +3,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Moq;
-using StockTrading.API.Controllers;
 using StockTrading.API.Controllers.Auth;
 using StockTrading.API.Services;
 using StockTrading.API.Validator.Interfaces;
@@ -14,7 +12,8 @@ using StockTrading.Application.Features.Auth.DTOs;
 using StockTrading.Application.Features.Auth.Services;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Services;
-using StockTrading.Domain.Settings;
+using StockTrading.Domain.Exceptions.Authentication;
+using System.Security.Claims;
 
 namespace StockTrading.Tests.Unit.Controllers;
 
@@ -52,7 +51,6 @@ public class AuthControllerTest
             _mockKisTokenRefreshService.Object
         )
         {
-            // HttpContext 설정
             ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext()
@@ -116,9 +114,17 @@ public class AuthControllerTest
             Name = "Test User"
         };
 
-        var mockPrincipal = new System.Security.Claims.ClaimsPrincipal();
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, testUser.Email),
+            new Claim(ClaimTypes.Name, testUser.Name),
+            new Claim(ClaimTypes.NameIdentifier, testUser.Id.ToString())
+        };
+        var mockPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
 
-        _controller.ControllerContext.HttpContext.Request.Headers.Cookie = "auth_token=valid-token";
+        _mockCookieService
+            .Setup(x => x.GetAuthToken())
+            .Returns("valid-token");
 
         _mockJwtService
             .Setup(x => x.ValidateToken("valid-token"))
@@ -128,21 +134,52 @@ public class AuthControllerTest
             .Setup(x => x.GetCurrentUserAsync())
             .ReturnsAsync(testUser);
 
+        _mockKisTokenRefreshService
+            .Setup(x => x.EnsureValidTokenAsync(testUser))
+            .ReturnsAsync(true);
+
         // Act
         var result = await _controller.CheckAuth();
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         Assert.NotNull(okResult.Value);
+        
+        var response = okResult.Value as LoginResponse;
+        Assert.NotNull(response);
+        Assert.Equal(testUser, response.User);
+        Assert.True(response.IsAuthenticated);
     }
 
     [Fact]
     public async Task CheckAuth_WithoutToken_ReturnsUnauthorized()
     {
+        // Arrange
+        _mockCookieService
+            .Setup(x => x.GetAuthToken())
+            .Returns((string)null);
+
         // Act
         var result = await _controller.CheckAuth();
 
         // Assert
-        Assert.IsType<UnauthorizedObjectResult>(result);
+        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+        Assert.NotNull(unauthorizedResult.Value);
+    }
+
+    [Fact]
+    public async Task CheckAuth_WithInvalidToken_ReturnsUnauthorized()
+    {
+        // Arrange
+        _mockCookieService
+            .Setup(x => x.GetAuthToken())
+            .Returns("invalid-token");
+
+        _mockJwtService
+            .Setup(x => x.ValidateToken("invalid-token"))
+            .Throws(new TokenValidationException("토큰 검증 실패"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<TokenValidationException>(async () => await _controller.CheckAuth());
     }
 }

@@ -8,9 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Moq;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Domain.Exceptions.Authentication;
-using StockTrading.Domain.Settings;
 using StockTrading.Domain.Settings.Infrastructure;
-using StockTrading.Infrastructure.Services;
 using StockTrading.Infrastructure.Services.Auth;
 
 namespace StockTrading.Tests.Unit.Implementations;
@@ -68,7 +66,6 @@ public class JwtServiceTest
         Assert.Equal(_jwtSettings.Audience, jwtToken.Audiences.FirstOrDefault());
 
         var expectedExpiration = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
-        var fiveMinutesWindow = TimeSpan.FromMinutes(5);
         Assert.True(Math.Abs((expectedExpiration - jwtToken.ValidTo).TotalMinutes) < 5,
             "토큰 만료 시간이 예상 범위 내에 있어야 합니다.");
     }
@@ -92,7 +89,6 @@ public class JwtServiceTest
             
         // 만료 시간 확인
         var expectedExpiration = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
-        var fiveMinutesWindow = TimeSpan.FromMinutes(5);
         Assert.True(Math.Abs((expectedExpiration - expiryDate).TotalMinutes) < 5,
             "토큰 만료 시간이 예상 범위 내에 있어야 합니다.");
     }
@@ -190,6 +186,15 @@ public class JwtServiceTest
     {
         var exception = Assert.Throws<TokenValidationException>(() => 
             _jwtService.ValidateToken(""));
+        
+        Assert.Equal("토큰 검증 실패", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateToken_WithNullToken_ShouldThrowTokenValidationException()
+    {
+        var exception = Assert.Throws<TokenValidationException>(() => 
+            _jwtService.ValidateToken(null));
         
         Assert.Equal("토큰 검증 실패", exception.Message);
     }

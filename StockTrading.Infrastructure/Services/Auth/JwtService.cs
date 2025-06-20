@@ -90,5 +90,25 @@ public class JwtService : IJwtService
             _logger.LogWarning("잘못된 서명의 토큰");
             throw new TokenValidationException("토큰 서명이 유효하지 않습니다.");
         }
+        catch (SecurityTokenMalformedException)
+        {
+            _logger.LogWarning("형식이 잘못된 토큰");
+            throw new TokenValidationException("토큰 검증 실패");
+        }
+        catch (SecurityTokenValidationException)
+        {
+            _logger.LogWarning("토큰 검증 실패");
+            throw new TokenValidationException("토큰 검증 실패");
+        }
+        catch (ArgumentNullException)
+        {
+            _logger.LogWarning("토큰이 null입니다.");
+            throw new TokenValidationException("토큰 검증 실패");
+        }
+        catch (ArgumentException)
+        {
+            _logger.LogWarning("잘못된 형식의 토큰");
+            throw new TokenValidationException("토큰 검증 실패");
+        }
     }
 }
