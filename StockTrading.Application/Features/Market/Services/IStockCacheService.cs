@@ -7,10 +7,8 @@ public interface IStockCacheService
 {
     #region 검색 결과 캐시
 
-    Task<CachedStockSearchResult?> GetSearchResultAsync(string searchTerm, int page, int pageSize);
-
-    Task SetSearchResultAsync(string searchTerm, int page, int pageSize, List<StockSearchResult> stocks,
-        int totalCount);
+    Task<StockSearchResponse?> GetSearchResultAsync(string searchTerm, int page, int pageSize);
+    Task SetSearchResultAsync(string searchTerm, int page, int pageSize, StockSearchResponse response);
 
     #endregion
 

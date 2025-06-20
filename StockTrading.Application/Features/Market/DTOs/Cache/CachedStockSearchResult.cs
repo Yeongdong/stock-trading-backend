@@ -8,6 +8,7 @@ public class CachedStockSearchResult
     public int TotalCount { get; init; }
     public int Page { get; init; }
     public int PageSize { get; init; }
+    public bool HasMore { get; init; } 
     public string SearchQuery { get; init; } = string.Empty;
     public DateTime CachedAt { get; init; }
     public int HitCount { get; set; }

@@ -15,7 +15,7 @@ public class OrderDataConverter
             OrderNumber = item.OrderNumber,
             StockCode = item.StockCode,
             StockName = item.StockName,
-            OrderSide = item.SellBuyDivisionName,
+            OrderType = item.SellBuyDivisionName,
             OrderQuantity = ParseHelper.ParseIntSafely(item.OrderQuantity),
             OrderPrice = ParseHelper.ParseDecimalSafely(item.OrderPrice),
             ExecutedQuantity = ParseHelper.ParseIntSafely(item.TotalExecutedQuantity),
@@ -27,7 +27,7 @@ public class OrderDataConverter
 
         return new OrderExecutionInquiryResponse
         {
-            ExecutionItems = executionItems,
+            Executions = executionItems,
             TotalCount = executionItems.Count,
             HasMore = !string.IsNullOrEmpty(kisResponse.CtxAreaNk100)
         };

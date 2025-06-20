@@ -24,13 +24,12 @@ public class StockService : IStockService
         _logger = logger;
     }
 
-    public async Task<List<StockSearchResult>> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
+    public async Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
         var cachedResult = await _stockCacheService.GetSearchResultAsync(searchTerm, page, pageSize);
-        if (cachedResult != null) return cachedResult.Stocks;
+        if (cachedResult != null) return cachedResult;
 
         var stocks = await _stockRepository.SearchByNameAsync(searchTerm, page, pageSize);
-
         var results = stocks.Select(stock => new StockSearchResult
         {
             Code = stock.Code,
@@ -41,9 +40,17 @@ public class StockService : IStockService
         }).ToList();
 
         var totalCount = await GetSearchTotalCountAsync(searchTerm);
-        await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, results, totalCount);
+        var response = new StockSearchResponse
+        {
+            Results = results,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            HasMore = (page * pageSize) < totalCount
+        };
+        await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, response);
 
-        return results;
+        return response;
     }
 
     public async Task<StockSearchResult?> GetStockByCodeAsync(string code)

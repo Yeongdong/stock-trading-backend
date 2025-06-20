@@ -16,8 +16,8 @@ public class OrderExecutionItem
     [JsonPropertyName("stockName")]
     public string StockName { get; init; } = string.Empty;
     
-    [JsonPropertyName("orderSide")]
-    public string OrderSide { get; init; } = string.Empty;
+    [JsonPropertyName("orderType")]
+    public string OrderType { get; init; } = string.Empty;
     
     [JsonPropertyName("orderQuantity")]
     public int OrderQuantity { get; init; }

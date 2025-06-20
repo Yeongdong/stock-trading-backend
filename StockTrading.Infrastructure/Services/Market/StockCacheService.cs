@@ -33,7 +33,7 @@ public class StockCacheService : IStockCacheService
 
     #region 검색 결과 캐시
 
-    public async Task<CachedStockSearchResult?> GetSearchResultAsync(string searchTerm, int page, int pageSize)
+    public async Task<StockSearchResponse?> GetSearchResultAsync(string searchTerm, int page, int pageSize)
     {
         if (!_cacheSettings.Enabled) return null;
 
@@ -50,49 +50,54 @@ public class StockCacheService : IStockCacheService
             return null;
         }
 
-        var result = JsonSerializer.Deserialize<CachedStockSearchResult>(cachedData);
+        var cachedResult = JsonSerializer.Deserialize<CachedStockSearchResult>(cachedData);
         _cacheMetrics.RecordHit(key, stopwatch.Elapsed);
-        _logger.LogDebug("캐시 히트: {Key}, 결과 수: {Count}", key, result?.Stocks.Count ?? 0);
+        _logger.LogDebug("캐시 히트: {Key}, 결과 수: {Count}", key, cachedResult?.Stocks.Count ?? 0);
 
-        if (result == null) return result;
-        result.HitCount++;
-        await UpdateHitCountAsync(key, result);
+        if (cachedResult == null) return null;
 
-        return result;
+        cachedResult.HitCount++;
+        await UpdateHitCountAsync(key, cachedResult);
+
+        return new StockSearchResponse
+        {
+            Results = cachedResult.Stocks,
+            TotalCount = cachedResult.TotalCount,
+            Page = cachedResult.Page,
+            PageSize = cachedResult.PageSize,
+            HasMore = cachedResult.HasMore
+        };
     }
 
     #endregion
 
     #region 자동완성 캐시
 
-    public async Task SetSearchResultAsync(string searchTerm, int page, int pageSize, List<StockSearchResult> stocks,
-        int totalCount)
+    public async Task SetSearchResultAsync(string searchTerm, int page, int pageSize, StockSearchResponse response)
     {
         if (!_cacheSettings.Enabled) return;
 
         var key = CacheKeys.SearchResult(searchTerm, page, pageSize);
-
         var cachedResult = new CachedStockSearchResult
         {
-            Stocks = stocks,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize,
+            Stocks = response.Results,
+            TotalCount = response.TotalCount,
+            Page = response.Page,
+            PageSize = response.PageSize,
+            HasMore = response.HasMore,
             SearchQuery = searchTerm,
             CachedAt = DateTime.UtcNow,
             HitCount = 0
         };
 
-        var jsonData = JsonSerializer.Serialize(cachedResult);
+        var serializedData = JsonSerializer.Serialize(cachedResult);
         var options = new DistributedCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = _cacheTtl.SearchResults
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_cacheSettings.Ttl.SearchResultsHours)
         };
 
-        await _distributedCache.SetStringAsync(key, jsonData, options);
-
-        await IncrementSearchCountAsync(searchTerm);
-        _logger.LogDebug("검색 결과 캐시 저장: {Key}, 결과 수: {Count}", key, stocks.Count);
+        await _distributedCache.SetStringAsync(key, serializedData, options);
+        _logger.LogDebug("캐시 저장: {Key}, 결과 수: {Count}", key, response.Results.Count);
     }
 
     public async Task<CachedAutoCompleteResponse?> GetAutoCompleteAsync(string prefix, int maxResults = 10)
