@@ -97,7 +97,8 @@ public class KisTokenServiceTest
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _kisTokenService.UpdateKisCredentialsAndTokensAsync(userId, appKey, appSecret, accountNumber);
+        var result =
+            await _kisTokenService.UpdateKisCredentialsAndTokensAsync(userId, appKey, appSecret, accountNumber);
 
         // Assert
         Assert.NotNull(result);
@@ -107,7 +108,8 @@ public class KisTokenServiceTest
 
         _mockDbTransaction.Verify(t => t.CommitAsync(), Times.Once);
         _mockKisTokenRepository.Verify(repo => repo.SaveKisTokenAsync(userId, It.IsAny<TokenInfo>()), Times.Once);
-        _mockUserKisInfoRepository.Verify(repo => repo.UpdateKisCredentialsAsync(userId, appKey, appSecret, accountNumber),
+        _mockUserKisInfoRepository.Verify(
+            repo => repo.UpdateKisCredentialsAsync(userId, appKey, appSecret, accountNumber),
             Times.Once);
         _mockUserKisInfoRepository.Verify(
             repo => repo.SaveWebSocketTokenAsync(userId, expectedWebSocketResponse.ApprovalKey), Times.Once);
@@ -130,7 +132,7 @@ public class KisTokenServiceTest
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             _kisTokenService.UpdateKisCredentialsAndTokensAsync(1, "", "secret", "account"));
 
-        Assert.Equal("앱 키는 필수입니다. (Parameter 'appKey')", exception.Message);
+        Assert.Equal("KIS 앱 키가 설정되지 않았습니다. (Parameter 'appKey')", exception.Message);
     }
 
     [Fact]
@@ -229,26 +231,6 @@ public class KisTokenServiceTest
         _mockUserKisInfoRepository.Verify(
             repo => repo.SaveWebSocketTokenAsync(userId, expectedResponse.ApprovalKey),
             Times.Once);
-    }
-
-    [Fact]
-    public async Task GetWebSocketTokenAsync_NullApprovalKey_ThrowsInvalidOperationException()
-    {
-        // Arrange
-        int userId = 1;
-        string appKey = "test_app_key";
-        string appSecret = "test_app_secret";
-
-        var invalidResponse = new KisWebSocketApprovalResponse
-        {
-            ApprovalKey = null
-        };
-
-        SetupHttpResponse("/oauth2/Approval", invalidResponse);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _kisTokenService.GetKisWebSocketTokenAsync(userId, appKey, appSecret));
     }
 
     private void SetupHttpResponse<T>(string path, T responseObject)

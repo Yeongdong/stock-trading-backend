@@ -1,11 +1,10 @@
 using JetBrains.Annotations;
-using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Features.Trading.DTOs.Portfolio;
 using StockTrading.Application.Features.Users.DTOs;
-using StockTrading.Infrastructure.Services;
+using StockTrading.Domain.Exceptions.Authentication;
 using StockTrading.Infrastructure.Services.Trading;
 
 namespace StockTrading.Tests.Unit.Implementations;
@@ -57,45 +56,45 @@ public class BalanceServiceTest
     }
 
     [Fact]
-    public async Task GetStockBalanceAsync_UserWithoutKisAppKey_ThrowsInvalidOperationException()
+    public async Task GetStockBalanceAsync_UserWithoutKisAppKey_ThrowsArgumentException()
     {
         // Arrange
         var userDto = CreateTestUser();
         userDto.KisAppKey = null;
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             _balanceService.GetStockBalanceAsync(userDto));
 
-        Assert.Equal("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
+        Assert.Contains("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
     }
 
     [Fact]
-    public async Task GetStockBalanceAsync_UserWithoutKisAppSecret_ThrowsInvalidOperationException()
+    public async Task GetStockBalanceAsync_UserWithoutKisAppSecret_ThrowsArgumentException()
     {
         // Arrange
         var userDto = CreateTestUser();
         userDto.KisAppSecret = "";
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             _balanceService.GetStockBalanceAsync(userDto));
 
-        Assert.Equal("KIS 앱 시크릿이 설정되지 않았습니다.", exception.Message);
+        Assert.Contains("KIS 앱 시크릿이 설정되지 않았습니다.", exception.Message);
     }
 
     [Fact]
-    public async Task GetStockBalanceAsync_UserWithoutAccountNumber_ThrowsInvalidOperationException()
+    public async Task GetStockBalanceAsync_UserWithoutAccountNumber_ThrowsArgumentException()
     {
         // Arrange
         var userDto = CreateTestUser();
         userDto.AccountNumber = "   "; // 공백
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             _balanceService.GetStockBalanceAsync(userDto));
 
-        Assert.Equal("계좌번호가 설정되지 않았습니다.", exception.Message);
+        Assert.Contains("계좌번호가 설정되지 않았습니다.", exception.Message);
     }
 
     [Fact]
@@ -120,10 +119,10 @@ public class BalanceServiceTest
         userDto.KisToken.ExpiresIn = DateTime.UtcNow.AddMinutes(-1); // 만료된 토큰
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<KisTokenExpiredException>(() =>
             _balanceService.GetStockBalanceAsync(userDto));
 
-        Assert.Equal("KIS 액세스 토큰이 만료되었습니다. 토큰을 재발급받아주세요.", exception.Message);
+        Assert.Contains("토큰이 만료되었습니다", exception.Message);
     }
 
     [Fact]

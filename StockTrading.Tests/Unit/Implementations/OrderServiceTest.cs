@@ -7,7 +7,7 @@ using StockTrading.Application.Features.Trading.DTOs.Orders;
 using StockTrading.Application.Features.Trading.Repositories;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Domain.Entities;
-using StockTrading.Infrastructure.Services;
+using StockTrading.Domain.Exceptions.Authentication;
 using StockTrading.Infrastructure.Services.Trading;
 
 namespace StockTrading.Tests.Unit.Implementations;
@@ -73,7 +73,7 @@ public class OrderServiceTest
     }
 
     [Fact]
-    public async Task PlaceOrderAsync_UserWithoutKisAppKey_ThrowsInvalidOperationException()
+    public async Task PlaceOrderAsync_UserWithoutKisAppKey_ThrowsArgumentException()
     {
         // Arrange
         var userDto = CreateTestUser();
@@ -81,14 +81,14 @@ public class OrderServiceTest
         var order = CreateTestOrder();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             _orderService.PlaceOrderAsync(order, userDto));
 
-        Assert.Equal("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
+        Assert.Contains("KIS 앱 키가 설정되지 않았습니다.", exception.Message);
     }
 
     [Fact]
-    public async Task PlaceOrderAsync_ExpiredToken_ThrowsInvalidOperationException()
+    public async Task PlaceOrderAsync_ExpiredToken_ThrowsKisTokenExpiredException()
     {
         // Arrange
         var userDto = CreateTestUser();
@@ -96,10 +96,10 @@ public class OrderServiceTest
         var order = CreateTestOrder();
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<KisTokenExpiredException>(() =>
             _orderService.PlaceOrderAsync(order, userDto));
 
-        Assert.Equal("KIS 액세스 토큰이 만료되었습니다. 토큰을 재발급받아주세요.", exception.Message);
+        Assert.Equal("KIS 액세스 토큰이 만료되었습니다.", exception.Message);
     }
 
     [Fact]
@@ -117,9 +117,7 @@ public class OrderServiceTest
         await Assert.ThrowsAsync<HttpRequestException>(() =>
             _orderService.PlaceOrderAsync(order, userDto));
 
-        // 트랜잭션이 시작되었는지 확인
         _mockDbContextWrapper.Verify(db => db.BeginTransactionAsync(), Times.Once);
-        // 주문 저장은 호출되지 않아야 함
         _mockOrderRepository.Verify(repo => repo.AddAsync(It.IsAny<StockOrder>()), Times.Never);
     }
 

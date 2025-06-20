@@ -11,29 +11,24 @@ public class StockOrderTest
     [Fact]
     public void StockOrder_Constructor_ShouldInitializePropertiesCorrectly()
     {
+        // Arrange
         string stockCode = "005930";
         string tradeType = "VTTC0802U";
         string orderType = "00";
         int quantity = 10;
         decimal price = 70_000;
-        var user = new User
-        {
-            Id = 1,
-            Email = "test@test.com",
-            Name = "Test",
-            GoogleId = "google_test",
-            CreatedAt = DateTime.Now,
-            Role = UserRole.User
-        };
+        int userId = 1;
 
-        var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, user.Id);
+        // Act
+        var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, userId);
 
+        // Assert
         stockOrder.StockCode.Should().Be(stockCode);
         stockOrder.TradeType.Should().Be(tradeType);
         stockOrder.OrderType.Should().Be(orderType);
         stockOrder.Quantity.Should().Be(quantity);
         stockOrder.Price.Should().Be(price);
-        stockOrder.User.Should().BeSameAs(user);
+        stockOrder.UserId.Should().Be(userId);
     }
 
     [Theory]
