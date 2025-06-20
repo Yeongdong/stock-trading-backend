@@ -53,8 +53,8 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.Role)
                 .HasColumnName("role")
-                .HasMaxLength(50)
-                .HasDefaultValue("User");
+                .HasDefaultValue(UserRole.User)
+                .HasConversion<int>();
 
             entity.Property(e => e.PasswordHash)
                 .HasColumnName("password_hash")

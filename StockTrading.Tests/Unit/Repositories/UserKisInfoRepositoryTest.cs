@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -42,7 +43,7 @@ public class UserKisInfoRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);
@@ -88,7 +89,7 @@ public class UserKisInfoRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);
@@ -113,7 +114,7 @@ public class UserKisInfoRepositoryTest
         Assert.Equal("test@example.com", updatedUser.Email);
         Assert.Equal("Test User", updatedUser.Name);
         Assert.Equal("google123", updatedUser.GoogleId);
-        Assert.Equal("User", updatedUser.Role);
+        Assert.Equal(UserRole.User, updatedUser.Role);
     }
     
     [Fact]
@@ -127,7 +128,7 @@ public class UserKisInfoRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);
@@ -167,7 +168,7 @@ public class UserKisInfoRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow,
             KisAppKey = "existing-app-key",
             KisAppSecret = "existing-app-secret",
@@ -226,7 +227,7 @@ public class UserKisInfoRepositoryTest
                 Email = "test@example.com",
                 Name = "Test User",
                 GoogleId = "test123",
-                Role = "User",
+                Role = UserRole.User,
             });
             SaveChanges();
         }

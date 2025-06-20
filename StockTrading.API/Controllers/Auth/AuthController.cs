@@ -77,4 +77,24 @@ public class AuthController : BaseController
             IsAuthenticated = true,
         });
     }
+
+    [HttpPost("master-login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> MasterLogin([FromBody] MasterLoginRequest request)
+    {
+        var masterSecret = _configuration["Authentication:Google:ClientSecret"];
+        if (string.IsNullOrEmpty(masterSecret) || request.Secret != masterSecret)
+            return Unauthorized();
+
+        var masterUser = await _userService.GetUserByEmailAsync(_configuration["Authentication:Google:masterId"]);
+        var token = _jwtService.GenerateToken(masterUser);
+
+        _cookieService.SetAuthCookie(token);
+
+        return Ok(new LoginResponse
+        {
+            User = masterUser,
+            Message = "마스터 로그인 성공"
+        });
+    }
 }

@@ -4,7 +4,7 @@ using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.API.Services;
 
-public class UserContextService: IUserContextService
+public class UserContextService : IUserContextService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUserService _userService;

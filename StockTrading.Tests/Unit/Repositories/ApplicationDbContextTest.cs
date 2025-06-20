@@ -2,6 +2,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Security.Encryption;
 
@@ -103,7 +104,7 @@ public class ApplicationDbContextTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -129,7 +130,7 @@ public class ApplicationDbContextTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow,
             KisToken = new KisToken
             {
@@ -165,7 +166,7 @@ public class ApplicationDbContextTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow,
             KisToken = new KisToken
             {

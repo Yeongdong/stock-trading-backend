@@ -1,13 +1,13 @@
 using FluentAssertions;
 using JetBrains.Annotations;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 
 namespace StockTrading.Tests.Unit.Entities;
 
 [TestSubject(typeof(KisToken))]
 public class KisTokenTest
 {
-
     [Fact]
     public void KisToken_Properties_ShouldSetAndGetCorrectly()
     {
@@ -32,13 +32,13 @@ public class KisTokenTest
         kisToken.TokenType.Should().Be(tokenType);
         kisToken.UserId.Should().Be(userId);
     }
-    
+
     [Fact]
     public void KisToken_UserRelationship_ShouldSetAndGetCorrectly()
     {
         // Arrange
         var userId = 42;
-    
+
         var user = new User
         {
             Id = 42,
@@ -46,9 +46,9 @@ public class KisTokenTest
             Name = "Test",
             GoogleId = "google_test",
             CreatedAt = DateTime.Now,
-            Role = "User"
+            Role = UserRole.User
         };
-    
+
         var kisToken = new KisToken
         {
             Id = 1,

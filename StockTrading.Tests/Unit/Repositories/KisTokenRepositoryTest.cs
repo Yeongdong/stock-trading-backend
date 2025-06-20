@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.Application.Features.Auth.DTOs;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -40,7 +41,7 @@ namespace StockTrading.Tests.Unit.Repositories
                 Email = "test@example.com",
                 Name = "Test User",
                 GoogleId = "google123",
-                Role = "User",
+                Role = UserRole.User,
                 CreatedAt = DateTime.UtcNow,
                 KisToken = new KisToken
                 {
@@ -79,7 +80,7 @@ namespace StockTrading.Tests.Unit.Repositories
                 Email = "test@example.com",
                 Name = "Test User",
                 GoogleId = "google123",
-                Role = "User",
+                Role = UserRole.User,
                 CreatedAt = DateTime.UtcNow,
                 KisToken = new KisToken
                 {

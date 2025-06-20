@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 using StockTrading.Infrastructure.Persistence.Contexts;
 using StockTrading.Infrastructure.Persistence.Repositories;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -35,7 +36,7 @@ public class UserRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow,
             KisToken = new KisToken
             {
@@ -80,7 +81,7 @@ public class UserRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);
@@ -117,7 +118,7 @@ public class UserRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);
@@ -165,7 +166,7 @@ public class UserRepositoryTest
             Email = "new@example.com",
             Name = "New User",
             GoogleId = "google456",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -191,7 +192,7 @@ public class UserRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);
@@ -224,7 +225,7 @@ public class UserRepositoryTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = "google123",
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
         context.Users.Add(user);

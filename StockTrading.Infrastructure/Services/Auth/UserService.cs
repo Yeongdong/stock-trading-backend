@@ -5,6 +5,7 @@ using StockTrading.Application.Features.Auth.Services;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Repositories;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 
 namespace StockTrading.Infrastructure.Services.Auth;
 
@@ -57,7 +58,7 @@ public class UserService : IUserService
             Name = payload.Name,
             GoogleId = payload.Subject,
             CreatedAt = DateTime.UtcNow,
-            Role = "User",
+            Role = UserRole.User,
         };
 
         var createdUser = await _userRepository.AddAsync(newUser);

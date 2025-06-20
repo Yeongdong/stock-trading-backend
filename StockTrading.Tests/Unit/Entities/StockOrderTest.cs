@@ -1,6 +1,7 @@
 using FluentAssertions;
 using JetBrains.Annotations;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 
 namespace StockTrading.Tests.Unit.Entities;
 
@@ -22,11 +23,11 @@ public class StockOrderTest
             Name = "Test",
             GoogleId = "google_test",
             CreatedAt = DateTime.Now,
-            Role = "User"
+            Role = UserRole.User
         };
-        
+
         var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, user.Id);
-        
+
         stockOrder.StockCode.Should().Be(stockCode);
         stockOrder.TradeType.Should().Be(tradeType);
         stockOrder.OrderType.Should().Be(orderType);
@@ -34,14 +35,15 @@ public class StockOrderTest
         stockOrder.Price.Should().Be(price);
         stockOrder.User.Should().BeSameAs(user);
     }
-    
+
     [Theory]
     [InlineData("", "Buy", "Limit", 10, 1000)]
     [InlineData("005930", "", "Limit", 10, 1000)]
     [InlineData("005930", "Buy", "", 10, 1000)]
     [InlineData("005930", "Buy", "Limit", 0, 1000)]
     [InlineData("005930", "Buy", "Limit", 10, 0)]
-    public void StockOrder_WithInvalidParameters_ShouldThrowException(string stockCode, string tradeType, string orderType, int quantity, decimal price)
+    public void StockOrder_WithInvalidParameters_ShouldThrowException(string stockCode, string tradeType,
+        string orderType, int quantity, decimal price)
     {
         var user = new User
         {

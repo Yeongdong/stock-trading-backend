@@ -4,9 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using StockTrading.Application.Features.Auth.Services;
 using StockTrading.Domain.Settings.Infrastructure;
 using StockTrading.Infrastructure.Security.Encryption;
 using StockTrading.Infrastructure.Security.Options;
+using StockTrading.Infrastructure.Services.Auth;
 
 namespace StockTrading.Infrastructure.Configuration.ServiceConfiguration;
 

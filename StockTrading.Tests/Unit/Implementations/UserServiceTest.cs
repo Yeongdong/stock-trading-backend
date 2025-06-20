@@ -5,8 +5,10 @@ using Moq;
 using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.Features.Users.Repositories;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 using StockTrading.Infrastructure.Services;
 using StockTrading.Infrastructure.Services.Auth;
+using static StockTrading.Domain.Enums.UserRole;
 
 namespace StockTrading.Tests.Unit.Implementations;
 
@@ -59,7 +61,7 @@ public class UserServiceTest
             Email = "test@example.com",
             Name = "Test User",
             GoogleId = googleId,
-            Role = "User",
+            Role = UserRole.User,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -83,7 +85,7 @@ public class UserServiceTest
         // 검증: 사용자 추가가 호출되지 않음
         _mockUserRepository.Verify(repo => repo.AddAsync(It.IsAny<User>()), Times.Never);
     }
-    
+
     [Fact]
     public async Task GetOrCreateGoogleUserAsync_NewUser_CreatesUserAndReturnsUserDto()
     {
@@ -94,7 +96,7 @@ public class UserServiceTest
             Email = "newuser@example.com",
             Name = "New User"
         };
-        
+
         var newUser = new User
         {
             Id = 42,
@@ -102,7 +104,7 @@ public class UserServiceTest
             Name = payload.Name,
             GoogleId = payload.Subject,
             CreatedAt = DateTime.UtcNow,
-            Role = "User"
+            Role = UserRole.User
         };
 
         _mockUserRepository.Setup(repo => repo.GetByGoogleIdAsync(googleId))
@@ -120,7 +122,7 @@ public class UserServiceTest
         _mockUserRepository.Verify(repo => repo.AddAsync(It.Is<User>(
             u => u.Email == payload.Email && u.GoogleId == payload.Subject)), Times.Once);
     }
-    
+
     [Fact]
     public async Task GetOrCreateGoogleUserAsync_NullPayload_ThrowsArgumentException()
     {
@@ -145,7 +147,7 @@ public class UserServiceTest
             Name = payload.Name,
             GoogleId = payload.Subject,
             CreatedAt = DateTime.UtcNow,
-            Role = "User"
+            Role = UserRole.User
         };
 
         _mockUserRepository.Setup(repo => repo.GetByGoogleIdAsync(payload.Subject))
@@ -170,7 +172,7 @@ public class UserServiceTest
             Id = 1,
             Email = email,
             Name = "Test User",
-            Role = "User"
+            Role = UserRole.User
         };
 
         _mockUserRepository.Setup(repo => repo.GetByEmailWithTokenAsync(email))

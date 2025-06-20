@@ -1,13 +1,13 @@
 using FluentAssertions;
 using JetBrains.Annotations;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 
 namespace StockTrading.Tests.Unit.Entities;
 
 [TestSubject(typeof(User))]
 public class UserTest
 {
-
     [Fact]
     public void User_Properties_ShouldSetAndGetCorrectly()
     {
@@ -16,7 +16,7 @@ public class UserTest
         var name = "Test User";
         var googleId = "google123456";
         var createdAt = DateTime.UtcNow;
-        var role = "User";
+        var role = UserRole.User;
         var passwordHash = "hashedPassword123";
         var kisAppKey = "appKey123";
         var kisAppSecret = "appSecret456";
@@ -50,7 +50,7 @@ public class UserTest
         user.AccountNumber.Should().Be(accountNumber);
         user.WebSocketToken.Should().Be(webSocketToken);
     }
-    
+
     [Fact]
     public void User_NullableProperties_CanBeNull()
     {
@@ -61,7 +61,7 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User",
+            Role = UserRole.User,
         };
 
         user.PasswordHash.Should().BeNull();
@@ -82,15 +82,14 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User"
+            Role = UserRole.User
         };
 
         user.Email.Should().NotBeNull();
         user.Name.Should().NotBeNull();
         user.GoogleId.Should().NotBeNull();
-        user.Role.Should().NotBeNull();
     }
-    
+
     [Fact]
     public void User_KisTokenRelationship_ShouldSetAndGetCorrectly()
     {
@@ -111,7 +110,7 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User",
+            Role = UserRole.User,
             KisToken = kisToken
         };
 
@@ -119,7 +118,7 @@ public class UserTest
         user.KisToken.Should().BeSameAs(kisToken);
         user.KisToken.UserId.Should().Be(user.Id);
     }
-    
+
     [Fact]
     public void User_WithKisApi_ShouldHaveRequiredValues()
     {
@@ -130,7 +129,7 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User",
+            Role = UserRole.User,
             KisAppKey = "appKey123",
             KisAppSecret = "appSecret456",
             AccountNumber = "12345678"
@@ -139,14 +138,14 @@ public class UserTest
         user.KisAppKey.Should().NotBeNull();
         user.KisAppSecret.Should().NotBeNull();
         user.AccountNumber.Should().NotBeNull();
-            
+
         var canUseKisApi = !string.IsNullOrEmpty(user.KisAppKey) &&
                            !string.IsNullOrEmpty(user.KisAppSecret) &&
                            !string.IsNullOrEmpty(user.AccountNumber);
-            
+
         canUseKisApi.Should().BeTrue();
     }
-    
+
     [Fact]
     public void User_WithoutKisApi_ShouldNotBeAbleToUseKisApi()
     {
@@ -157,7 +156,7 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User"
+            Role = UserRole.User
         };
 
         var canUseKisApi = !string.IsNullOrEmpty(user.KisAppKey) &&
@@ -166,7 +165,7 @@ public class UserTest
 
         canUseKisApi.Should().BeFalse();
     }
-    
+
     [Fact]
     public void User_DefaultCreatedAt_ShouldNotBeDefault()
     {
@@ -177,12 +176,12 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User"
+            Role = UserRole.User
         };
 
         user.CreatedAt.Should().NotBe(default(DateTime));
     }
-    
+
     [Fact]
     public void User_WithOAuth_ShouldNotRequirePassword()
     {
@@ -193,7 +192,7 @@ public class UserTest
             Name = "Test User",
             GoogleId = "google123",
             CreatedAt = DateTime.UtcNow,
-            Role = "User",
+            Role = UserRole.User,
             PasswordHash = null // 비밀번호 없음
         };
 
