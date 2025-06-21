@@ -80,12 +80,8 @@ public class AuthController : BaseController
 
     [HttpPost("master-login")]
     [AllowAnonymous]
-    public async Task<IActionResult> MasterLogin([FromBody] MasterLoginRequest request)
+    public async Task<IActionResult> MasterLogin()
     {
-        var masterSecret = _configuration["Authentication:Google:ClientSecret"];
-        if (string.IsNullOrEmpty(masterSecret) || request.Secret != masterSecret)
-            return Unauthorized();
-
         var masterUser = await _userService.GetUserByEmailAsync(_configuration["Authentication:Google:masterId"]);
         var token = _jwtService.GenerateToken(masterUser);
 
