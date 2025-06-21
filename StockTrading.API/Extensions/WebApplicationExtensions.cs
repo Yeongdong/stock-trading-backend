@@ -7,14 +7,13 @@ public static class WebApplicationExtensions
 {
     public static WebApplication ConfigureMiddlewarePipeline(this WebApplication app)
     {
-        // 3. CORS를 가장 앞으로 이동
-        Console.WriteLine("Configuring CORS middleware...");
+        // 1. CORS 설정
         app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
         
-        // 1. 전역 예외 처리
+        // 2. 전역 예외 처리
         app.UseMiddleware<ExceptionMiddleware>();
 
-        // 2. 환경별 설정
+        // 3. 환경별 설정
         if (app.Environment.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
@@ -26,8 +25,6 @@ public static class WebApplicationExtensions
             app.UseHsts();
             app.UseSecurityHeaders();
         }
-
-        
     
         // 4. 기본 미들웨어들
         app.UseHttpsRedirection();
@@ -37,8 +34,6 @@ public static class WebApplicationExtensions
         app.UseAuthentication();
         app.UseAuthorization();
     
-        Console.WriteLine("Middleware pipeline configured successfully");
-
         // 6. 엔드포인트 매핑
         app.MapControllers();
         app.MapHub<StockHub>("/stockhub");
