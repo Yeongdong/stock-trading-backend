@@ -23,16 +23,19 @@ public static class WebApplicationExtensions
             app.UseSecurityHeaders();
         }
 
-        // 3. 기본 미들웨어들
+        // 3. CORS를 가장 앞으로 이동
+        Console.WriteLine("Configuring CORS middleware...");
+        app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
+    
+        // 4. 기본 미들웨어들
         app.UseHttpsRedirection();
         app.UseRouting();
-
-        // 4. CORS
-        app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
 
         // 5. 인증 및 인가
         app.UseAuthentication();
         app.UseAuthorization();
+    
+        Console.WriteLine("Middleware pipeline configured successfully");
 
         // 6. 엔드포인트 매핑
         app.MapControllers();
