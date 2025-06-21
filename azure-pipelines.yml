@@ -1,5 +1,5 @@
 trigger:
-- main
+  - main
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -7,124 +7,154 @@ pool:
 variables:
   buildConfiguration: 'Release'
   dotnetSdkVersion: '8.0.x'
-  solutionFile: '**/*.sln'  # 모든 위치에서 .sln 파일 검색
-  apiProjectPath: '**/StockTrading.API.csproj'  # 모든 위치에서 API 프로젝트 검색
+  solutionFile: '**/*.sln'
+  apiProjectPath: '**/StockTrading.API.csproj'
 
 stages:
-- stage: Build
-  displayName: 'Build Stage'
-  jobs:
-  - job: Build
-    steps:
-    - task: UseDotNet@2
-      displayName: 'Install .NET SDK'
-      inputs:
-        packageType: 'sdk'
-        version: '$(dotnetSdkVersion)'
-    
-    # 프로젝트 구조 확인
-    - script: |
-        echo "Current directory: $(pwd)"
-        echo "Directory contents:"
-        ls -la
-        echo "Looking for sln files:"
-        find . -name "*.sln"
-        echo "Looking for csproj files:"
-        find . -name "*.csproj"
-      displayName: 'Check Project Structure'
-    
-    # 테스트 설정 파일 생성
-    - script: |
-        echo '{
-          "Logging": {
-            "LogLevel": {
-              "Default": "Information",
-              "Microsoft.AspNetCore": "Warning"
-            }
-          },
-          "JwtSettings": {
-            "Key": "super_secure_test_key_that_is_at_least_32_bytes_long_for_testing_purposes_only",
-            "Issuer": "test_issuer",
-            "Audience": "test_audience",
-            "AccessTokenExpirationMinutes": 30,
-            "RefreshTokenExpirationDays": 7
-          },
-          "Authentication": {
-            "Google": {
-              "ClientId": "test_client_id_for_integration_tests",
-              "ClientSecret": "test_client_secret_for_integration_tests"
-            }
-          },
-          "ConnectionStrings": {
-            "DefaultConnection": "InMemory=true"
-          }
-        }' > StockTrading.Tests/appsettings.Testing.json
-      displayName: 'Create Test Settings File'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Restore packages'
-      inputs:
-        command: 'restore'
-        projects: '$(solutionFile)'
-        feedsToUse: 'select'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Build solution'
-      inputs:
-        command: 'build'
-        projects: '$(solutionFile)'
-        arguments: '--configuration $(buildConfiguration) --no-restore'
-
-    # 빌드 후 설정 파일 복사
-    - script: |
-        # 빌드 출력 디렉토리 찾기
-        echo "Looking for test output directories:"
-        find . -path "*/bin/$(buildConfiguration)/*" -type d
-        
-        # 테스트 파일 복사 (여러 위치에 복사)
-        mkdir -p bin/$(buildConfiguration)/net8.0
-        find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \;
-      displayName: 'Copy settings to build output'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Run tests'
-      inputs:
-        command: 'test'
-        projects: '**/*Tests/*.csproj'
-        arguments: '--configuration $(buildConfiguration) --no-build'
-        testRunTitle: 'Running tests'
-
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish app'
-      inputs:
-        command: 'publish'
-        publishWebProjects: false
-        projects: '$(apiProjectPath)'
-        arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
-        zipAfterPublish: true
-
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish artifacts'
-      inputs:
-        pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        artifactName: 'WebApp'
-
-- stage: Deploy
-  displayName: 'Deploy to Development'
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - deployment: DeployWebApp
-    displayName: 'Deploy Web App'
-    environment: 'Development'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
+  - stage: Build
+    displayName: 'Build Stage'
+    jobs:
+      - job: Build
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
             inputs:
-              azureSubscription: 'stocktrading'
-              appType: 'webApp'
-              appName: 'stocktrading-api'
-              package: '$(Pipeline.Workspace)/WebApp/*.zip'
+              packageType: 'sdk'
+              version: '$(dotnetSdkVersion)'
+          
+          # 프로젝트 구조 확인
+          - script: |
+              echo "Current directory: $(pwd)"
+              echo "Directory contents:"
+              ls -la
+              echo "Looking for sln files:"
+              find . -name "*.sln"
+              echo "Looking for csproj files:"
+              find . -name "*.csproj"
+            displayName: 'Check Project Structure'
+          
+          # 테스트 설정 파일 생성
+          - script: |
+              echo '{
+                "Logging": {
+                  "LogLevel": {
+                    "Default": "Information",
+                    "Microsoft.AspNetCore": "Warning"
+                  }
+                },
+                "JwtSettings": {
+                  "Key": "super_secure_test_key_that_is_at_least_32_bytes_long_for_testing_purposes_only",
+                  "Issuer": "test_issuer",
+                  "Audience": "test_audience",
+                  "AccessTokenExpirationMinutes": 30,
+                  "RefreshTokenExpirationDays": 7
+                },
+                "Authentication": {
+                  "Google": {
+                    "ClientId": "test_client_id_for_integration_tests",
+                    "ClientSecret": "test_client_secret_for_integration_tests"
+                  }
+                },
+                "ConnectionStrings": {
+                  "DefaultConnection": "InMemory=true"
+                }
+              }' > StockTrading.Tests/appsettings.Testing.json
+            displayName: 'Create Test Settings File'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore packages'
+            inputs:
+              command: 'restore'
+              projects: '$(solutionFile)'
+              feedsToUse: 'select'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Build solution'
+            inputs:
+              command: 'build'
+              projects: '$(solutionFile)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+          
+          # 빌드 후 설정 파일 복사
+          - script: |
+              # 빌드 출력 디렉토리 찾기
+              echo "Looking for test output directories:"
+              find . -path "*/bin/$(buildConfiguration)/*" -type d
+              
+              # 테스트 파일 복사 (여러 위치에 복사)
+              mkdir -p bin/$(buildConfiguration)/net8.0
+              find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \;
+            displayName: 'Copy settings to build output'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Run tests'
+            inputs:
+              command: 'test'
+              projects: '**/*Tests/*.csproj'
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: 'Running tests'
+
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish app'
+            inputs:
+              command: 'publish'
+              publishWebProjects: false
+              projects: '$(apiProjectPath)'
+              arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+              zipAfterPublish: true
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish artifacts'
+            inputs:
+              pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'WebApp'
+
+  - stage: Deploy
+    displayName: 'Deploy to Development'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployWebApp
+        displayName: 'Deploy Web App'
+        environment: 'Development'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # 소스 코드 체크아웃 (마이그레이션을 위해 필요)
+                - checkout: self
+
+                - task: UseDotNet@2
+                  displayName: 'Install .NET SDK for Migration'
+                  inputs:
+                    packageType: 'sdk'
+                    version: '8.0.x'
+                    
+                    # # EF Core 마이그레이션 실행
+                    # - script: |
+                    #     # EF Core Tools 설치
+                    #     dotnet tool install --global dotnet-ef
+                    
+                    #     # 소스 디렉토리에서 마이그레이션 실행
+                    #     export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=1635411qQ!;Ssl Mode=Require;"
+                    
+                    #     # 프로젝트 restore
+                    #     dotnet restore
+                    
+                    #     # 새로운 마이그레이션 생성 (모델 변경사항이 있는 경우)
+                    #     #dotnet ef migrations add AzureDeployment --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --context ApplicationDbContext || echo "Migration already exists or no changes"
+                  
+                  #     # 데이터베이스 업데이트
+                  #     #dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --context ApplicationDbContext
+                  #   displayName: 'Run Database Migration'
+
+                - task: AzureWebApp@1
+                  displayName: 'Deploy to Azure Web App'
+                  inputs:
+                    azureSubscription: 'stocktrading'
+                    appType: 'webApp'
+                    appName: 'stocktrading-api'
+                    package: '$(Pipeline.Workspace)/WebApp/*.zip'
+                    deploymentMethod: 'zipDeploy'
+                    enableCustomDeployment: true
+                    removeAdditionalFilesFlag: true

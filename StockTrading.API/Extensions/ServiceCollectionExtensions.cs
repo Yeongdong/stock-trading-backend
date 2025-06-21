@@ -140,10 +140,14 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var frontendUrl = configuration["Application:Frontend:Url"] ?? "http://localhost:3000";
+        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        var frontendUrl = isDevelopment
+            ? "http://localhost:3000"
+            : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
 
         services.AddCors(options =>
         {
+            // Production용 정책
             options.AddPolicy("AllowReactApp", builder =>
             {
                 builder.WithOrigins(frontendUrl)
@@ -152,9 +156,10 @@ public static class ServiceCollectionExtensions
                     .AllowCredentials();
             });
 
+            // Development 정책
             options.AddPolicy("Development", builder =>
             {
-                builder.WithOrigins(frontendUrl, "http://localhost:3000", "https://localhost:3000")
+                builder.WithOrigins("http://localhost:3000", "https://localhost:3000")
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
