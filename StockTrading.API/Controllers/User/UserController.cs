@@ -14,6 +14,9 @@ public class UserController : BaseController
     [HttpGet]
     public async Task<IActionResult> GetCurrentUser()
     {
+        Response.Headers.Add("Access-Control-Allow-Origin", "https://happy-glacier-0243a741e.6.azurestaticapps.net");
+        Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+        
         var user = await GetCurrentUserAsync();
         return Ok(user);
     }
