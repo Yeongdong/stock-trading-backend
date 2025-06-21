@@ -136,37 +136,44 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
-
+    
     private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-        var frontendUrl = isDevelopment
-            ? "http://localhost:3000"
-            : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
-
+        // var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        // var frontendUrl = isDevelopment
+        //     ? "http://localhost:3000"
+        //     : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
+        //
+        // services.AddCors(options =>
+        // {
+        //     // Production용 정책
+        //     options.AddPolicy("AllowReactApp", builder =>
+        //     {
+        //         builder.WithOrigins(frontendUrl)
+        //             .AllowAnyMethod()
+        //             .AllowAnyHeader()
+        //             .AllowCredentials();
+        //     });
+        //
+        //     // Development 정책
+        //     options.AddPolicy("Development", builder =>
+        //     {
+        //         builder.WithOrigins("http://localhost:3000", "https://localhost:3000")
+        //             .AllowAnyMethod()
+        //             .AllowAnyHeader()
+        //             .AllowCredentials()
+        //             .SetIsOriginAllowed(_ => true);
+        //     });
+        // });
         services.AddCors(options =>
         {
-            // Production용 정책
             options.AddPolicy("AllowReactApp", builder =>
             {
-                builder.WithOrigins(frontendUrl)
+                builder.AllowAnyOrigin() // 임시로 모든 도메인 허용
                     .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
-            });
-
-            // Development 정책
-            options.AddPolicy("Development", builder =>
-            {
-                builder.WithOrigins("http://localhost:3000", "https://localhost:3000")
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials()
-                    .SetIsOriginAllowed(_ => true);
+                    .AllowAnyHeader();
             });
         });
-
         return services;
     }
 
