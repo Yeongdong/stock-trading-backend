@@ -7,6 +7,10 @@ public static class WebApplicationExtensions
 {
     public static WebApplication ConfigureMiddlewarePipeline(this WebApplication app)
     {
+        // 3. CORS를 가장 앞으로 이동
+        Console.WriteLine("Configuring CORS middleware...");
+        app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
+        
         // 1. 전역 예외 처리
         app.UseMiddleware<ExceptionMiddleware>();
 
@@ -23,9 +27,7 @@ public static class WebApplicationExtensions
             app.UseSecurityHeaders();
         }
 
-        // 3. CORS를 가장 앞으로 이동
-        Console.WriteLine("Configuring CORS middleware...");
-        app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
+        
     
         // 4. 기본 미들웨어들
         app.UseHttpsRedirection();
