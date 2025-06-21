@@ -136,44 +136,47 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    
+
+
     private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-        // var frontendUrl = isDevelopment
-        //     ? "http://localhost:3000"
-        //     : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
-        //
-        // services.AddCors(options =>
-        // {
-        //     // Production용 정책
-        //     options.AddPolicy("AllowReactApp", builder =>
-        //     {
-        //         builder.WithOrigins(frontendUrl)
-        //             .AllowAnyMethod()
-        //             .AllowAnyHeader()
-        //             .AllowCredentials();
-        //     });
-        //
-        //     // Development 정책
-        //     options.AddPolicy("Development", builder =>
-        //     {
-        //         builder.WithOrigins("http://localhost:3000", "https://localhost:3000")
-        //             .AllowAnyMethod()
-        //             .AllowAnyHeader()
-        //             .AllowCredentials()
-        //             .SetIsOriginAllowed(_ => true);
-        //     });
-        // });
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        var isDevelopment = environment == "Development";
+    
+        // 디버깅용 로그
+        Console.WriteLine($"=== CORS DEBUG ===");
+        Console.WriteLine($"Environment: {environment}");
+        Console.WriteLine($"IsDevelopment: {isDevelopment}");
+    
+        var frontendUrl = isDevelopment
+            ? "http://localhost:3000"
+            : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
+
+        Console.WriteLine($"Frontend URL: {frontendUrl}");
+        Console.WriteLine($"Policy: {(isDevelopment ? "Development" : "AllowReactApp")}");
+        
         services.AddCors(options =>
         {
+            // Production용 정책
             options.AddPolicy("AllowReactApp", builder =>
             {
-                builder.AllowAnyOrigin() // 임시로 모든 도메인 허용
+                builder.WithOrigins(frontendUrl)
                     .AllowAnyMethod()
-                    .AllowAnyHeader();
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+            });
+
+            // Development 정책
+            options.AddPolicy("Development", builder =>
+            {
+                builder.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .SetIsOriginAllowed(_ => true);
             });
         });
+
         return services;
     }
 

@@ -23,12 +23,12 @@ public static class WebApplicationExtensions
             app.UseSecurityHeaders();
         }
 
-        // 3. CORS
-        app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
-        
-        // 4. 기본 미들웨어들
+        // 3. 기본 미들웨어들
         app.UseHttpsRedirection();
         app.UseRouting();
+
+        // 4. CORS
+        app.UseCors(app.Environment.IsDevelopment() ? "Development" : "AllowReactApp");
 
         // 5. 인증 및 인가
         app.UseAuthentication();
