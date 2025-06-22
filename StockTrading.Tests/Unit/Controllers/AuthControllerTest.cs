@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using StockTrading.API.Controllers.Auth;
 using StockTrading.API.Services;
-using StockTrading.API.Validator.Interfaces;
 using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.Features.Auth.DTOs;
 using StockTrading.Application.Features.Auth.Services;
@@ -14,6 +13,7 @@ using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Services;
 using StockTrading.Domain.Exceptions.Authentication;
 using System.Security.Claims;
+using StockTrading.Infrastructure.Validator.Interfaces;
 
 namespace StockTrading.Tests.Unit.Controllers;
 
@@ -23,7 +23,7 @@ public class AuthControllerTest
     private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly Mock<IJwtService> _mockJwtService;
     private readonly Mock<IUserService> _mockUserService;
-    private readonly Mock<IGoogleAuthValidator> _mockGoogleAuthValidator;
+    private readonly Mock<IAuthService> _mockAuthService;
     private readonly Mock<IUserContextService> _mockUserContextService;
     private readonly Mock<ICookieService> _mockCookieService;
     private readonly Mock<IKisTokenRefreshService> _mockKisTokenRefreshService;
@@ -34,7 +34,7 @@ public class AuthControllerTest
         _mockConfiguration = new Mock<IConfiguration>();
         _mockJwtService = new Mock<IJwtService>();
         _mockUserService = new Mock<IUserService>();
-        _mockGoogleAuthValidator = new Mock<IGoogleAuthValidator>();
+        _mockAuthService = new Mock<IAuthService>();
         _mockUserContextService = new Mock<IUserContextService>();
         _mockCookieService = new Mock<ICookieService>();
         _mockKisTokenRefreshService = new Mock<IKisTokenRefreshService>();
@@ -45,7 +45,7 @@ public class AuthControllerTest
             _mockConfiguration.Object,
             _mockJwtService.Object,
             _mockUserService.Object,
-            _mockGoogleAuthValidator.Object,
+            _mockAuthService.Object,
             _mockUserContextService.Object,
             _mockCookieService.Object,
             _mockKisTokenRefreshService.Object
@@ -83,16 +83,12 @@ public class AuthControllerTest
 
         var token = "jwt-token-value";
 
-        _mockGoogleAuthValidator
-            .Setup(x => x.ValidateAsync(googleLoginRequest.Credential, "test-client-id"))
-            .ReturnsAsync(payload);
-
         _mockUserService
             .Setup(x => x.CreateOrGetGoogleUserAsync(payload))
             .ReturnsAsync(user);
 
         _mockJwtService
-            .Setup(x => x.GenerateToken(user))
+            .Setup(x => x.GenerateAccessToken(user))
             .Returns(token);
 
         // Act

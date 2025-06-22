@@ -5,6 +5,8 @@ namespace StockTrading.Application.Features.Auth.Services;
 
 public interface IJwtService
 {
-    string GenerateToken(UserInfo user);
+    string GenerateAccessToken(UserInfo user);
+    (string refreshToken, DateTime expiryDate) GenerateRefreshToken();
     ClaimsPrincipal ValidateToken(string token);
+    int? GetUserIdFromToken(string token);
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Entities.Auth;
 using StockTrading.Domain.Enums;
 using StockTrading.Domain.Extensions;
 using StockTrading.Infrastructure.Security.Encryption;
@@ -19,6 +20,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<KisToken> KisTokens { get; set; }
     public DbSet<StockOrder> StockOrders { get; set; } = null!;
     public DbSet<StockOrder> Stocks { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +83,11 @@ public class ApplicationDbContext : DbContext
                 .HasConversion(
                     v => _encryptionService.Encrypt(v),
                     v => _encryptionService.Decrypt(v));
+            
+            entity.Property(e => e.WebSocketToken)
+                .HasColumnName("websocket_token")
+                .HasMaxLength(1000)
+                .IsRequired(false);
 
             entity.HasIndex(e => e.GoogleId)
                 .HasDatabaseName("ix_users_google_id");
@@ -226,6 +233,45 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Sector)
                 .HasDatabaseName("ix_stocks_sector");
+        });
+        
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("refresh_tokens");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .UseIdentityAlwaysColumn();
+
+            entity.Property(e => e.Token)
+                .HasColumnName("token")
+                .IsRequired()
+                .HasMaxLength(256);
+
+            entity.Property(e => e.ExpiresAt)
+                .HasColumnName("expires_at")
+                .HasColumnType("timestamp with time zone");
+
+            entity.Property(e => e.IsRevoked)
+                .HasColumnName("is_revoked")
+                .HasDefaultValue(false);
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at")
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.UserId)
+                .HasColumnName("user_id");
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.UserId);
         });
     }
 }

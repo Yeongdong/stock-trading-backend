@@ -89,9 +89,10 @@ public static class AuthenticationConfiguration
         {
             OnMessageReceived = context =>
             {
-                // 쿠키에서 토큰 추출
-                if (context.Request.Cookies.TryGetValue("auth_token", out var token))
-                    context.Token = token;
+                // Authorization 헤더에서 토큰 추출
+                var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
+                if (authHeader?.StartsWith("Bearer ") == true)
+                    context.Token = authHeader[7..];
 
                 // SignalR용 쿼리 스트링에서 토큰 추출
                 var accessToken = context.Request.Query["access_token"];

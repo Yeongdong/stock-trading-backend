@@ -1,7 +1,7 @@
+using System.Security.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
-using StockTrading.API.Validator.Interfaces;
 using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.Features.Auth.DTOs;
 using StockTrading.Application.Features.Auth.Services;
@@ -15,18 +15,18 @@ public class AuthController : BaseController
     private readonly IConfiguration _configuration;
     private readonly IJwtService _jwtService;
     private readonly IUserService _userService;
-    private readonly IGoogleAuthValidator _googleAuthValidator;
+    private readonly IAuthService _authService;
     private readonly ICookieService _cookieService;
     private readonly IKisTokenRefreshService _kisTokenRefreshService;
 
     public AuthController(IConfiguration configuration, IJwtService jwtService, IUserService userService,
-        IGoogleAuthValidator googleAuthValidator, IUserContextService userContextService,
-        ICookieService cookieService, IKisTokenRefreshService kisTokenRefreshService) : base(userContextService)
+        IAuthService authService, IUserContextService userContextService, ICookieService cookieService,
+        IKisTokenRefreshService kisTokenRefreshService) : base(userContextService)
     {
         _configuration = configuration;
         _jwtService = jwtService;
         _userService = userService;
-        _googleAuthValidator = googleAuthValidator;
+        _authService = authService;
         _cookieService = cookieService;
         _kisTokenRefreshService = kisTokenRefreshService;
     }
@@ -35,26 +35,30 @@ public class AuthController : BaseController
     [AllowAnonymous]
     public async Task<IActionResult> GoogleLogin([FromBody] LoginRequest request)
     {
-        var payload = await _googleAuthValidator.ValidateAsync(
-            request.Credential,
-            _configuration["Authentication:Google:ClientId"]);
+        var loginResponse = await _authService.GoogleLoginAsync(request.Credential);
+        return Ok(loginResponse);
+    }
 
-        var user = await _userService.CreateOrGetGoogleUserAsync(payload);
-        var token = _jwtService.GenerateToken(user);
-
-        _cookieService.SetAuthCookie(token);
-
-        return Ok(new LoginResponse
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken()
+    {
+        try
         {
-            User = user,
-            Message = "로그인 성공"
-        });
+            var refreshResponse = await _authService.RefreshTokenAsync();
+            return Ok(refreshResponse);
+        }
+        catch (AuthenticationException ex)
+        {
+            return Unauthorized(new { Message = ex.Message });
+        }
     }
 
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
-        _cookieService.DeleteAuthCookie();
+        var user = await GetCurrentUserAsync();
+        await _authService.LogoutAsync(user.Id);
 
         return Ok(new { Message = "로그아웃 성공" });
     }
@@ -83,7 +87,7 @@ public class AuthController : BaseController
     public async Task<IActionResult> MasterLogin()
     {
         var masterUser = await _userService.GetUserByEmailAsync(_configuration["Authentication:Google:masterId"]);
-        var token = _jwtService.GenerateToken(masterUser);
+        var token = _jwtService.GenerateAccessToken(masterUser);
 
         _cookieService.SetAuthCookie(token);
 

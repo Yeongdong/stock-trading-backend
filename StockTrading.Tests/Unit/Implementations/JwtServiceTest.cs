@@ -51,7 +51,7 @@ public class JwtServiceTest
     [Fact]
     public void GenerateToken_ShouldReturnValidJwtToken()
     {
-        var token = _jwtService.GenerateToken(_testUser);
+        var token = _jwtService.GenerateAccessToken(_testUser);
 
         Assert.NotNull(token);
         Assert.NotEmpty(token);
@@ -96,7 +96,7 @@ public class JwtServiceTest
     [Fact]
     public void ValidateToken_WithValidToken_ShouldReturnClaimsPrincipal()
     {
-        var token = _jwtService.GenerateToken(_testUser);
+        var token = _jwtService.GenerateAccessToken(_testUser);
 
         var principal = _jwtService.ValidateToken(token);
 
@@ -144,7 +144,7 @@ public class JwtServiceTest
     [Fact]
     public void ValidateToken_WithInvalidSignature_ShouldThrowTokenValidationException()
     {
-        var token = _jwtService.GenerateToken(_testUser);
+        var token = _jwtService.GenerateAccessToken(_testUser);
     
         var parts = token.Split('.');
         if (parts.Length == 3)

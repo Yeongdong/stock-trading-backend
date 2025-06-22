@@ -23,10 +23,11 @@ public class JwtService : IJwtService
         _logger = logger;
     }
 
-    public string GenerateToken(UserInfo user)
+    public string GenerateAccessToken(UserInfo user)
     {
         var claims = new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -45,14 +46,14 @@ public class JwtService : IJwtService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public (string token, DateTime expiryDate) GenerateRefreshToken()
+    public (string refreshToken, DateTime expiryDate) GenerateRefreshToken()
     {
         var randomNumber = new byte[32];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomNumber);
 
         var refreshToken = Convert.ToBase64String(randomNumber);
-        var expiryDate = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
+        var expiryDate = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
 
         return (refreshToken, expiryDate);
     }
@@ -110,5 +111,23 @@ public class JwtService : IJwtService
             _logger.LogWarning("잘못된 형식의 토큰");
             throw new TokenValidationException("토큰 검증 실패");
         }
+    }
+
+    public int? GetUserIdFromToken(string token)
+    {
+        try
+        {
+            var principal = ValidateToken(token);
+            var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier);
+
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+                return userId;
+        }
+        catch (TokenValidationException)
+        {
+            _logger.LogWarning("토큰에서 사용자 ID 추출 실패");
+        }
+
+        return null;
     }
 }

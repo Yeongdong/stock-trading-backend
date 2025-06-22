@@ -1,7 +1,7 @@
 using Google.Apis.Auth;
 using StockTrading.Application.Features.Users.DTOs;
 
-namespace StockTrading.Application.Features.Auth.Services;
+namespace StockTrading.Application.Features.Users.Services;
 
 public interface IUserService
 {

@@ -4,6 +4,7 @@ using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.Features.Auth.Services;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Repositories;
+using StockTrading.Application.Features.Users.Services;
 using StockTrading.Domain.Entities;
 using StockTrading.Domain.Enums;
 

@@ -2,9 +2,8 @@ using StackExchange.Redis;
 using StockTrading.Infrastructure.Configuration;
 using StockTrading.Infrastructure.Configuration.ServiceConfiguration;
 using StockTrading.API.Services;
-using StockTrading.API.Validator.Implementations;
-using StockTrading.API.Validator.Interfaces;
 using StockTrading.Application.Common.Interfaces;
+using StockTrading.Application.Features.Auth.Repositories;
 using StockTrading.Application.Features.Auth.Services;
 using StockTrading.Application.Features.Market.Repositories;
 using StockTrading.Application.Features.Market.Services;
@@ -25,6 +24,8 @@ using StockTrading.Infrastructure.Services.Common;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.Converters;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Trading.Converters;
+using StockTrading.Infrastructure.Validator.Implementations;
+using StockTrading.Infrastructure.Validator.Interfaces;
 
 namespace StockTrading.API.Extensions;
 
@@ -77,6 +78,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITokenRepository, TokenRepository>();
         services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         // Application Services
         services.AddScoped<IJwtService, JwtService>();
@@ -92,6 +94,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IStockCacheService, StockCacheService>();
         services.AddScoped<IKisTokenRefreshService, KisTokenRefreshService>();
         services.AddScoped<ICookieService, CookieService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         // Infrastructure Services
         services.AddScoped<IDbContextWrapper, DbContextWrapper>();
