@@ -27,7 +27,9 @@ public class StockService : IStockService
     public async Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
         var cachedResult = await _stockCacheService.GetSearchResultAsync(searchTerm, page, pageSize);
-        if (cachedResult != null) return cachedResult;
+
+        if (cachedResult != null && cachedResult.Results.Count != 0)
+            return cachedResult;
 
         var stocks = await _stockRepository.SearchByNameAsync(searchTerm, page, pageSize);
         var results = stocks.Select(stock => new StockSearchResult
@@ -48,7 +50,9 @@ public class StockService : IStockService
             PageSize = pageSize,
             HasMore = (page * pageSize) < totalCount
         };
-        await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, response);
+
+        if (results.Count != 0)
+            await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, response);
 
         return response;
     }
@@ -80,7 +84,7 @@ public class StockService : IStockService
 
         await _stockCacheService.InvalidateAllStockCacheAsync();
         var krxResponse = await _krxApiClient.GetStockListAsync();
-        
+
         var validStocks = krxResponse.Stocks
             .Where(item => item.IsValid())
             .Select(item => new Stock(
