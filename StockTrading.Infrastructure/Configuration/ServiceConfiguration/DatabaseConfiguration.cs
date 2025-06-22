@@ -16,11 +16,9 @@ public static class DatabaseConfiguration
             options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"));
 
             // 개발 환경에서만 민감한 데이터 로깅 활성화
-            if (IsDevelopment())
-            {
-                options.EnableSensitiveDataLogging();
-                options.EnableDetailedErrors();
-            }
+            if (!IsDevelopment()) return;
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
         });
 
         // ApplicationDbContext 수동 등록 (IEncryptionService 의존성)

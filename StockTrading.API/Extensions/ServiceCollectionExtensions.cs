@@ -41,6 +41,7 @@ public static class ServiceCollectionExtensions
 
         // Infrastructure 서비스들
         services.AddDatabaseServices(configuration);
+        services.AddBackgroundServices();
         services.AddAuthenticationServices(configuration);
         services.AddCacheServices(configuration);
         services.AddExternalServices(configuration);
