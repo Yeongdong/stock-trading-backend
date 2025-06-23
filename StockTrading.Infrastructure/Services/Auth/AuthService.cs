@@ -1,6 +1,7 @@
 using System.Security.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.Features.Auth.DTOs;
 using StockTrading.Application.Features.Auth.Repositories;
@@ -9,6 +10,7 @@ using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Services;
 using StockTrading.Domain.Entities;
 using StockTrading.Domain.Entities.Auth;
+using StockTrading.Domain.Settings.Infrastructure;
 using StockTrading.Infrastructure.Validator.Interfaces;
 
 namespace StockTrading.Infrastructure.Services.Auth;
@@ -23,14 +25,7 @@ public class AuthService : IAuthService
     private readonly ICookieService _cookieService;
     private readonly ILogger<AuthService> _logger;
 
-    public AuthService(
-        IJwtService jwtService,
-        IUserService userService,
-        IRefreshTokenRepository refreshTokenRepository,
-        IGoogleAuthValidator googleAuthValidator,
-        IConfiguration configuration,
-        ICookieService cookieService,
-        ILogger<AuthService> logger)
+    public AuthService(IJwtService jwtService, IUserService userService, IRefreshTokenRepository refreshTokenRepository, IGoogleAuthValidator googleAuthValidator, IConfiguration configuration, ICookieService cookieService, ILogger<AuthService> logger)
     {
         _jwtService = jwtService;
         _userService = userService;
@@ -43,17 +38,15 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> GoogleLoginAsync(string credential)
     {
+
         var payload = await _googleAuthValidator.ValidateAsync(credential, _configuration["Authentication:Google:ClientId"]);
         var user = await _userService.CreateOrGetGoogleUserAsync(payload);
 
-        // 기존 토큰들 폐기
         await _refreshTokenRepository.RevokeAllByUserIdAsync(user.Id);
 
-        // 새 토큰 생성
         var accessToken = _jwtService.GenerateAccessToken(user);
         var (refreshToken, refreshExpiry) = _jwtService.GenerateRefreshToken();
 
-        // Refresh Token 저장
         var refreshTokenEntity = new RefreshToken
         {
             Token = refreshToken,
@@ -63,12 +56,12 @@ public class AuthService : IAuthService
         };
         await _refreshTokenRepository.AddAsync(refreshTokenEntity);
 
-        // Refresh Token을 httpOnly 쿠키로 설정
         _cookieService.SetRefreshTokenCookie(refreshToken);
 
         return new LoginResponse
         {
             AccessToken = accessToken,
+            ExpiresIn = 3600,
             User = user,
             Message = "로그인 성공"
         };

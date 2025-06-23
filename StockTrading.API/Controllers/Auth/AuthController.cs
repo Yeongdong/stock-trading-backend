@@ -66,9 +66,11 @@ public class AuthController : BaseController
     [HttpGet("check")]
     public async Task<IActionResult> CheckAuth()
     {
-        var token = _cookieService.GetAuthToken();
-        if (token == null)
+        var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+        if (authHeader == null || !authHeader.StartsWith("Bearer "))
             return Unauthorized(new { Message = "인증되지 않음" });
+
+        var token = authHeader["Bearer ".Length..].Trim();
 
         var principal = _jwtService.ValidateToken(token);
         var user = await GetCurrentUserAsync();
