@@ -14,23 +14,18 @@ public class Stock
     public string? ListedShares { get; private set; } // 상장주식수
     public DateTime? ListedDate { get; private set; } // 상장일
     public Market Market { get; private set; } // 시장구분 (KOSPI/KOSDAQ/KONEX)
+    public Currency Currency { get; private set; } // 거래 통화
     public DateTime LastUpdated { get; private set; } // 마지막 업데이트 시간
 
-    private Stock() { }
+    private Stock()
+    {
+    }
 
-    public Stock(
-        string code,
-        string name,
-        string fullName,
-        string sector,
-        Market market,
-        string? englishName = null,
-        string? stockType = null,
-        string? parValue = null,
-        string? listedShares = null,
+    public Stock(string code, string name, string fullName, string sector, Market market, Currency currency,
+        string? englishName = null, string? stockType = null, string? parValue = null, string? listedShares = null,
         DateTime? listedDate = null)
     {
-        ValidateCode(code);
+        ValidateCode(code, market);
         ValidateName(name);
         ValidateName(fullName);
         ValidateSector(sector);
@@ -41,6 +36,7 @@ public class Stock
         EnglishName = englishName;
         Sector = sector;
         Market = market;
+        Currency = currency;
         StockType = stockType;
         ParValue = parValue;
         ListedShares = listedShares;
@@ -53,6 +49,7 @@ public class Stock
         string fullName,
         string sector,
         Market market,
+        Currency currency,
         string? englishName = null,
         string? stockType = null,
         string? parValue = null,
@@ -68,6 +65,7 @@ public class Stock
         EnglishName = englishName;
         Sector = sector;
         Market = market;
+        Currency = currency;
         StockType = stockType;
         ParValue = parValue;
         ListedShares = listedShares;
@@ -75,13 +73,22 @@ public class Stock
         LastUpdated = DateTime.UtcNow;
     }
 
-    private static void ValidateCode(string code)
+    private static void ValidateCode(string code, Market market)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new ArgumentException("종목코드는 필수입니다.", nameof(code));
 
-        if (code.Length != 6 || !code.All(char.IsDigit))
-            throw new ArgumentException("종목코드는 6자리 숫자여야 합니다.", nameof(code));
+        if (IsKoreanMarket(market))
+        {
+            if (code.Length != 6 || !code.All(char.IsDigit))
+                throw new ArgumentException("국내 종목코드는 6자리 숫자여야 합니다.", nameof(code));
+        }
+        // 해외 주식: 알파벳과 숫자 조합 허용
+        else
+        {
+            if (code.Length > 10 || !code.All(c => char.IsLetterOrDigit(c)))
+                throw new ArgumentException("해외 종목코드는 10자리 이하 영숫자여야 합니다.", nameof(code));
+        }
     }
 
     private static void ValidateName(string name)
@@ -95,4 +102,7 @@ public class Stock
         if (string.IsNullOrWhiteSpace(sector))
             throw new ArgumentException("업종은 필수입니다.", nameof(sector));
     }
+    
+    private static bool IsKoreanMarket(Market market) =>
+        market is Market.Kospi or Market.Kosdaq or Market.Konex;
 }
