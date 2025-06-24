@@ -1,32 +1,68 @@
 using Microsoft.Extensions.Logging;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
 using StockTrading.Application.ExternalServices;
+using StockTrading.Application.Features.Market.Services;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
-using StockTrading.Application.Features.Trading.Services;
 using StockTrading.Application.Features.Users.DTOs;
+using static StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Common.Helpers.KisValidationHelper;
 
 namespace StockTrading.Infrastructure.Services.Market;
 
-public class PeriodPriceService : IPeriodPriceService
+public class PriceService : IPriceService
 {
     private readonly IKisPriceApiClient _kisPriceApiClient;
-    private readonly ILogger<PeriodPriceService> _logger;
+    private readonly ILogger<PriceService> _logger;
 
-    public PeriodPriceService(IKisPriceApiClient kisPriceApiClient, ILogger<PeriodPriceService> logger)
+    public PriceService(IKisPriceApiClient kisPriceApiClient, ILogger<PriceService> logger)
     {
         _kisPriceApiClient = kisPriceApiClient;
         _logger = logger;
     }
 
-    public async Task<PeriodPriceResponse> GetPeriodPriceAsync(PeriodPriceRequest request, UserInfo user)
+    #region 국내 주식 시세
+
+    public async Task<DomesticCurrentPriceResponse> GetDomesticCurrentPriceAsync(CurrentPriceRequest request,
+        UserInfo userInfo)
     {
+        ValidateUserForKisApi(userInfo);
+        var response = await _kisPriceApiClient.GetDomesticCurrentPriceAsync(request, userInfo);
+        return response;
+    }
+
+    public async Task<PeriodPriceResponse> GetDomesticPeriodPriceAsync(PeriodPriceRequest request, UserInfo user)
+    {
+        ValidateUserForKisApi(user);
         ValidateRequest(request);
 
         var response = await _kisPriceApiClient.GetDomesticPeriodPriceAsync(request, user);
-        _logger.LogInformation("기간별 시세 조회 완료: 사용자 {UserId}, 종목 {StockCode}, 데이터 건수 {Count}", user.Id, request.StockCode,
-            response.PriceData.Count);
+        _logger.LogInformation("기간별 시세 조회 완료: 사용자 {UserId}, 종목 {StockCode}, 데이터 건수 {Count}",
+            user.Id, request.StockCode, response.PriceData.Count);
 
         return response;
     }
+
+    #endregion
+
+    #region 해외 주식 시세
+
+    public async Task<OverseasCurrentPriceResponse> GetOverseasCurrentPriceAsync(string stockCode,
+        StockTrading.Domain.Enums.Market market, UserInfo userInfo)
+    {
+        ValidateUserForKisApi(userInfo);
+
+        var request = new OverseasPriceRequest
+        {
+            StockCode = stockCode,
+            MarketCode = GetMarketCode(market)
+        };
+
+        var response = await _kisPriceApiClient.GetOverseasCurrentPriceAsync(request, userInfo);
+        return response;
+    }
+
+    #endregion
+
+    #region Private Helper Methods
 
     private void ValidateRequest(PeriodPriceRequest request)
     {
@@ -56,7 +92,6 @@ public class PeriodPriceService : IPeriodPriceService
         var end = DateTime.ParseExact(endDate, "yyyyMMdd", null);
         var daysDifference = (end - start).Days;
 
-        // API 스펙: 최대 100개 데이터
         var maxDays = periodDivCode switch
         {
             "D" => 100, // 일봉: 100일
@@ -69,4 +104,19 @@ public class PeriodPriceService : IPeriodPriceService
         if (daysDifference > maxDays)
             throw new ArgumentException($"조회 기간이 너무 깁니다. {periodDivCode} 기간으로는 최대 {maxDays}일까지 조회 가능합니다.");
     }
+
+    private static string GetMarketCode(StockTrading.Domain.Enums.Market market)
+    {
+        return market switch
+        {
+            Domain.Enums.Market.Nasdaq => "NAS",
+            Domain.Enums.Market.Nyse => "NYS",
+            Domain.Enums.Market.Tokyo => "TSE",
+            Domain.Enums.Market.London => "LSE",
+            Domain.Enums.Market.HongKong => "HKSE",
+            _ => throw new ArgumentException($"지원하지 않는 해외 시장: {market}")
+        };
+    }
+
+    #endregion
 }

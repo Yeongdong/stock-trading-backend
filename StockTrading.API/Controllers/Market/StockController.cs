@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
 using StockTrading.Application.Features.Market.Services;
-using StockTrading.Application.Features.Trading.DTOs.Inquiry;
-using StockTrading.Application.Features.Trading.Services;
-using StockTrading.Domain.Enums;
 
 namespace StockTrading.API.Controllers.Market;
 
@@ -11,23 +8,18 @@ namespace StockTrading.API.Controllers.Market;
 public class StockController : BaseController
 {
     private readonly IStockService _stockService;
-    private readonly IPeriodPriceService _periodPriceService;
-    private readonly ICurrentPriceService _currentPriceService;
     private readonly IStockCacheService _stockCacheService;
     private readonly ILogger<StockController> _logger;
 
-    public StockController(IStockService stockService, IPeriodPriceService periodPriceService,
-        ICurrentPriceService currentPriceService, IStockCacheService stockCacheService,
+    public StockController(IStockService stockService, IStockCacheService stockCacheService,
         IUserContextService userContextService, ILogger<StockController> logger) : base(userContextService)
     {
         _stockService = stockService;
-        _periodPriceService = periodPriceService;
-        _currentPriceService = currentPriceService;
         _stockCacheService = stockCacheService;
         _logger = logger;
     }
 
-    #region 국내 주식
+    #region 주식 검색 및 조회
 
     [HttpGet("search")]
     public async Task<IActionResult> SearchStocks([FromQuery] string searchTerm, [FromQuery] int page = 1,
@@ -57,61 +49,16 @@ public class StockController : BaseController
         return Ok(stock);
     }
 
-    [HttpGet("domestic/current-price")]
-    public async Task<IActionResult> GetCurrentPrice([FromQuery] CurrentPriceRequest request)
+    [HttpGet("search/summary")]
+    public async Task<IActionResult> GetSearchSummary()
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var user = await GetCurrentUserAsync();
-
-        _logger.LogInformation("주식 현재가 조회 요청: 사용자 {UserId}, 종목 {StockCode}", user.Id, request.StockCode);
-        var response = await _currentPriceService.GetDomesticCurrentPriceAsync(request, user);
-
-        return Ok(response);
-    }
-
-
-    [HttpGet("domestic/period-price")]
-    public async Task<IActionResult> GetPeriodPrice([FromQuery] PeriodPriceRequest request)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var user = await GetCurrentUserAsync();
-
-        _logger.LogInformation("기간별 시세 조회 요청: 사용자 {UserId}, 종목 {StockCode}, 기간 {Period}", user.Id, request.StockCode,
-            request.PeriodDivCode);
-        var response = await _periodPriceService.GetPeriodPriceAsync(request, user);
-
-        return Ok(response);
+        var summary = await _stockService.GetSearchSummaryAsync();
+        return Ok(summary);
     }
 
     #endregion
 
     #region 해외 주식
-
-    [HttpGet("overseas/current-price/{stockCode}")]
-    public async Task<IActionResult> GetOverseasCurrentPrice(string stockCode, [FromQuery] string market)
-    {
-        if (string.IsNullOrWhiteSpace(stockCode))
-            return BadRequest("종목코드를 입력해주세요.");
-
-        if (string.IsNullOrWhiteSpace(market))
-            return BadRequest("시장 정보를 입력해주세요. (예: nasdaq, nyse)");
-
-        if (!Enum.TryParse<StockTrading.Domain.Enums.Market>(market, true, out var marketEnum))
-            return BadRequest("지원하지 않는 시장입니다. (nasdaq, nyse, tokyo, london, hongkong)");
-
-        var user = await GetCurrentUserAsync();
-
-        _logger.LogInformation("해외 주식 현재가 조회: 사용자 {UserId}, 종목 {StockCode}, 시장 {Market}",
-            user.Id, stockCode, market);
-
-        var response = await _currentPriceService.GetOverseasCurrentPriceAsync(stockCode, marketEnum, user);
-
-        return Ok(response);
-    }
 
     [HttpGet("overseas/markets/{market}")]
     public async Task<IActionResult> GetStocksByMarket(string market)
@@ -122,21 +69,11 @@ public class StockController : BaseController
         var stocks = await _stockService.GetStocksByMarketAsync(marketEnum);
         return Ok(new { market = market, stocks });
     }
-    
+
     #endregion
 
-    #region 공통 메서드
+    #region 데이터 동기화 (관리자용)
 
-    [HttpGet("search/summary")]
-    public async Task<IActionResult> GetSearchSummary()
-    {
-        var summary = await _stockService.GetSearchSummaryAsync();
-        return Ok(summary);
-    }
-
-    /// <summary>
-    /// 종목 데이터 동기화 (관리자용)
-    /// </summary>
     [HttpPost("sync/domestic")]
     public async Task<IActionResult> SyncStockData()
     {
@@ -161,29 +98,4 @@ public class StockController : BaseController
     }
 
     #endregion
-
-    // /// <summary>
-    // /// KRX 데이터 업데이트 (관리자용)
-    // /// </summary>
-    // [HttpPost("update-from-krx")]
-    // public async Task<IActionResult> UpdateStockDataFromKrx()
-    // {
-    //     await _stockService.UpdateStockDataFromKrxAsync();
-    //     return Ok(new { message = "KRX 데이터 업데이트가 완료되었습니다." });
-    // }
-
-    // #region DTO Classes
-    //
-    // public class AddOverseasStockRequest
-    // {
-    //     public string Code { get; set; } = string.Empty;
-    //     public string Name { get; set; } = string.Empty;
-    //     public string FullName { get; set; } = string.Empty;
-    //     public string? EnglishName { get; set; }
-    //     public string Sector { get; set; } = string.Empty;
-    //     public string Market { get; set; } = string.Empty;
-    //     public string Currency { get; set; } = string.Empty;
-    // }
-    //
-    // #endregion
 }

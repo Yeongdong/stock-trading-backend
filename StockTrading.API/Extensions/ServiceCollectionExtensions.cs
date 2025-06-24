@@ -83,18 +83,14 @@ public static class ServiceCollectionExtensions
         // Application Services
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IUserService, UserService>();
-        services.AddScoped<IOrderService, OrderService>();
-        services.AddScoped<IBalanceService, BalanceService>();
         services.AddScoped<IStockService, StockService>();
+        services.AddScoped<IPriceService, PriceService>();
         services.AddScoped<IKisTokenService, KisTokenService>();
-        services.AddScoped<IOrderExecutionInquiryService, OrderExecutionInquiryService>();
-        services.AddScoped<IBuyableInquiryService, BuyableInquiryService>();
-        services.AddScoped<ICurrentPriceService, CurrentPriceService>();
-        services.AddScoped<IPeriodPriceService, PeriodPriceService>();
         services.AddScoped<IStockCacheService, StockCacheService>();
         services.AddScoped<IKisTokenRefreshService, KisTokenRefreshService>();
         services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITradingService, TradingService>();
 
         // Infrastructure Services
         services.AddScoped<IDbContextWrapper, DbContextWrapper>();

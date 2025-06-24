@@ -24,7 +24,7 @@ public class StockService : IStockService
         _logger = logger;
     }
 
-    #region 주식 검색 (국내/해외 통합)
+    #region 주식 검색 및 조회
 
     public async Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
@@ -55,7 +55,8 @@ public class StockService : IStockService
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+            HasMore = (page * pageSize) < totalCount
         };
 
         await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, response);
@@ -90,47 +91,10 @@ public class StockService : IStockService
         return result;
     }
 
-    #endregion
-
-    #region 국내 주식 데이터 동기화
-
-    public async Task SyncDomesticStockDataAsync()
-    {
-        _logger.LogInformation("국내 주식 데이터 동기화 시작");
-
-        var stockListResponse = await _krxApiClient.GetStockListAsync();
-        var validStocks = stockListResponse.Stocks
-            .Where(item => !string.IsNullOrWhiteSpace(item.Code) && item.Code.Length == 6)
-            .Select(item => new Domain.Entities.Stock(
-                code: item.Code,
-                name: item.Name,
-                fullName: item.FullName,
-                sector: NormalizeSector(item.Sector),
-                market: NormalizeMarketName(item.SecurityGroup),
-                currency: Currency.Krw, // 국내 주식은 KRW
-                englishName: item.EnglishName,
-                stockType: ExtractStockType(item.StockTypedShares),
-                parValue: null,
-                listedShares: ExtractListedShares(item.StockTypedShares),
-                listedDate: ParseListedDate(item.ListedDate)))
-            .ToList();
-
-        await _stockRepository.BulkUpsertAsync(validStocks);
-
-        var summary = await GetSearchSummaryAsync();
-        await _stockCacheService.SetStockSummaryAsync(summary);
-
-        _logger.LogInformation("국내 주식 데이터 동기화 완료: {Count}개", validStocks.Count);
-    }
-
-    #endregion
-
-    #region 해외 주식 데이터 관리
-    
     public async Task<List<StockSearchResult>> GetStocksByMarketAsync(StockTrading.Domain.Enums.Market market)
     {
         var stocks = await _stockRepository.GetByMarketAsync(market);
-        
+
         return stocks.Select(s => new StockSearchResult
         {
             Code = s.Code,
@@ -145,10 +109,6 @@ public class StockService : IStockService
             LastUpdated = s.LastUpdated
         }).ToList();
     }
-
-    #endregion
-
-    #region 공통 메서드
 
     public async Task<StockSearchSummary> GetSearchSummaryAsync()
     {
@@ -180,6 +140,39 @@ public class StockService : IStockService
 
         await _stockCacheService.SetStockSummaryAsync(summary);
         return summary;
+    }
+
+    #endregion
+
+    #region 데이터 동기화
+
+    public async Task SyncDomesticStockDataAsync()
+    {
+        _logger.LogInformation("국내 주식 데이터 동기화 시작");
+
+        var stockListResponse = await _krxApiClient.GetStockListAsync();
+        var validStocks = stockListResponse.Stocks
+            .Where(item => !string.IsNullOrWhiteSpace(item.Code) && item.Code.Length == 6)
+            .Select(item => new Domain.Entities.Stock(
+                code: item.Code,
+                name: item.Name,
+                fullName: item.FullName,
+                sector: NormalizeSector(item.Sector),
+                market: NormalizeMarketName(item.SecurityGroup),
+                currency: Currency.Krw,
+                englishName: item.EnglishName,
+                stockType: ExtractStockType(item.StockTypedShares),
+                parValue: null,
+                listedShares: ExtractListedShares(item.StockTypedShares),
+                listedDate: ParseListedDate(item.ListedDate)))
+            .ToList();
+
+        await _stockRepository.BulkUpsertAsync(validStocks);
+
+        var summary = await GetSearchSummaryAsync();
+        await _stockCacheService.SetStockSummaryAsync(summary);
+
+        _logger.LogInformation("국내 주식 데이터 동기화 완료: {Count}개", validStocks.Count);
     }
 
     #endregion
@@ -229,9 +222,12 @@ public class StockService : IStockService
 
         return securityGroup switch
         {
-            _ when securityGroup.Contains("코스피") || securityGroup.Contains("KOSPI") => StockTrading.Domain.Enums.Market.Kospi,
-            _ when securityGroup.Contains("코스닥") || securityGroup.Contains("KOSDAQ") => StockTrading.Domain.Enums.Market.Kosdaq,
-            _ when securityGroup.Contains("코넥스") || securityGroup.Contains("KONEX") => StockTrading.Domain.Enums.Market.Konex,
+            _ when securityGroup.Contains("코스피") || securityGroup.Contains("KOSPI") => StockTrading.Domain.Enums.Market
+                .Kospi,
+            _ when securityGroup.Contains("코스닥") || securityGroup.Contains("KOSDAQ") => StockTrading.Domain.Enums.Market
+                .Kosdaq,
+            _ when securityGroup.Contains("코넥스") || securityGroup.Contains("KONEX") => StockTrading.Domain.Enums.Market
+                .Konex,
             _ when securityGroup.Contains("주권") => StockTrading.Domain.Enums.Market.Kospi,
             _ => StockTrading.Domain.Enums.Market.Kospi
         };
