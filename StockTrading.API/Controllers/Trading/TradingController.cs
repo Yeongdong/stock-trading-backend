@@ -60,7 +60,7 @@ public class TradingController : BaseController
         var user = await GetCurrentUserAsync();
 
         _logger.LogInformation("해외 주식 주문 시작: 사용자 {UserId}, 종목 {StockCode}, 시장 {Market}",
-            user.Id, request.StockCode, request.Market);
+            user.Id, request.PDNO, request.Market);
 
         var orderResponse = await _tradingService.PlaceOverseasOrderAsync(request, user);
 

@@ -100,11 +100,11 @@ public class TradingService : ITradingService
         KisValidationHelper.ValidateUserForKisApi(user);
 
         var stockOrder = new StockOrder(
-            stockCode: order.StockCode,
-            tradeType: order.TradeType,
-            orderType: order.OrderDivision,
-            quantity: order.Quantity,
-            price: order.Price,
+            stockCode: order.PDNO,
+            tradeType: order.tr_id,
+            orderType: order.ORD_DVSN,
+            quantity: order.QuantityAsInt,
+            price: order.PriceAsDecimal,
             market: order.Market,
             currency: GetCurrencyByMarket(order.Market),
             userId: user.Id
@@ -117,7 +117,7 @@ public class TradingService : ITradingService
         await transaction.CommitAsync();
 
         _logger.LogInformation("해외 주식 주문 완료: 사용자 {UserId}, 종목 {StockCode}, 주문번호 {OrderNumber}",
-            user.Id, order.StockCode, apiResponse.OrderNumber);
+            user.Id, order.PDNO, apiResponse.OrderNumber);
 
         return apiResponse;
     }

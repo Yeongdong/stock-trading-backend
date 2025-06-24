@@ -22,14 +22,14 @@ public class OverseasOrderDataConverter
         {
             OrderNumber = output.OrderNumber,
             OrderTime = output.OrderTime,
-            StockCode = originalRequest.StockCode,
-            StockName = GetStockNameFromCode(originalRequest.StockCode), // TODO: 실제로는 별도 API 호출 필요
+            StockCode = originalRequest.PDNO,
+            StockName = GetStockNameFromCode(originalRequest.PDNO), // TODO: 실제로는 별도 API 호출 필요
             Market = originalRequest.Market,
-            TradeType = originalRequest.TradeType,
-            OrderDivision = originalRequest.OrderDivision,
-            Quantity = originalRequest.Quantity,
-            Price = originalRequest.Price,
-            OrderCondition = originalRequest.OrderCondition,
+            TradeType = originalRequest.tr_id,
+            OrderDivision = originalRequest.ORD_DVSN,
+            Quantity = originalRequest.QuantityAsInt,
+            Price = originalRequest.PriceAsDecimal,
+            OrderCondition = originalRequest.ORD_CNDT,
             Currency = currency,
             OrderStatus = "접수", // 기본값
             IsSuccess = kisResponse.IsSuccess,

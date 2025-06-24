@@ -30,7 +30,7 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
     public async Task<OverseasOrderResponse> PlaceOverseasOrderAsync(OverseasOrderRequest request, UserInfo user)
     {
         var kisRequest = CreateKisOverseasOrderRequest(request, user);
-        var httpRequest = CreateOverseasOrderHttpRequest(kisRequest, request.TradeType, user);
+        var httpRequest = CreateOverseasOrderHttpRequest(kisRequest, request.tr_id, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
         var responseContent = await ValidateAndReadResponse(response);
@@ -62,7 +62,7 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
 
     #endregion
 
-    #region Private Methods - 해외 주식 주문
+    #region Private Methods
 
     private KisOverseasOrderRequest CreateKisOverseasOrderRequest(OverseasOrderRequest request, UserInfo user)
     {
@@ -72,12 +72,12 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
         {
             CANO = user.AccountNumber,
             ACNT_PRDT_CD = _settings.DefaultValues.AccountProductCode,
-            OVRS_EXCG_CD = marketCode,
-            PDNO = request.StockCode,
-            ORD_QTY = request.Quantity.ToString(),
-            OVRS_ORD_UNPR = request.Price.ToString("F2"),
-            ORD_SVR_DVSN_CD = request.OrderDivision,
-            ORD_DVSN = request.OrderCondition
+            OVRS_EXCG_CD = request.OVRS_EXCG_CD,
+            PDNO = request.PDNO,
+            ORD_QTY = request.ORD_QTY,
+            OVRS_ORD_UNPR = request.ORD_UNPR,
+            ORD_SVR_DVSN_CD = request.ORD_DVSN,
+            ORD_DVSN = request.ORD_CNDT
         };
     }
 
@@ -104,7 +104,7 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
 
     #endregion
 
-    #region Private Methods - 해외 주식 체결 내역
+    #region Private Methods
 
     private Dictionary<string, string> CreateOverseasOrderExecutionQueryParams(string startDate, string endDate,
         UserInfo user)
