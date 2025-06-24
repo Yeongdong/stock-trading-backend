@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.Features.Market.Services;
 
-namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
+namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime;
 
 public class SubscriptionManager : ISubscriptionManager
 {
@@ -10,6 +10,12 @@ public class SubscriptionManager : ISubscriptionManager
     private readonly ILogger<SubscriptionManager> _logger;
     private readonly Dictionary<string, bool> _subscribedSymbols = new();
     private string _webSocketToken = string.Empty;
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
 
     public SubscriptionManager(IWebSocketClient webSocketClient, ILogger<SubscriptionManager> logger)
     {
@@ -22,41 +28,14 @@ public class SubscriptionManager : ISubscriptionManager
         if (_subscribedSymbols.ContainsKey(symbol))
             return;
 
-        if (string.IsNullOrEmpty(_webSocketToken))
-            throw new InvalidOperationException("WebSocket 토큰이 설정되지 않았습니다.");
+        EnsureTokenSet();
 
         _logger.LogInformation("종목 구독: {Symbol}", symbol);
 
-        var subscriptionMessage = new
-        {
-            header = new
-            {
-                approval_key = _webSocketToken,
-                custtype = "P",
-                tr_type = "1",
-                content_type = "utf-8"
-            },
-            body = new
-            {
-                input = new
-                {
-                    tr_id = "H0STCNT0",
-                    tr_key = symbol
-                }
-            }
-        };
-
-        var jsonMessage = JsonSerializer.Serialize(subscriptionMessage, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
-
-        await _webSocketClient.SendMessageAsync(jsonMessage);
-        await Task.Delay(1000);
-
+        await SendMessageWithDelayAsync(BuildMessage("1", "H0STCNT0", symbol));
         _subscribedSymbols[symbol] = true;
-        await SubscribeAskBidAsync(symbol);
+
+        await SendMessageWithDelayAsync(BuildMessage("1", "H0STASP0", symbol));
     }
 
     public async Task UnsubscribeSymbolAsync(string symbol)
@@ -66,33 +45,11 @@ public class SubscriptionManager : ISubscriptionManager
 
         _logger.LogInformation("종목 구독 해제: {Symbol}", symbol);
 
-        var unsubscriptionMessage = new
-        {
-            header = new
-            {
-                approval_key = _webSocketToken,
-                custtype = "P",
-                tr_type = "2",
-                content_type = "utf-8"
-            },
-            body = new
-            {
-                input = new
-                {
-                    tr_id = "H0STASP0",
-                    tr_key = symbol
-                }
-            }
-        };
+        await _webSocketClient.SendMessageAsync(BuildMessage("2", "H0STCNT0", symbol));
+        await _webSocketClient.SendMessageAsync(BuildMessage("2", "H0STASP0", symbol));
 
-        var jsonMessage = JsonSerializer.Serialize(unsubscriptionMessage, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
-
-        await _webSocketClient.SendMessageAsync(jsonMessage);
         _subscribedSymbols.Remove(symbol);
+        _logger.LogInformation("종목 구독 해제 완료: {Symbol}", symbol);
     }
 
     public async Task UnsubscribeAllAsync()
@@ -102,19 +59,14 @@ public class SubscriptionManager : ISubscriptionManager
 
         _logger.LogInformation("전체 구독 해제: {Count}개 종목", _subscribedSymbols.Count);
 
-        var symbolsToUnsubscribe = _subscribedSymbols.Keys.ToList();
-
-        foreach (var symbol in symbolsToUnsubscribe)
+        foreach (var symbol in _subscribedSymbols.Keys.ToList())
         {
             await UnsubscribeSymbolAsync(symbol);
-            await Task.Delay(100);
         }
     }
 
     public IReadOnlyCollection<string> GetSubscribedSymbols()
-    {
-        return _subscribedSymbols.Keys.ToList().AsReadOnly();
-    }
+        => _subscribedSymbols.Keys.ToList().AsReadOnly();
 
     public void SetWebSocketToken(string token)
     {
@@ -125,34 +77,38 @@ public class SubscriptionManager : ISubscriptionManager
         _logger.LogInformation("WebSocket 토큰 설정 완료");
     }
 
-    private async Task SubscribeAskBidAsync(string symbol)
+    private void EnsureTokenSet()
     {
-        var askBidMessage = new
+        if (string.IsNullOrEmpty(_webSocketToken))
+            throw new InvalidOperationException("WebSocket 토큰이 설정되지 않았습니다.");
+    }
+
+    private string BuildMessage(string trType, string trId, string symbol)
+    {
+        var message = new
         {
             header = new
             {
                 approval_key = _webSocketToken,
                 custtype = "P",
-                tr_type = "1",
+                tr_type = trType,
                 content_type = "utf-8"
             },
             body = new
             {
                 input = new
                 {
-                    tr_id = "H0STASP0",
+                    tr_id = trId,
                     tr_key = symbol
                 }
             }
         };
 
-        var jsonMessage = JsonSerializer.Serialize(askBidMessage, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = false
-        });
+        return JsonSerializer.Serialize(message, JsonOptions);
+    }
 
-        await _webSocketClient.SendMessageAsync(jsonMessage);
-        await Task.Delay(500);
+    private async Task SendMessageWithDelayAsync(string message)
+    {
+        await _webSocketClient.SendMessageAsync(message);
     }
 }
