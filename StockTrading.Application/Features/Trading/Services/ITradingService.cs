@@ -7,11 +7,19 @@ namespace StockTrading.Application.Features.Trading.Services;
 
 public interface ITradingService
 {
-    // 주문 관리
+    // 국내 주식 주문 관리
     Task<OrderResponse> PlaceOrderAsync(OrderRequest order, UserInfo user);
     Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo userInfo);
 
-    // 조회
+    // 국내 주식 조회
     Task<AccountBalance> GetStockBalanceAsync(UserInfo user);
-    Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request, UserInfo userInfo);
+
+    Task<OrderExecutionInquiryResponse>
+        GetOrderExecutionsAsync(OrderExecutionInquiryRequest request, UserInfo userInfo);
+
+    // 해외 주식 주문 관리
+    Task<OverseasOrderResponse> PlaceOverseasOrderAsync(OverseasOrderRequest order, UserInfo user);
+
+    // 해외 주식 조회
+    Task<List<OverseasOrderExecution>> GetOverseasOrderExecutionsAsync(string startDate, string endDate, UserInfo user);
 }

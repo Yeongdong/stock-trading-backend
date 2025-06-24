@@ -19,7 +19,7 @@ public class TradingController : BaseController
         _logger = logger;
     }
 
-    #region 주문 관리
+    #region 국내 주식 주문 관리
 
     [HttpPost("order")]
     public async Task<IActionResult> PlaceOrder(OrderRequest request)
@@ -49,7 +49,27 @@ public class TradingController : BaseController
 
     #endregion
 
-    #region 조회
+    #region 해외 주식 주문
+
+    [HttpPost("overseas/order")]
+    public async Task<IActionResult> PlaceOverseasOrder(OverseasOrderRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await GetCurrentUserAsync();
+
+        _logger.LogInformation("해외 주식 주문 시작: 사용자 {UserId}, 종목 {StockCode}, 시장 {Market}",
+            user.Id, request.StockCode, request.Market);
+
+        var orderResponse = await _tradingService.PlaceOverseasOrderAsync(request, user);
+
+        return Ok(orderResponse);
+    }
+
+    #endregion
+
+    #region 국내 주식 조회
 
     [HttpGet("balance")]
     public async Task<IActionResult> GetBalance()
@@ -69,6 +89,24 @@ public class TradingController : BaseController
         var response = await _tradingService.GetOrderExecutionsAsync(request, user);
 
         return Ok(response);
+    }
+
+    #endregion
+
+    #region 해외 주식 조회
+
+    [HttpGet("overseas/executions")]
+    public async Task<IActionResult> GetOverseasOrderExecutions([FromQuery] string startDate,
+        [FromQuery] string endDate)
+    {
+        var user = await GetCurrentUserAsync();
+
+        _logger.LogInformation("해외 주식 체결 내역 조회: 사용자 {UserId}, 기간 {StartDate}~{EndDate}",
+            user.Id, startDate, endDate);
+
+        var executions = await _tradingService.GetOverseasOrderExecutionsAsync(startDate, endDate, user);
+
+        return Ok(new { executions, count = executions.Count });
     }
 
     #endregion

@@ -18,21 +18,24 @@ public class TradingService : ITradingService
 {
     private readonly IKisOrderApiClient _kisOrderApiClient;
     private readonly IKisBalanceApiClient _kisBalanceApiClient;
+    private readonly IKisOverseasTradingApiClient _kisOverseasTradingApiClient;
     private readonly IDbContextWrapper _dbContextWrapper;
     private readonly IOrderRepository _orderRepository;
     private readonly ILogger<TradingService> _logger;
 
     public TradingService(IKisOrderApiClient kisOrderApiClient, IKisBalanceApiClient kisBalanceApiClient,
-        IDbContextWrapper dbContextWrapper, IOrderRepository orderRepository, ILogger<TradingService> logger)
+        IKisOverseasTradingApiClient kisOverseasTradingApiClient, IDbContextWrapper dbContextWrapper,
+        IOrderRepository orderRepository, ILogger<TradingService> logger)
     {
         _kisOrderApiClient = kisOrderApiClient;
         _kisBalanceApiClient = kisBalanceApiClient;
+        _kisOverseasTradingApiClient = kisOverseasTradingApiClient;
         _dbContextWrapper = dbContextWrapper;
         _orderRepository = orderRepository;
         _logger = logger;
     }
 
-    #region 주문 관리
+    #region 국내 주식 주문
 
     public async Task<OrderResponse> PlaceOrderAsync(OrderRequest order, UserInfo user)
     {
@@ -56,7 +59,7 @@ public class TradingService : ITradingService
         await _orderRepository.AddAsync(stockOrder);
         await transaction.CommitAsync();
 
-        _logger.LogInformation("주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}",
+        _logger.LogInformation("국내 주식 주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}",
             user.Id, apiResponse?.Output?.OrderNumber ?? "알 수 없음");
 
         return apiResponse;
@@ -70,7 +73,7 @@ public class TradingService : ITradingService
 
     #endregion
 
-    #region 조회
+    #region 국내 주식 조회
 
     public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
     {
@@ -85,6 +88,58 @@ public class TradingService : ITradingService
         ValidateOrderExecutionRequest(request);
 
         return await _kisOrderApiClient.GetOrderExecutionsAsync(request, userInfo);
+    }
+
+    #endregion
+
+    #region 해외 주식 주문
+
+    public async Task<OverseasOrderResponse> PlaceOverseasOrderAsync(OverseasOrderRequest order, UserInfo user)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        KisValidationHelper.ValidateUserForKisApi(user);
+
+        var stockOrder = new StockOrder(
+            stockCode: order.StockCode,
+            tradeType: order.TradeType,
+            orderType: order.OrderDivision,
+            quantity: order.Quantity,
+            price: order.Price,
+            market: order.Market,
+            currency: GetCurrencyByMarket(order.Market),
+            userId: user.Id
+        );
+
+        await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
+
+        var apiResponse = await _kisOverseasTradingApiClient.PlaceOverseasOrderAsync(order, user);
+        await _orderRepository.AddAsync(stockOrder);
+        await transaction.CommitAsync();
+
+        _logger.LogInformation("해외 주식 주문 완료: 사용자 {UserId}, 종목 {StockCode}, 주문번호 {OrderNumber}",
+            user.Id, order.StockCode, apiResponse.OrderNumber);
+
+        return apiResponse;
+    }
+
+    #endregion
+
+    #region 해외 주식 조회
+
+    public async Task<List<OverseasOrderExecution>> GetOverseasOrderExecutionsAsync(string startDate, string endDate,
+        UserInfo user)
+    {
+        ArgumentNullException.ThrowIfNull(startDate);
+        ArgumentNullException.ThrowIfNull(endDate);
+        KisValidationHelper.ValidateUserForKisApi(user);
+
+        var executions =
+            await _kisOverseasTradingApiClient.GetOverseasOrderExecutionsAsync(startDate, endDate, user);
+
+        _logger.LogInformation("해외 주식 체결 내역 조회 완료: 사용자 {UserId}, 조회기간 {StartDate}~{EndDate}, 건수 {Count}",
+            user.Id, startDate, endDate, executions.Count);
+
+        return executions;
     }
 
     #endregion
@@ -108,5 +163,17 @@ public class TradingService : ITradingService
             throw new ArgumentException("종료일자는 현재 날짜보다 이후일 수 없습니다.");
     }
 
+    private Currency GetCurrencyByMarket(StockTrading.Domain.Enums.Market market)
+    {
+        return market switch
+        {
+            StockTrading.Domain.Enums.Market.Nasdaq or StockTrading.Domain.Enums.Market.Nyse => Currency.Usd,
+            StockTrading.Domain.Enums.Market.Tokyo => Currency.Jpy,
+            StockTrading.Domain.Enums.Market.London => Currency.Gbp,
+            StockTrading.Domain.Enums.Market.Hongkong => Currency.Hkd,
+            StockTrading.Domain.Enums.Market.Kospi or StockTrading.Domain.Enums.Market.Kosdaq or StockTrading.Domain.Enums.Market.Konex => Currency.Krw,
+            _ => Currency.Usd // Default
+        };
+    }
     #endregion
 }

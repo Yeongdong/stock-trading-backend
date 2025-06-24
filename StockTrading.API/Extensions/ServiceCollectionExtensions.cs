@@ -100,11 +100,12 @@ public static class ServiceCollectionExtensions
 
         // Validators
         services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
-
+        
         // Converters
         services.AddSingleton<StockDataConverter>();
         services.AddSingleton<PriceDataConverter>();
         services.AddSingleton<OrderDataConverter>();
+        services.AddSingleton<OverseasOrderDataConverter>(); 
 
         return services;
     }

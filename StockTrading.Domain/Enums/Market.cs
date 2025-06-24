@@ -16,5 +16,5 @@ public enum Market
     // 해외 시장 - 기타
     [Description("TSE")] Tokyo,
     [Description("LSE")] London,
-    [Description("HKSE")] HongKong
+    [Description("HKSE")] Hongkong
 }

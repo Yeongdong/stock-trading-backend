@@ -32,6 +32,10 @@ public static class ExternalServiceConfiguration
 
         services.AddHttpClient<KisBalanceApiClient>(client =>
             ConfigureKisHttpClient(client, settings.BaseUrl));
+        
+        // 해외 주식 Trading 관련 클라이언트
+        services.AddHttpClient<KisOverseasTradingApiClient>(client =>
+            ConfigureKisHttpClient(client, settings.BaseUrl));
 
         // Market 관련 클라이언트들
         services.AddHttpClient<KisPriceApiClient>(client =>
@@ -46,6 +50,10 @@ public static class ExternalServiceConfiguration
 
         services.AddScoped<IKisPriceApiClient>(provider =>
             provider.GetRequiredService<KisPriceApiClient>());
+        
+        // === 해외 주식 인터페이스 ===
+        services.AddScoped<IKisOverseasTradingApiClient>(provider =>
+            provider.GetRequiredService<KisOverseasTradingApiClient>());
 
         // 공통 서비스들
         services.AddHttpClient(nameof(KisTokenService), client =>

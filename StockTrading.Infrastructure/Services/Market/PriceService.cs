@@ -113,7 +113,7 @@ public class PriceService : IPriceService
             Domain.Enums.Market.Nyse => "NYS",
             Domain.Enums.Market.Tokyo => "TSE",
             Domain.Enums.Market.London => "LSE",
-            Domain.Enums.Market.HongKong => "HKSE",
+            Domain.Enums.Market.Hongkong => "HKSE",
             _ => throw new ArgumentException($"지원하지 않는 해외 시장: {market}")
         };
     }
