@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
+using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Features.Market.DTOs.Stock;
 using StockTrading.Application.Features.Market.Repositories;
 using StockTrading.Application.Features.Market.Services;
+using StockTrading.Domain.Entities;
 using StockTrading.Domain.Enums;
 using StockTrading.Domain.Extensions;
 using StockTrading.Infrastructure.ExternalServices.KRX;
@@ -11,20 +13,25 @@ namespace StockTrading.Infrastructure.Services.Market;
 public class StockService : IStockService
 {
     private readonly IStockRepository _stockRepository;
+    private readonly IForeignStockRepository _foreignStockRepository;
     private readonly IStockCacheService _stockCacheService;
     private readonly KrxApiClient _krxApiClient;
+    private readonly IFinnhubApiClient _finnhubApiClient;
     private readonly ILogger<StockService> _logger;
 
-    public StockService(IStockRepository stockRepository, IStockCacheService stockCacheService,
-        KrxApiClient krxApiClient, ILogger<StockService> logger)
+    public StockService(IStockRepository stockRepository, IForeignStockRepository foreignStockRepository,
+        IStockCacheService stockCacheService,
+        KrxApiClient krxApiClient, IFinnhubApiClient finnhubApiClient, ILogger<StockService> logger)
     {
         _stockRepository = stockRepository;
+        _foreignStockRepository = foreignStockRepository;
         _stockCacheService = stockCacheService;
         _krxApiClient = krxApiClient;
+        _finnhubApiClient = finnhubApiClient;
         _logger = logger;
     }
 
-    #region 주식 검색 및 조회
+    #region 국내 주식 검색 및 조회
 
     public async Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
@@ -177,6 +184,24 @@ public class StockService : IStockService
 
     #endregion
 
+    #region 해외 주식
+
+    public async Task<ForeignStockSearchResult> SearchForeignStocksAsync(ForeignStockSearchRequest request)
+    {
+        var dbResults = await _foreignStockRepository.SearchByTermAsync(request.Query, request.Limit);
+
+        if (dbResults.Count >= request.Limit)
+            return ConvertToForeignStockSearchResult(dbResults);
+
+        var apiResult = await _finnhubApiClient.SearchSymbolsAsync(request);
+
+        await SaveNewForeignStocksAsync(apiResult.Stocks);
+
+        return apiResult;
+    }
+
+    #endregion
+
     #region Private Helper Methods
 
     private async Task<int> GetSearchTotalCountAsync(string searchTerm)
@@ -230,6 +255,62 @@ public class StockService : IStockService
                 .Konex,
             _ when securityGroup.Contains("주권") => StockTrading.Domain.Enums.Market.Kospi,
             _ => StockTrading.Domain.Enums.Market.Kospi
+        };
+    }
+
+    private async Task SaveNewForeignStocksAsync(IList<ForeignStockInfo> stockInfos)
+    {
+        if (!stockInfos.Any()) return;
+
+        var symbols = stockInfos.Select(s => s.Symbol).ToList();
+        var existingStocks = await _foreignStockRepository.GetBySymbolsAsync(symbols);
+        var existingSymbols = existingStocks.Select(s => s.Symbol).ToHashSet();
+
+        var newStocks = stockInfos
+            .Where(info => !existingSymbols.Contains(info.Symbol))
+            .Select(info => new ForeignStock(
+                info.Symbol,
+                info.DisplaySymbol,
+                info.Description,
+                info.Type,
+                info.Currency,
+                info.Exchange,
+                info.Country,
+                ExtractMicFromExchange(info.Exchange)))
+            .ToList();
+
+        if (newStocks.Count != 0)
+            await _foreignStockRepository.AddRangeAsync(newStocks);
+    }
+
+    private static ForeignStockSearchResult ConvertToForeignStockSearchResult(List<ForeignStock> stocks)
+    {
+        return new ForeignStockSearchResult
+        {
+            Stocks = stocks.Select(stock => new ForeignStockInfo
+            {
+                Symbol = stock.Symbol,
+                DisplaySymbol = stock.DisplaySymbol,
+                Description = stock.Description,
+                Type = stock.Type,
+                Currency = stock.Currency,
+                Exchange = stock.Exchange,
+                Country = stock.Country
+            }).ToList(),
+            Count = stocks.Count
+        };
+    }
+
+    private static string ExtractMicFromExchange(string exchange)
+    {
+        return exchange switch
+        {
+            "NYSE" => "XNYS",
+            "NASDAQ" => "XNAS",
+            "LSE" => "XLON",
+            "TSE" => "XTSE",
+            "HKEX" => "XHKG",
+            _ => string.Empty
         };
     }
 

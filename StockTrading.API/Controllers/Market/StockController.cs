@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using StockTrading.API.Services;
+using StockTrading.Application.Features.Market.DTOs.Stock;
 using StockTrading.Application.Features.Market.Services;
 
 namespace StockTrading.API.Controllers.Market;
@@ -59,6 +60,27 @@ public class StockController : BaseController
     #endregion
 
     #region 해외 주식
+
+    [HttpGet("overseas/search")]
+    public async Task<IActionResult> SearchForeignStocks([FromQuery] string query,
+        [FromQuery] string? exchange = null, [FromQuery] int limit = 50)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return BadRequest("검색어를 입력해주세요.");
+
+        if (limit is < 1 or > 100)
+            limit = 50;
+
+        var request = new ForeignStockSearchRequest
+        {
+            Query = query,
+            Exchange = exchange,
+            Limit = limit
+        };
+
+        var result = await _stockService.SearchForeignStocksAsync(request);
+        return Ok(result);
+    }
 
     [HttpGet("overseas/markets/{market}")]
     public async Task<IActionResult> GetStocksByMarket(string market)

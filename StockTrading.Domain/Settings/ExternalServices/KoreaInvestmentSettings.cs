@@ -16,7 +16,7 @@ public class KoreaInvestmentSettings : BaseSettings
 
     [Range(5, 300)] public int TimeoutSeconds { get; init; } = 30;
 
-    public RetrySettings RetrySettings { get; init; } = new();
+    public KisRetrySettings RetrySettings { get; init; } = new();
     public KisEndpoints Endpoints { get; init; } = new();
     public KisDefaults DefaultValues { get; init; } = new();
     public KisMarkets MarketConstants { get; init; } = new();
@@ -46,7 +46,7 @@ public class KoreaInvestmentSettings : BaseSettings
     }
 }
 
-public class RetrySettings
+public class KisRetrySettings
 {
     [Range(0, 10)] public int MaxRetryCount { get; init; } = 3;
     [Range(100, 10000)] public int RetryDelayMs { get; init; } = 1000;
