@@ -83,7 +83,7 @@ public class ApplicationDbContext : DbContext
                 .HasConversion(
                     v => _encryptionService.Encrypt(v),
                     v => _encryptionService.Decrypt(v));
-            
+
             entity.Property(e => e.WebSocketToken)
                 .HasColumnName("websocket_token")
                 .HasMaxLength(1000)
@@ -117,7 +117,7 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey<KisToken>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-        
+
         modelBuilder.Entity<StockOrder>(entity =>
         {
             entity.ToTable("stock_orders");
@@ -161,7 +161,7 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
-        
+
         modelBuilder.Entity<Stock>(entity =>
         {
             entity.ToTable("stocks");
@@ -220,6 +220,16 @@ public class ApplicationDbContext : DbContext
                     v => EnumExtensions.GetEnumFromDescription<Market>(v))
                 .IsRequired();
 
+            entity.Property(e => e.Market)
+                .HasColumnName("market")
+                .HasConversion<string>()
+                .IsRequired();
+
+            entity.Property(e => e.Currency)
+                .HasColumnName("currency")
+                .HasConversion<string>()
+                .IsRequired();
+
             entity.Property(e => e.LastUpdated)
                 .HasColumnName("last_updated")
                 .HasColumnType("timestamp with time zone")
@@ -234,7 +244,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Sector)
                 .HasDatabaseName("ix_stocks_sector");
         });
-        
+
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("refresh_tokens");

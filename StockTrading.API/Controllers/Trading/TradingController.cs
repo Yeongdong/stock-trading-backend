@@ -6,7 +6,7 @@ using StockTrading.Application.Features.Trading.Services;
 
 namespace StockTrading.API.Controllers.Trading;
 
-[Route("api/trading")]
+[Route("api/{controller}")]
 public class TradingController : BaseController
 {
     private readonly ITradingService _tradingService;
