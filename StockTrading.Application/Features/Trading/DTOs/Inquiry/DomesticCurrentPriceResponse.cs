@@ -1,6 +1,6 @@
 namespace StockTrading.Application.Features.Trading.DTOs.Inquiry;
 
-public class KisCurrentPriceResponse
+public class DomesticCurrentPriceResponse
 {
     public string StockCode { get; init; } = string.Empty;
     public string StockName { get; init; } = string.Empty;

@@ -20,7 +20,7 @@ public class StockOrderTest
         int userId = 1;
 
         // Act
-        var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, userId);
+        var stockOrder = new StockOrder(stockCode, tradeType, orderType, quantity, price, Market.Kospi, Currency.Krw, userId);
 
         // Assert
         stockOrder.StockCode.Should().Be(stockCode);
@@ -46,7 +46,7 @@ public class StockOrderTest
             Email = "test@example.com"
         };
 
-        Action act = () => new StockOrder(stockCode, tradeType, orderType, quantity, price, user.Id);
+        Action act = () => new StockOrder(stockCode, tradeType, orderType, quantity, price, Market.Kospi, Currency.Krw, user.Id);
         act.Should().Throw<ArgumentException>();
     }
 }

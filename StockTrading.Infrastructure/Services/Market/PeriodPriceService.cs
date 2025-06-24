@@ -21,7 +21,7 @@ public class PeriodPriceService : IPeriodPriceService
     {
         ValidateRequest(request);
 
-        var response = await _kisPriceApiClient.GetPeriodPriceAsync(request, user);
+        var response = await _kisPriceApiClient.GetDomesticPeriodPriceAsync(request, user);
         _logger.LogInformation("기간별 시세 조회 완료: 사용자 {UserId}, 종목 {StockCode}, 데이터 건수 {Count}", user.Id, request.StockCode,
             response.PriceData.Count);
 

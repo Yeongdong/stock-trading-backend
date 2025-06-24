@@ -6,6 +6,7 @@ public class StockSearchResponse
     public int TotalCount { get; init; }
     public int Page { get; init; }
     public int PageSize { get; init; }
+    public int TotalPages { get; init; }
     public bool HasMore { get; init; }
     public int HitCount { get; set; } = 0;
     public DateTime CachedAt { get; init; } = DateTime.UtcNow;

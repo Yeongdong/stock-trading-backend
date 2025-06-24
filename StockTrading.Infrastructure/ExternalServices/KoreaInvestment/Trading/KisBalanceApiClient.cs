@@ -71,10 +71,10 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
     private HttpRequestMessage CreateBalanceHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
     {
-        var url = BuildGetUrl(_settings.Endpoints.BalancePath, queryParams);
+        var url = BuildGetUrl(_settings.Endpoints.DomesticBalancePath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetStandardHeaders(httpRequest, _settings.DefaultValues.BalanceTransactionId, user);
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.DomesticBalanceTransactionId, user);
         return httpRequest;
     }
 
@@ -113,10 +113,10 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
     private HttpRequestMessage CreateBuyableInquiryHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
     {
-        var url = BuildGetUrl(_settings.Endpoints.BuyableInquiryPath, queryParams);
+        var url = BuildGetUrl(_settings.Endpoints.DomesticBuyableInquiryPath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetStandardHeaders(httpRequest, _settings.DefaultValues.BuyableInquiryTransactionId, user);
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.DomesticBuyableInquiryTransactionId, user);
         return httpRequest;
     }
 

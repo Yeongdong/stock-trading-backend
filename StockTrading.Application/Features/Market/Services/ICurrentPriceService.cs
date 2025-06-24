@@ -5,5 +5,9 @@ namespace StockTrading.Application.Features.Market.Services;
 
 public interface ICurrentPriceService
 {
-    Task<KisCurrentPriceResponse> GetCurrentPriceAsync(CurrentPriceRequest request, UserInfo userInfo);
+    // 국내 주식
+    Task<DomesticCurrentPriceResponse> GetDomesticCurrentPriceAsync(CurrentPriceRequest request, UserInfo userInfo);
+    
+    // 해외 주식  
+    Task<OverseasCurrentPriceResponse> GetOverseasCurrentPriceAsync(string stockCode, Domain.Enums.Market market, UserInfo userInfo);
 }

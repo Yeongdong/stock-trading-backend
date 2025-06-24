@@ -55,6 +55,7 @@ public class StockRepository : BaseRepository<Stock, string>, IStockRepository
                     fullName: stock.FullName,
                     sector: stock.Sector,
                     market: stock.Market,
+                    currency: stock.Currency,
                     englishName: stock.EnglishName,
                     stockType: stock.StockType,
                     parValue: stock.ParValue,

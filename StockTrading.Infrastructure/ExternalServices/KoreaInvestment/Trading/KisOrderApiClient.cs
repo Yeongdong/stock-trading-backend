@@ -67,7 +67,7 @@ public class KisOrderApiClient : KisApiClientBase, IKisOrderApiClient
     private HttpRequestMessage CreateOrderHttpRequest(KisOrderRequest kisRequest, string trId, UserInfo user)
     {
         var content = new StringContent(JsonSerializer.Serialize(kisRequest), Encoding.UTF8, "application/json");
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.OrderPath) { Content = content };
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, _settings.Endpoints.DomesticOrderPath) { Content = content };
 
         SetStandardHeaders(httpRequest, trId, user);
         return httpRequest;
@@ -114,10 +114,10 @@ public class KisOrderApiClient : KisApiClientBase, IKisOrderApiClient
 
     private HttpRequestMessage CreateOrderExecutionHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
     {
-        var url = BuildGetUrl(_settings.Endpoints.OrderExecutionPath, queryParams);
+        var url = BuildGetUrl(_settings.Endpoints.DomesticOrderExecutionPath, queryParams);
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
-        SetOrderExecutionHeaders(httpRequest, _settings.DefaultValues.OrderExecutionTransactionId, user);
+        SetOrderExecutionHeaders(httpRequest, _settings.DefaultValues.DomesticOrderExecutionTransactionId, user);
         return httpRequest;
     }
 

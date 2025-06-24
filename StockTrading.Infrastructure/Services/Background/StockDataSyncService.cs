@@ -58,7 +58,7 @@ public class StockDataSyncService : BackgroundService
         var stockService = scope.ServiceProvider.GetRequiredService<IStockService>();
         var stockCacheService = scope.ServiceProvider.GetRequiredService<IStockCacheService>();
 
-        await stockService.UpdateStockDataFromKrxAsync();
+        await stockService.SyncDomesticStockDataAsync();
         await WarmupCacheAsync(stockCacheService, stockService);
 
         if (_settings.ResetMetricsOnSync)

@@ -1,6 +1,5 @@
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
-using StockTrading.Domain.Settings;
 using StockTrading.Domain.Settings.ExternalServices;
 using StockTrading.Infrastructure.Utilities;
 
@@ -8,9 +7,11 @@ namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Market.Co
 
 public class PriceDataConverter
 {
-    public KisCurrentPriceResponse ConvertToCurrentPriceResponse(KisCurrentPriceData kisData, string stockCode)
+    #region 국내 주식 변환
+
+    public DomesticCurrentPriceResponse ConvertToCurrentPriceResponse(KisCurrentPriceData kisData, string stockCode)
     {
-        return new KisCurrentPriceResponse
+        return new DomesticCurrentPriceResponse
         {
             StockCode = stockCode,
             StockName = kisData.StockName,
@@ -25,7 +26,7 @@ public class PriceDataConverter
             InquiryTime = DateTime.Now
         };
     }
-    
+
     public PeriodPriceResponse ConvertToPeriodPriceResponse(KisPeriodPriceResponse kisData, string stockCode)
     {
         var current = kisData.CurrentInfo;
@@ -57,6 +58,34 @@ public class PriceDataConverter
         };
     }
 
+    #endregion
+
+    #region 해외 주식 변환
+
+    public OverseasCurrentPriceResponse ConvertToOverseasCurrentPriceResponse(KisOverseasPriceData kisData,
+        string stockCode)
+    {
+        return new OverseasCurrentPriceResponse
+        {
+            StockCode = stockCode,
+            StockName = kisData.StockName,
+            CurrentPrice = ParseHelper.ParseDecimalSafely(kisData.CurrentPrice),
+            PriceChange = ParseHelper.ParseDecimalSafely(kisData.PriceChange),
+            ChangeRate = ParseHelper.ParseDecimalSafely(kisData.ChangeRate),
+            ChangeType = ConvertOverseasChangeType(kisData.PriceChange),
+            OpenPrice = ParseHelper.ParseDecimalSafely(kisData.OpenPrice),
+            HighPrice = ParseHelper.ParseDecimalSafely(kisData.HighPrice),
+            LowPrice = ParseHelper.ParseDecimalSafely(kisData.LowPrice),
+            Volume = ParseHelper.ParseLongSafely(kisData.Volume),
+            Currency = kisData.Currency,
+            MarketStatus = kisData.MarketStatus,
+            InquiryTime = DateTime.Now
+        };
+    }
+
+    #endregion
+
+    #region Helper Methods
 
     public static string ConvertChangeType(string changeSign)
     {
@@ -67,4 +96,18 @@ public class PriceDataConverter
             ? MessageTypes.ChangeType.Fall
             : MessageTypes.ChangeType.Flat;
     }
+
+    private static string ConvertOverseasChangeType(string priceChange)
+    {
+        var change = ParseHelper.ParseDecimalSafely(priceChange);
+
+        if (change > 0)
+            return MessageTypes.ChangeType.Rise;
+
+        return change < 0
+            ? MessageTypes.ChangeType.Fall
+            : MessageTypes.ChangeType.Flat;
+    }
+
+    #endregion
 }

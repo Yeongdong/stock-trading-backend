@@ -5,6 +5,7 @@ using StockTrading.Application.Features.Trading.Repositories;
 using StockTrading.Application.Features.Trading.Services;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Domain.Entities;
+using StockTrading.Domain.Enums;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Common.Helpers;
 
 namespace StockTrading.Infrastructure.Services.Trading;
@@ -33,6 +34,8 @@ public class OrderService : IOrderService
             orderType: order.ORD_DVSN,
             quantity: order.QuantityAsInt,
             price: order.PriceAsDecimal,
+            market: StockTrading.Domain.Enums.Market.Kospi,
+            currency: Currency.Krw,
             userId: user.Id
         );
 
