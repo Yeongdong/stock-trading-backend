@@ -58,15 +58,52 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
     public async Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user)
     {
-        var queryParams = CreateOverseasBalanceQueryParams(user);
-        var httpRequest = CreateOverseasBalanceHttpRequest(queryParams, user);
+        var allPositions = new List<KisOverseasBalanceData>();
 
-        var response = await _httpClient.SendAsync(httpRequest);
-        var kisResponse = await response.Content.ReadFromJsonAsync<KisOverseasBalanceResponse>();
+        // 거래소/통화 조합
+        var exchangeCurrencyPairs = new[]
+        {
+            ("NASD", "USD"), // 나스닥
+            ("NYSE", "USD"), // 뉴욕증권거래소  
+            ("AMEX", "USD"), // 아멕스
+            ("SEHK", "HKD"), // 홍콩
+            ("TKSE", "JPY"), // 일본
+            // 중국과 베트남은 필요시 추가
+            // ("SHAA", "CNY"), // 중국상해
+            // ("SZAA", "CNY"), // 중국심천
+            // ("HASE", "VND"), // 베트남 하노이
+            // ("VNSE", "VND"), // 베트남 호치민
+        };
 
-        ValidateOverseasBalanceResponse(kisResponse);
+        foreach (var (exchangeCode, currencyCode) in exchangeCurrencyPairs)
+        {
+            try
+            {
+                var queryParams = CreateOverseasBalanceQueryParams(user, exchangeCode, currencyCode);
+                var httpRequest = CreateOverseasBalanceHttpRequest(queryParams, user);
 
-        return CreateOverseasAccountBalance(kisResponse);
+                var response = await _httpClient.SendAsync(httpRequest);
+                var kisResponse = await response.Content.ReadFromJsonAsync<KisOverseasBalanceResponse>();
+
+                if (kisResponse is not { IsSuccess: true, HasPositions: true }) continue;
+                var validPositions = kisResponse.Positions
+                    .Where(p => !string.IsNullOrEmpty(p.StockCode) && !string.IsNullOrEmpty(p.StockName))
+                    .ToList();
+
+                allPositions.AddRange(validPositions);
+            }
+            catch (Exception ex)
+            {
+                // 특정 거래소에서 에러가 나도 다른 거래소는 계속 조회
+                _logger.LogWarning("해외 잔고 조회 실패: 거래소 {Exchange}, 통화 {Currency}, 에러: {Error}",
+                    exchangeCode, currencyCode, ex.Message);
+            }
+        }
+
+        return new OverseasAccountBalance
+        {
+            Positions = allPositions
+        };
     }
 
     #endregion
@@ -156,17 +193,18 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
     #region 해외 주식 Private Methods
 
-    private Dictionary<string, string> CreateOverseasBalanceQueryParams(UserInfo user)
+    private Dictionary<string, string> CreateOverseasBalanceQueryParams(UserInfo user, string exchangeCode,
+        string currencyCode)
     {
         var defaults = _settings.DefaultValues;
         return new Dictionary<string, string>
         {
             ["CANO"] = user.AccountNumber,
             ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
-            ["OVRS_EXCG_CD"] = "",
-            ["TR_CRCY_CD"] = "",
-            ["CTX_AREA_FK200"] = "",
-            ["CTX_AREA_NK200"] = ""
+            ["OVRS_EXCG_CD"] = exchangeCode, // 해외거래소코드 (필수)
+            ["TR_CRCY_CD"] = currencyCode, // 거래통화코드 (필수)
+            ["CTX_AREA_FK200"] = "", // 연속조회검색조건200 (첫 조회시 공백)
+            ["CTX_AREA_NK200"] = "" // 연속조회키200 (첫 조회시 공백)
         };
     }
 
@@ -177,23 +215,6 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         SetStandardHeaders(httpRequest, _settings.DefaultValues.OverseasBalanceTransactionId, user);
         return httpRequest;
-    }
-
-    private static void ValidateOverseasBalanceResponse(KisOverseasBalanceResponse? kisResponse)
-    {
-        if (!kisResponse.IsSuccess)
-            throw new Exception($"해외 잔고조회 실패: {kisResponse.Message}");
-
-        if (!kisResponse.HasData)
-            throw new Exception("해외 잔고조회 데이터가 없습니다.");
-    }
-
-    private static OverseasAccountBalance CreateOverseasAccountBalance(KisOverseasBalanceResponse? kisResponse)
-    {
-        return new OverseasAccountBalance
-        {
-            Positions = kisResponse.Positions
-        };
     }
 
     #endregion

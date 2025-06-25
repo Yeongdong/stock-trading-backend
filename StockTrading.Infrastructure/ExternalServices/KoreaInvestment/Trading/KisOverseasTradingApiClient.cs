@@ -111,12 +111,18 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
         {
             ["CANO"] = user.AccountNumber,
             ["ACNT_PRDT_CD"] = _settings.DefaultValues.AccountProductCode,
-            ["OVRS_EXCG_CD"] = "NASD", // 기본값으로 나스닥, 필요시 파라미터로 받을 수 있음
-            ["TR_CRCY_CD"] = "USD",
-            ["ST_DT"] = startDate,
-            ["END_DT"] = endDate,
-            ["SLL_BUY_DVSN_CD"] = "00", // 전체 조회
-            ["ORD_DVSN"] = "00" // 전체 조회
+            ["PDNO"] = "%",                    // 전종목 조회
+            ["ORD_STRT_DT"] = startDate,       // 주문시작일자 (YYYYMMDD)
+            ["ORD_END_DT"] = endDate,          // 주문종료일자 (YYYYMMDD)
+            ["SLL_BUY_DVSN"] = "00",          // 매도매수구분 (00:전체, 01:매도, 02:매수)
+            ["CCLD_NCCS_DVSN"] = "01",        // 체결미체결구분 (00:전체, 01:체결, 02:미체결)
+            ["OVRS_EXCG_CD"] = "%",           // 해외거래소코드 (전체 조회)
+            ["SORT_SQN"] = "DS",              // 정렬순서 (DS:정순, AS:역순)
+            ["ORD_DT"] = "",                  // 주문일자 (Null 값)
+            ["ORD_GNO_BRNO"] = "",            // 주문채번지점번호 (Null 값)
+            ["ODNO"] = "",                    // 주문번호 (Null 값)
+            ["CTX_AREA_NK200"] = "",          // 연속조회키200 (첫 조회시 공백)
+            ["CTX_AREA_FK200"] = ""           // 연속조회검색조건200 (첫 조회시 공백)
         };
     }
 

@@ -71,7 +71,7 @@ public class KisEndpoints
     // 해외 주식
     public string OverseasOrderPath { get; init; } = "/uapi/overseas-stock/v1/trading/order";
     public string OverseasBalancePath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-balance";
-    public string OverseasOrderExecutionPath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-ccld";
+    public string OverseasOrderExecutionPath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-ccnl";
     public string OverseasBuyableInquiryPath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-psamount";
     public string OverseasCurrentPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/price";
     public string OverseasPeriodPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/dailyprice";
@@ -89,10 +89,10 @@ public class KisDefaults
     public string DomesticBuyableInquiryTransactionId { get; init; } = "VTTC8908R";
 
     // 해외 주식
-    public string OverseasBalanceTransactionId { get; init; } = "VTRP6504R";
+    public string OverseasBalanceTransactionId { get; init; } = "VTTS3012R";
     public string OverseasCurrentPriceTransactionId { get; init; } = "HHDFS00000300";
     public string OverseasPeriodPriceTransactionId { get; init; } = "HHDFS76240000";
-    public string OverseasOrderExecutionTransactionId { get; init; } = "VTRP6502R";
+    public string OverseasOrderExecutionTransactionId { get; init; } = "VTTS3035R";
     public string OverseasBuyableInquiryTransactionId { get; init; } = "VTRP6505R";
 
     // 공통
