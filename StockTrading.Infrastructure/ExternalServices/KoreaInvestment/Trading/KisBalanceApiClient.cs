@@ -59,8 +59,8 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
     public async Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user)
     {
         var allPositions = new List<KisOverseasBalanceData>();
+        OverseasDepositInfo? depositInfo = null;
 
-        // 거래소/통화 조합
         var exchangeCurrencyPairs = new[]
         {
             ("NASD", "USD"), // 나스닥
@@ -68,41 +68,35 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
             ("AMEX", "USD"), // 아멕스
             ("SEHK", "HKD"), // 홍콩
             ("TKSE", "JPY"), // 일본
-            // 중국과 베트남은 필요시 추가
-            // ("SHAA", "CNY"), // 중국상해
-            // ("SZAA", "CNY"), // 중국심천
-            // ("HASE", "VND"), // 베트남 하노이
-            // ("VNSE", "VND"), // 베트남 호치민
         };
 
         foreach (var (exchangeCode, currencyCode) in exchangeCurrencyPairs)
         {
-            try
+            var queryParams = CreateOverseasBalanceQueryParams(user, exchangeCode, currencyCode);
+            var httpRequest = CreateOverseasBalanceHttpRequest(queryParams, user);
+
+            var response = await _httpClient.SendAsync(httpRequest);
+            var kisResponse = await response.Content.ReadFromJsonAsync<KisOverseasBalanceResponse>();
+
+            if (kisResponse?.IsSuccess != true) continue;
+
+            if (kisResponse.HasPositions)
             {
-                var queryParams = CreateOverseasBalanceQueryParams(user, exchangeCode, currencyCode);
-                var httpRequest = CreateOverseasBalanceHttpRequest(queryParams, user);
-
-                var response = await _httpClient.SendAsync(httpRequest);
-                var kisResponse = await response.Content.ReadFromJsonAsync<KisOverseasBalanceResponse>();
-
-                if (kisResponse is not { IsSuccess: true, HasPositions: true }) continue;
                 var validPositions = kisResponse.Positions
                     .Where(p => !string.IsNullOrEmpty(p.StockCode) && !string.IsNullOrEmpty(p.StockName))
                     .ToList();
 
                 allPositions.AddRange(validPositions);
             }
-            catch (Exception ex)
-            {
-                // 특정 거래소에서 에러가 나도 다른 거래소는 계속 조회
-                _logger.LogWarning("해외 잔고 조회 실패: 거래소 {Exchange}, 통화 {Currency}, 에러: {Error}",
-                    exchangeCode, currencyCode, ex.Message);
-            }
+
+            // 예수금 정보는 첫 번째 성공한 응답에서만 수집 
+            depositInfo ??= ConvertToDepositInfo(kisResponse.DepositData, currencyCode);
         }
 
         return new OverseasAccountBalance
         {
-            Positions = allPositions
+            Positions = allPositions,
+            DepositInfo = depositInfo ?? new OverseasDepositInfo()
         };
     }
 
@@ -215,6 +209,20 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         SetStandardHeaders(httpRequest, _settings.DefaultValues.OverseasBalanceTransactionId, user);
         return httpRequest;
+    }
+
+    private static OverseasDepositInfo ConvertToDepositInfo(KisOverseasDepositData? data, string currencyCode)
+    {
+        if (data == null) return new OverseasDepositInfo { CurrencyCode = currencyCode };
+
+        return new OverseasDepositInfo
+        {
+            TotalDepositAmount = decimal.TryParse(data.DepositAmount, out var deposit) ? deposit : 0,
+            OrderableAmount = decimal.TryParse(data.OrderableAmount, out var orderable) ? orderable : 0,
+            CurrencyCode = currencyCode,
+            ExchangeRate = decimal.TryParse(data.ExchangeRate, out var rate) ? rate : 0,
+            InquiryTime = DateTime.Now
+        };
     }
 
     #endregion

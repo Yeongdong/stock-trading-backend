@@ -15,10 +15,15 @@ public class OverseasAccountBalance
     /// <summary>
     /// 포지션 보유 여부
     /// </summary>
-    public bool HasPositions => Positions.Any();
+    public bool HasPositions => Positions.Count != 0;
 
     /// <summary>
     /// 총 포지션 수
     /// </summary>
     public int TotalPositions => Positions.Count;
+
+    /// <summary>
+    /// 예수금 정보
+    /// </summary>
+    public OverseasDepositInfo DepositInfo { get; init; } = new();
 }

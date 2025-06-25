@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 
 /// <summary>
@@ -9,9 +11,16 @@ public class KisOverseasBalanceResponse : KisBaseResponse<List<KisOverseasBalanc
     /// 해외 주식 포지션 목록 (output1)
     /// </summary>
     public List<KisOverseasBalanceData> Positions => Output ?? [];
+    
+    /// <summary>
+    /// 해외 주식 예수금 정보 (output2)
+    /// </summary>
+    [JsonPropertyName("output2")]
+    public KisOverseasDepositData? DepositData { get; init; }
 
     /// <summary>
     /// 포지션 데이터 존재 여부
     /// </summary>
     public bool HasPositions => Positions.Any(p => !string.IsNullOrEmpty(p.StockCode));
 }
+
