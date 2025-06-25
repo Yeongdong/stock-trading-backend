@@ -11,84 +11,75 @@ namespace StockTrading.Infrastructure.ExternalServices.Finnhub;
 
 public class FinnhubApiClient : FinnhubApiClientBase, IFinnhubApiClient
 {
-    public FinnhubApiClient(HttpClient httpClient, IOptions<FinnhubSettings> settings,
-        ILogger<FinnhubApiClient> logger) : base(httpClient, settings, logger)
-    {
-    }
+   public FinnhubApiClient(HttpClient httpClient, IOptions<FinnhubSettings> settings,
+       ILogger<FinnhubApiClient> logger) : base(httpClient, settings, logger)
+   {
+   }
 
-    public async Task<ForeignStockSearchResult> SearchSymbolsAsync(ForeignStockSearchRequest request)
-    {
-        var queryParams = new Dictionary<string, string>
-        {
-            { "q", request.Query }
-        };
+   public async Task<ForeignStockSearchResult> SearchSymbolsAsync(ForeignStockSearchRequest request)
+   {
+       var queryString = $"q={Uri.EscapeDataString(request.Query)}";
+       if (!string.IsNullOrEmpty(request.Exchange))
+           queryString += $"&exchange={Uri.EscapeDataString(request.Exchange)}";
 
-        if (!string.IsNullOrEmpty(request.Exchange))
-            queryParams.Add("exchange", request.Exchange);
+       var fullUrl = $"{_settings.BaseUrl.TrimEnd('/')}/{_settings.Endpoints.SymbolSearchPath.TrimStart('/')}?{queryString}";
 
-        var url = BuildGetUrl(_settings.Endpoints.SymbolSearchPath, queryParams);
-        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
-        SetStandardHeaders(httpRequest);
+       var httpRequest = new HttpRequestMessage(HttpMethod.Get, fullUrl);
+       SetStandardHeaders(httpRequest);
 
-        var response = await _httpClient.SendAsync(httpRequest);
-        var responseContent = await ValidateAndReadResponse(response);
+       var response = await _httpClient.SendAsync(httpRequest);
+       var responseContent = await ValidateAndReadResponse(response);
 
-        var finnhubResponse = JsonSerializer.Deserialize<FinnhubSymbolSearchResponse>(responseContent);
+       if (responseContent.StartsWith("<") || responseContent.Contains("html"))
+           throw new Exception("Finnhub API 인증 실패 또는 잘못된 요청입니다.");
 
-        return ConvertToForeignStockSearchResult(finnhubResponse, request.Limit);
-    }
+       var finnhubResponse = JsonSerializer.Deserialize<FinnhubSymbolSearchResponse>(responseContent);
 
-    private static ForeignStockSearchResult ConvertToForeignStockSearchResult(
-        FinnhubSymbolSearchResponse? finnhubResponse, int limit)
-    {
-        if (finnhubResponse?.Result == null)
-            return new ForeignStockSearchResult();
+       return ConvertToForeignStockSearchResult(finnhubResponse, request.Limit);
+   }
 
-        var stocks = finnhubResponse.Result
-            .Take(limit)
-            .Select(symbol => new ForeignStockInfo
-            {
-                Symbol = symbol.Symbol,
-                DisplaySymbol = symbol.DisplaySymbol,
-                Description = symbol.Description,
-                Type = symbol.Type,
-                Currency = symbol.Currency,
-                Exchange = ExtractExchangeFromMic(symbol.Mic),
-                Country = ExtractCountryFromMic(symbol.Mic)
-            })
-            .ToList();
+   private static ForeignStockSearchResult ConvertToForeignStockSearchResult(
+       FinnhubSymbolSearchResponse? finnhubResponse, int limit)
+   {
+       if (finnhubResponse?.Result == null)
+           return new ForeignStockSearchResult();
 
-        return new ForeignStockSearchResult
-        {
-            Stocks = stocks,
-            Count = stocks.Count
-        };
-    }
+       var stocks = finnhubResponse.Result
+           .Take(limit)
+           .Select(CreateForeignStockInfo)
+           .ToList();
 
-    private static string ExtractExchangeFromMic(string mic)
-    {
-        // MIC 코드에서 거래소명 추출
-        return mic switch
-        {
-            "XNYS" => "NYSE",
-            "XNAS" => "NASDAQ",
-            "XLON" => "LSE",
-            "XTSE" => "TSE",
-            "XHKG" => "HKEX",
-            _ => mic
-        };
-    }
+       return new ForeignStockSearchResult { Stocks = stocks, Count = stocks.Count };
+   }
 
-    private static string ExtractCountryFromMic(string mic)
-    {
-        // MIC 코드에서 국가 추출
-        return mic switch
-        {
-            "XNYS" or "XNAS" => "US",
-            "XLON" => "GB",
-            "XTSE" => "JP",
-            "XHKG" => "HK",
-            _ => "Unknown"
-        };
-    }
+   private static ForeignStockInfo CreateForeignStockInfo(FinnhubSymbolInfo symbol) => new()
+   {
+       Symbol = symbol.Symbol,
+       DisplaySymbol = symbol.DisplaySymbol,
+       Description = symbol.Description,
+       Type = symbol.Type,
+       Currency = GetCurrency(symbol.Symbol),
+       Exchange = GetExchange(symbol.Symbol),
+       Country = GetCountry(symbol.Symbol)
+   };
+
+   private static readonly Dictionary<string, (string Currency, string Exchange, string Country)> SuffixMappings = new()
+   {
+       { ".TO", ("CAD", "TSE", "CA") },
+       { ".L", ("GBP", "LSE", "GB") },
+       { ".T", ("JPY", "TSE", "JP") },
+       { ".HK", ("HKD", "HKEX", "HK") },
+       { ".SW", ("CHF", "SIX", "CH") },
+       { ".PA", ("EUR", "EPA", "FR") },
+       { ".DE", ("EUR", "XETRA", "DE") }
+   };
+
+   private static string GetCurrency(string symbol) => 
+       SuffixMappings.FirstOrDefault(kvp => symbol.EndsWith(kvp.Key)).Value.Currency ?? "USD";
+
+   private static string GetExchange(string symbol) => 
+       SuffixMappings.FirstOrDefault(kvp => symbol.EndsWith(kvp.Key)).Value.Exchange ?? "NASDAQ";
+
+   private static string GetCountry(string symbol) => 
+       SuffixMappings.FirstOrDefault(kvp => symbol.EndsWith(kvp.Key)).Value.Country ?? "US";
 }

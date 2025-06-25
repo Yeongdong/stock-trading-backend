@@ -2,7 +2,7 @@ namespace StockTrading.Domain.Entities;
 
 public class ForeignStock
 {
-    public int Id { get; private set; } 
+    public int Id { get; private set; }
     public string Symbol { get; private set; } = null!;
     public string DisplaySymbol { get; private set; } = null!;
     public string Description { get; private set; } = null!;
@@ -10,7 +10,7 @@ public class ForeignStock
     public string Currency { get; private set; } = null!;
     public string Exchange { get; private set; } = null!;
     public string Country { get; private set; } = null!;
-    public string Mic { get; private set; } = null!; // Market Identifier Code
+    public string Mic { get; private set; } = null!;
     public DateTime LastUpdated { get; private set; }
 
     private ForeignStock() { }
@@ -20,7 +20,6 @@ public class ForeignStock
     {
         ValidateSymbol(symbol);
         ValidateDescription(description);
-        ValidateExchange(exchange);
 
         Symbol = symbol;
         DisplaySymbol = displaySymbol;
@@ -30,6 +29,11 @@ public class ForeignStock
         Exchange = exchange;
         Country = country;
         Mic = mic;
+        LastUpdated = DateTime.UtcNow;
+    }
+
+    public void UpdateLastUpdated()
+    {
         LastUpdated = DateTime.UtcNow;
     }
 
@@ -46,11 +50,5 @@ public class ForeignStock
     {
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("종목명은 필수입니다.", nameof(description));
-    }
-
-    private static void ValidateExchange(string exchange)
-    {
-        if (string.IsNullOrWhiteSpace(exchange))
-            throw new ArgumentException("거래소 정보는 필수입니다.", nameof(exchange));
     }
 }

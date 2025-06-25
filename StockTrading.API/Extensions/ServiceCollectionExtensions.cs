@@ -79,6 +79,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserKisInfoRepository, UserKisInfoRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IForeignStockRepository, ForeignStockRepository>();
 
         // Application Services
         services.AddScoped<IJwtService, JwtService>();

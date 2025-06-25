@@ -19,6 +19,11 @@ public abstract class FinnhubApiClientBase
 
     protected void SetStandardHeaders(HttpRequestMessage request)
     {
+        if (string.IsNullOrEmpty(_settings.ApiKey))
+        {
+            _logger.LogError("Finnhub API 키가 설정되지 않았습니다.");
+            throw new Exception("Finnhub API 키가 필요합니다.");
+        }
         request.Headers.Add("X-Finnhub-Token", _settings.ApiKey);
     }
 

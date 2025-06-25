@@ -283,5 +283,66 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Token).IsUnique();
             entity.HasIndex(e => e.UserId);
         });
+
+        modelBuilder.Entity<ForeignStock>(entity =>
+        {
+            entity.ToTable("foreign_stocks");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .UseIdentityAlwaysColumn();
+
+            entity.Property(e => e.Symbol)
+                .HasColumnName("symbol")
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.DisplaySymbol)
+                .HasColumnName("display_symbol")
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.Description)
+                .HasColumnName("description")
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.Type)
+                .HasColumnName("type")
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Currency)
+                .HasColumnName("currency")
+                .HasMaxLength(10);
+
+            entity.Property(e => e.Exchange)
+                .HasColumnName("exchange")
+                .IsRequired()
+                .HasMaxLength(20);
+
+            entity.Property(e => e.Country)
+                .HasColumnName("country")
+                .HasMaxLength(10);
+
+            entity.Property(e => e.Mic)
+                .HasColumnName("mic")
+                .HasMaxLength(10);
+
+            entity.Property(e => e.LastUpdated)
+                .HasColumnName("last_updated")
+                .HasColumnType("timestamp with time zone")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => e.Symbol)
+                .HasDatabaseName("ix_foreign_stocks_symbol")
+                .IsUnique();
+
+            entity.HasIndex(e => e.Description)
+                .HasDatabaseName("ix_foreign_stocks_description");
+
+            entity.HasIndex(e => e.Exchange)
+                .HasDatabaseName("ix_foreign_stocks_exchange");
+        });
     }
 }

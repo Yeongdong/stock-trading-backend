@@ -276,7 +276,8 @@ public class StockService : IStockService
                 info.Currency,
                 info.Exchange,
                 info.Country,
-                ExtractMicFromExchange(info.Exchange)))
+                ""
+            ))
             .ToList();
 
         if (newStocks.Count != 0)
