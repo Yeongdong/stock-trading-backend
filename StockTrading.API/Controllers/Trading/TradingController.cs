@@ -49,26 +49,6 @@ public class TradingController : BaseController
 
     #endregion
 
-    #region 해외 주식 주문
-
-    [HttpPost("overseas/order")]
-    public async Task<IActionResult> PlaceOverseasOrder(OverseasOrderRequest request)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var user = await GetCurrentUserAsync();
-
-        _logger.LogInformation("해외 주식 주문 시작: 사용자 {UserId}, 종목 {StockCode}, 시장 {Market}",
-            user.Id, request.PDNO, request.Market);
-
-        var orderResponse = await _tradingService.PlaceOverseasOrderAsync(request, user);
-
-        return Ok(orderResponse);
-    }
-
-    #endregion
-
     #region 국내 주식 조회
 
     [HttpGet("balance")]
@@ -93,6 +73,26 @@ public class TradingController : BaseController
 
     #endregion
 
+    #region 해외 주식 주문
+
+    [HttpPost("overseas/order")]
+    public async Task<IActionResult> PlaceOverseasOrder(OverseasOrderRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await GetCurrentUserAsync();
+
+        _logger.LogInformation("해외 주식 주문 시작: 사용자 {UserId}, 종목 {StockCode}, 시장 {Market}",
+            user.Id, request.PDNO, request.Market);
+
+        var orderResponse = await _tradingService.PlaceOverseasOrderAsync(request, user);
+
+        return Ok(orderResponse);
+    }
+
+    #endregion
+
     #region 해외 주식 조회
 
     [HttpGet("overseas/executions")]
@@ -106,7 +106,7 @@ public class TradingController : BaseController
 
         var executions = await _tradingService.GetOverseasOrderExecutionsAsync(startDate, endDate, user);
 
-        return Ok(new { executions, count = executions.Count });
+        return Ok(executions);
     }
 
     #endregion

@@ -62,22 +62,20 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
 
     #endregion
 
-    #region Private Methods
+    #region 주문 Private Methods
 
     private KisOverseasOrderRequest CreateKisOverseasOrderRequest(OverseasOrderRequest request, UserInfo user)
     {
-        var marketCode = GetMarketCode(request.Market);
-
         return new KisOverseasOrderRequest
         {
             CANO = user.AccountNumber,
-            ACNT_PRDT_CD = _settings.DefaultValues.AccountProductCode,
+            ACNT_PRDT_CD = request.ACNT_PRDT_CD,
             OVRS_EXCG_CD = request.OVRS_EXCG_CD,
             PDNO = request.PDNO,
             ORD_QTY = request.ORD_QTY,
-            OVRS_ORD_UNPR = request.ORD_UNPR,
-            ORD_SVR_DVSN_CD = request.ORD_DVSN,
-            ORD_DVSN = request.ORD_CNDT
+            OVRS_ORD_UNPR = request.OVRS_ORD_UNPR,
+            ORD_SVR_DVSN_CD = request.ORD_SVR_DVSN_CD,
+            ORD_DVSN = request.ORD_DVSN
         };
     }
 
@@ -104,7 +102,7 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
 
     #endregion
 
-    #region Private Methods
+    #region 체결내역 Private Methods
 
     private Dictionary<string, string> CreateOverseasOrderExecutionQueryParams(string startDate, string endDate,
         UserInfo user)
@@ -136,23 +134,6 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
     {
         if (!response?.IsSuccess ?? true)
             throw new Exception($"해외 주식 체결 내역 조회 실패: {response?.Message ?? "응답 없음"}");
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    private string GetMarketCode(StockTrading.Domain.Enums.Market market)
-    {
-        return market switch
-        {
-            Domain.Enums.Market.Nasdaq => "NASD",
-            Domain.Enums.Market.Nyse => "NYSE",
-            Domain.Enums.Market.Tokyo => "TKSE",
-            Domain.Enums.Market.London => "LNSE",
-            Domain.Enums.Market.Hongkong => "HKEX",
-            _ => throw new ArgumentException($"지원하지 않는 해외 시장입니다: {market}")
-        };
     }
 
     #endregion

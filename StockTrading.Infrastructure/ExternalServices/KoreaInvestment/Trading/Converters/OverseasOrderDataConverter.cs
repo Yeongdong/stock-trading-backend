@@ -29,9 +29,9 @@ public class OverseasOrderDataConverter
             OrderDivision = originalRequest.ORD_DVSN,
             Quantity = originalRequest.QuantityAsInt,
             Price = originalRequest.PriceAsDecimal,
-            OrderCondition = originalRequest.ORD_CNDT,
+            OrderCondition = "DAY",
             Currency = currency,
-            OrderStatus = "접수", // 기본값
+            OrderStatus = "접수",
             IsSuccess = kisResponse.IsSuccess,
             Message = kisResponse.Message
         };

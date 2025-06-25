@@ -15,6 +15,12 @@ public class KisOverseasOrderExecutionResponse : KisBaseResponse<List<KisOversea
 public class KisOverseasOrderExecutionData
 {
     /// <summary>
+    /// 체결번호
+    /// </summary>
+    [JsonPropertyName("excn_no")]
+    public string ExecutionNumber { get; set; } = null!;
+
+    /// <summary>
     /// 주문번호
     /// </summary>
     [JsonPropertyName("odno")]

@@ -99,6 +99,9 @@ public class TradingService : ITradingService
         ArgumentNullException.ThrowIfNull(order);
         KisValidationHelper.ValidateUserForKisApi(user);
 
+        // 사용자 정보를 DTO에 자동 설정
+        order.CANO = user.AccountNumber;
+
         var stockOrder = new StockOrder(
             stockCode: order.PDNO,
             tradeType: order.tr_id,
@@ -106,7 +109,7 @@ public class TradingService : ITradingService
             quantity: order.QuantityAsInt,
             price: order.PriceAsDecimal,
             market: order.Market,
-            currency: GetCurrencyByMarket(order.Market),
+            currency: GetCurrencyEnum(order.Market),
             userId: user.Id
         );
 
@@ -116,8 +119,8 @@ public class TradingService : ITradingService
         await _orderRepository.AddAsync(stockOrder);
         await transaction.CommitAsync();
 
-        _logger.LogInformation("해외 주식 주문 완료: 사용자 {UserId}, 종목 {StockCode}, 주문번호 {OrderNumber}",
-            user.Id, order.PDNO, apiResponse.OrderNumber);
+        _logger.LogInformation("해외 주식 주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}",
+            user.Id, apiResponse?.OrderNumber ?? "없음");
 
         return apiResponse;
     }
@@ -163,16 +166,16 @@ public class TradingService : ITradingService
             throw new ArgumentException("종료일자는 현재 날짜보다 이후일 수 없습니다.");
     }
 
-    private Currency GetCurrencyByMarket(StockTrading.Domain.Enums.Market market)
+    private Currency GetCurrencyEnum(StockTrading.Domain.Enums.Market market)
     {
         return market switch
         {
-            StockTrading.Domain.Enums.Market.Nasdaq or StockTrading.Domain.Enums.Market.Nyse => Currency.Usd,
+            StockTrading.Domain.Enums.Market.Nasdaq => Currency.Usd,
+            StockTrading.Domain.Enums.Market.Nyse => Currency.Usd,
             StockTrading.Domain.Enums.Market.Tokyo => Currency.Jpy,
             StockTrading.Domain.Enums.Market.London => Currency.Gbp,
             StockTrading.Domain.Enums.Market.Hongkong => Currency.Hkd,
-            StockTrading.Domain.Enums.Market.Kospi or StockTrading.Domain.Enums.Market.Kosdaq or StockTrading.Domain.Enums.Market.Konex => Currency.Krw,
-            _ => Currency.Usd // Default
+            _ => Currency.Usd
         };
     }
     #endregion
