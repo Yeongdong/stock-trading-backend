@@ -99,7 +99,6 @@ public class TradingService : ITradingService
         ArgumentNullException.ThrowIfNull(order);
         KisValidationHelper.ValidateUserForKisApi(user);
 
-        // 사용자 정보를 DTO에 자동 설정
         order.CANO = user.AccountNumber;
 
         var stockOrder = new StockOrder(
@@ -119,9 +118,6 @@ public class TradingService : ITradingService
         await _orderRepository.AddAsync(stockOrder);
         await transaction.CommitAsync();
 
-        _logger.LogInformation("해외 주식 주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}",
-            user.Id, apiResponse?.OrderNumber ?? "없음");
-
         return apiResponse;
     }
 
@@ -139,10 +135,13 @@ public class TradingService : ITradingService
         var executions =
             await _kisOverseasTradingApiClient.GetOverseasOrderExecutionsAsync(startDate, endDate, user);
 
-        _logger.LogInformation("해외 주식 체결 내역 조회 완료: 사용자 {UserId}, 조회기간 {StartDate}~{EndDate}, 건수 {Count}",
-            user.Id, startDate, endDate, executions.Count);
-
         return executions;
+    }
+
+    public async Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user)
+    {
+        KisValidationHelper.ValidateUserForKisApi(user);
+        return await _kisBalanceApiClient.GetOverseasStockBalanceAsync(user);
     }
 
     #endregion
@@ -178,5 +177,6 @@ public class TradingService : ITradingService
             _ => Currency.Usd
         };
     }
+
     #endregion
 }

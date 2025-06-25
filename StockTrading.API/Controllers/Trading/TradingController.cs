@@ -100,14 +100,19 @@ public class TradingController : BaseController
         [FromQuery] string endDate)
     {
         var user = await GetCurrentUserAsync();
-
-        _logger.LogInformation("해외 주식 체결 내역 조회: 사용자 {UserId}, 기간 {StartDate}~{EndDate}",
-            user.Id, startDate, endDate);
-
         var executions = await _tradingService.GetOverseasOrderExecutionsAsync(startDate, endDate, user);
 
         return Ok(executions);
     }
 
+    [HttpGet("overseas/balance")]
+    public async Task<IActionResult> GetOverseasBalance()
+    {
+        var user = await GetCurrentUserAsync();
+        var balance = await _tradingService.GetOverseasStockBalanceAsync(user);
+
+        return Ok(balance);
+    }
+    
     #endregion
 }

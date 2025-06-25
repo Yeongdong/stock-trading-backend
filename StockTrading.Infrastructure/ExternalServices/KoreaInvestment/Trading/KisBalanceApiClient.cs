@@ -23,6 +23,8 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         _stockDataConverter = stockDataConverter;
     }
 
+    #region 국내 주식
+
     public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
     {
         var queryParams = CreateBalanceQueryParams(user);
@@ -30,7 +32,7 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         var response = await _httpClient.SendAsync(httpRequest);
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
-        
+
         ValidateBalanceResponse(kisResponse);
 
         return CreateAccountBalance(kisResponse);
@@ -43,12 +45,33 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         var response = await _httpClient.SendAsync(httpRequest);
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBuyableInquiryResponse>();
-        
+
         ValidateBuyableInquiryResponse(kisResponse);
 
         return _stockDataConverter.ConvertToBuyableInquiryResponse(kisResponse.Output, request.OrderPrice,
             request.StockCode);
     }
+
+    #endregion
+
+    #region 해외 주식
+
+    public async Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user)
+    {
+        var queryParams = CreateOverseasBalanceQueryParams(user);
+        var httpRequest = CreateOverseasBalanceHttpRequest(queryParams, user);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        var kisResponse = await response.Content.ReadFromJsonAsync<KisOverseasBalanceResponse>();
+
+        ValidateOverseasBalanceResponse(kisResponse);
+
+        return CreateOverseasAccountBalance(kisResponse);
+    }
+
+    #endregion
+
+    #region 국내 주식 Private Methods
 
     private Dictionary<string, string> CreateBalanceQueryParams(UserInfo user)
     {
@@ -128,4 +151,50 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         if (!kisResponse.HasData)
             throw new Exception("매수가능조회 데이터가 없습니다.");
     }
+
+    #endregion
+
+    #region 해외 주식 Private Methods
+
+    private Dictionary<string, string> CreateOverseasBalanceQueryParams(UserInfo user)
+    {
+        var defaults = _settings.DefaultValues;
+        return new Dictionary<string, string>
+        {
+            ["CANO"] = user.AccountNumber,
+            ["ACNT_PRDT_CD"] = defaults.AccountProductCode,
+            ["OVRS_EXCG_CD"] = "",
+            ["TR_CRCY_CD"] = "",
+            ["CTX_AREA_FK200"] = "",
+            ["CTX_AREA_NK200"] = ""
+        };
+    }
+
+    private HttpRequestMessage CreateOverseasBalanceHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
+    {
+        var url = BuildGetUrl(_settings.Endpoints.OverseasBalancePath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.OverseasBalanceTransactionId, user);
+        return httpRequest;
+    }
+
+    private static void ValidateOverseasBalanceResponse(KisOverseasBalanceResponse? kisResponse)
+    {
+        if (!kisResponse.IsSuccess)
+            throw new Exception($"해외 잔고조회 실패: {kisResponse.Message}");
+
+        if (!kisResponse.HasData)
+            throw new Exception("해외 잔고조회 데이터가 없습니다.");
+    }
+
+    private static OverseasAccountBalance CreateOverseasAccountBalance(KisOverseasBalanceResponse? kisResponse)
+    {
+        return new OverseasAccountBalance
+        {
+            Positions = kisResponse.Positions
+        };
+    }
+
+    #endregion
 }
