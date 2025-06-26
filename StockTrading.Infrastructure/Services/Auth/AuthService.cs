@@ -126,6 +126,7 @@ public class AuthService : IAuthService
             Id = user.Id,
             Email = user.Email,
             Name = user.Name,
+            CreatedAt = user.CreatedAt,
             Role = user.Role,
             KisAppKey = user.KisAppKey,
             KisAppSecret = user.KisAppSecret,

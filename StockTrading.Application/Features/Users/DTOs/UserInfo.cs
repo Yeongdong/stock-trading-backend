@@ -7,7 +7,8 @@ public class UserInfo
     public int Id { get; init; }
     public string Email { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
-    public UserRole Role { get; set; }
+    public DateTime CreatedAt { get; init; }
+    public UserRole Role { get; init; }
     public string? KisAppKey { get; set; }
     public string? KisAppSecret { get; set; }
     public string? AccountNumber { get; set; }

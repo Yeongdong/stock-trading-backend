@@ -19,7 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<KisToken> KisTokens { get; set; }
     public DbSet<StockOrder> StockOrders { get; set; } = null!;
-    public DbSet<StockOrder> Stocks { get; set; } = null!;
+    public DbSet<Stock> Stocks { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -130,7 +130,7 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.StockCode)
                 .HasColumnName("stock_code")
                 .IsRequired()
-                .HasMaxLength(6);
+                .HasMaxLength(10);
 
             entity.Property(e => e.TradeType)
                 .HasColumnName("trade_type")
@@ -150,6 +150,20 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("price")
                 .IsRequired()
                 .HasColumnType("decimal(18,2)");
+
+            entity.Property(e => e.Market)
+                .HasColumnName("market")
+                .HasConversion<string>()
+                .IsRequired();
+
+            entity.Property(e => e.Currency)
+                .HasColumnName("currency")
+                .HasConversion<string>()
+                .IsRequired();
+
+            entity.Property(e => e.UserId)
+                .HasColumnName("user_id")
+                .IsRequired();
 
             entity.Property(e => e.CreatedAt)
                 .HasColumnName("created_at")

@@ -1,10 +1,10 @@
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using StockTrading.API.Controllers;
 using StockTrading.API.Controllers.User;
 using StockTrading.API.Services;
 using StockTrading.Application.Features.Users.DTOs;
+using StockTrading.Application.Features.Users.Services;
 
 namespace StockTrading.Tests.Unit.Controllers;
 
@@ -12,12 +12,14 @@ namespace StockTrading.Tests.Unit.Controllers;
 public class UserControllerTest
 {
     private readonly Mock<IUserContextService> _mockUserContextService;
+    private readonly Mock<IUserService> _mockUserService;
     private readonly UserController _controller;
 
     public UserControllerTest()
     {
         _mockUserContextService = new Mock<IUserContextService>();
-        _controller = new UserController(_mockUserContextService.Object);
+        _mockUserService = new Mock<IUserService>();
+        _controller = new UserController(_mockUserContextService.Object, _mockUserService.Object);
     }
 
     [Fact]

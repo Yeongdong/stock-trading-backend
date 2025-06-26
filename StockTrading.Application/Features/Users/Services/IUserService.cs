@@ -7,4 +7,5 @@ public interface IUserService
 {
     Task<UserInfo> CreateOrGetGoogleUserAsync(GoogleJsonWebSignature.Payload payload);
     Task<UserInfo> GetUserByEmailAsync(string email);
+    Task DeleteAccountAsync(int userId);
 }

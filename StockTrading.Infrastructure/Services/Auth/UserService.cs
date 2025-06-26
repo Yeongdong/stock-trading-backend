@@ -47,6 +47,26 @@ public class UserService : IUserService
         return ToUserDto(user);
     }
 
+    public async Task DeleteAccountAsync(int userId)
+    {
+        if (userId <= 0)
+            throw new ArgumentException("유효하지 않은 사용자 ID입니다.", nameof(userId));
+
+        _logger.LogInformation("회원 탈퇴 시작: 사용자 ID {UserId}", userId);
+
+        await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new KeyNotFoundException($"사용자 ID {userId}를 찾을 수 없습니다.");
+
+        await _userRepository.DeleteAsync(user.Id);
+        await transaction.CommitAsync();
+
+        _logger.LogInformation("회원 탈퇴 완료: 사용자 ID {UserId}, 이메일 {Email}", userId, user.Email);
+    }
+
+
     private async Task<UserInfo> CreateNewGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
     {
         _logger.LogInformation("새 Google 사용자 생성: {GoogleId}", payload.Subject);
@@ -75,6 +95,7 @@ public class UserService : IUserService
             Id = user.Id,
             Email = user.Email,
             Name = user.Name,
+            CreatedAt = user.CreatedAt,
             AccountNumber = user.AccountNumber,
             KisAppKey = user.KisAppKey,
             KisAppSecret = user.KisAppSecret,
