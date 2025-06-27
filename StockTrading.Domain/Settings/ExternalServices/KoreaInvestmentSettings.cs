@@ -91,7 +91,7 @@ public class KisDefaults
     // 해외 주식
     public string OverseasBalanceTransactionId { get; init; } = "VTTS3012R";
     public string OverseasCurrentPriceTransactionId { get; init; } = "HHDFS00000300";
-    public string OverseasPeriodPriceTransactionId { get; init; } = "HHDFS76240000";
+    public string OverseasPeriodPriceTransactionId { get; init; } = "FHKST03030100";
     public string OverseasOrderExecutionTransactionId { get; init; } = "VTTS3035R";
     public string OverseasBuyableInquiryTransactionId { get; init; } = "VTRP6505R";
 
