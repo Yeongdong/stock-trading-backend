@@ -82,8 +82,6 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
         return _priceConverter.ConvertToOverseasPeriodPriceResponse(kisResponse, request.StockCode);
     }
 
-    
-
     #endregion
 
     #region 국내 주식 Private Methods

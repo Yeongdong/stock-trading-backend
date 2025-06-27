@@ -5,13 +5,55 @@ namespace StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 /// <summary>
 /// KIS API 해외주식 기간별시세 응답
 /// </summary>
-public class KisOverseasPeriodPriceResponse : KisBaseResponse<KisOverseasPeriodPriceData>
+public class KisOverseasPeriodPriceResponse
 {
     /// <summary>
-    /// 일자별 정보
+    /// 응답코드 (0: 성공)
+    /// </summary>
+    [JsonPropertyName("rt_cd")]
+    public string ReturnCode { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 메시지코드
+    /// </summary>
+    [JsonPropertyName("msg_cd")]
+    public string MessageCode { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 응답메시지
+    /// </summary>
+    [JsonPropertyName("msg1")]
+    public string Message { get; init; } = string.Empty;
+
+    /// <summary>
+    /// 기본정보 (output1)
+    /// </summary>
+    [JsonPropertyName("output1")]
+    public KisOverseasPeriodPriceData? Output { get; set; }
+
+    /// <summary>
+    /// 일자별 정보 (output2)
     /// </summary>
     [JsonPropertyName("output2")]
     public List<KisOverseasPriceItem> PriceItems { get; set; } = [];
+
+    /// <summary>
+    /// 응답이 성공인지 확인
+    /// </summary>
+    [JsonIgnore]
+    public bool IsSuccess => ReturnCode == "0";
+
+    /// <summary>
+    /// 응답 데이터가 있는지 확인
+    /// </summary>
+    [JsonIgnore]
+    public bool HasData => Output != null;
+
+    /// <summary>
+    /// 가격 데이터가 있는지 확인
+    /// </summary>
+    [JsonIgnore]
+    public bool HasPriceData => PriceItems?.Count > 0;
 }
 
 /// <summary>
