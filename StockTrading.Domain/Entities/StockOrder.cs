@@ -15,11 +15,15 @@ public class StockOrder
     public int UserId { get; private set; }
     public User? User { get; }
     public DateTime CreatedAt { get; private set; }
+    public bool IsScheduledOrder { get; private set; }
+    public DateTime? ScheduledExecutionTime { get; private set; }
+    public string? ReservedOrderNumber { get; private set; }
 
     public StockOrder()
     {
     }
 
+    // 즉시주문 생성자
     public StockOrder(string stockCode, string tradeType, string orderType, int quantity, decimal price,
         Market market, Currency currency, int userId)
     {
@@ -39,6 +43,21 @@ public class StockOrder
         Currency = currency;
         UserId = userId;
         CreatedAt = DateTime.UtcNow;
+        IsScheduledOrder = false;
+    }
+
+    // 예약주문 생성자
+    public StockOrder(string stockCode, string tradeType, string orderType, int quantity, decimal price,
+        Market market, Currency currency, int userId, DateTime scheduledExecutionTime)
+        : this(stockCode, tradeType, orderType, quantity, price, market, currency, userId)
+    {
+        IsScheduledOrder = true;
+        ScheduledExecutionTime = scheduledExecutionTime;
+    }
+
+    public void SetReservedOrderNumber(string reservedOrderNumber)
+    {
+        ReservedOrderNumber = reservedOrderNumber;
     }
 
     private void ValidateStockCode(string stockCode, Market market)
@@ -70,8 +89,10 @@ public class StockOrder
         }
         else
         {
-            if (tradeType != "VTTT1002U" && tradeType != "VTTT1001U")
-                throw new ArgumentException("해외 거래 유형은 'VTTT1002U' 또는 'VTTT1001U'이어야 합니다.", nameof(tradeType));
+            // 즉시주문과 예약주문 TR_ID 모두 허용
+            var allowedTradeTypes = new[] { "VTTT1002U", "VTTT1001U", "VTTT3014U", "VTTT3016U", "VTTS3013U" };
+            if (!allowedTradeTypes.Contains(tradeType))
+                throw new ArgumentException($"해외 거래 유형은 {string.Join(", ", allowedTradeTypes)} 중 하나여야 합니다.", nameof(tradeType));
         }
     }
 
@@ -89,16 +110,18 @@ public class StockOrder
 
     private void ValidatePrice(decimal price)
     {
-        if (OrderType != "Market" && price <= 0)
+        if (price <= 0)
             throw new ArgumentException("가격은 0보다 커야 합니다.", nameof(price));
     }
 
     private void ValidateUserId(int userId)
     {
         if (userId <= 0)
-            throw new ArgumentException("사용자 ID는 0보다 커야 합니다.", nameof(userId));
+            throw new ArgumentException("사용자 ID는 유효하지 않습니다.", nameof(userId));
     }
 
-    private static bool IsKoreanMarket(Market market) =>
-        market is Market.Kospi or Market.Kosdaq or Market.Konex;
+    private static bool IsKoreanMarket(Market market)
+    {
+        return market == Market.Kospi || market == Market.Kosdaq;
+    }
 }

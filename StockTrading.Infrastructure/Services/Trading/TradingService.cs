@@ -101,24 +101,10 @@ public class TradingService : ITradingService
 
         order.CANO = user.AccountNumber;
 
-        var stockOrder = new StockOrder(
-            stockCode: order.PDNO,
-            tradeType: order.tr_id,
-            orderType: order.ORD_DVSN,
-            quantity: order.QuantityAsInt,
-            price: order.PriceAsDecimal,
-            market: order.Market,
-            currency: GetCurrencyEnum(order.Market),
-            userId: user.Id
-        );
-
-        await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
-
-        var apiResponse = await _kisOverseasTradingApiClient.PlaceOverseasOrderAsync(order, user);
-        await _orderRepository.AddAsync(stockOrder);
-        await transaction.CommitAsync();
-
-        return apiResponse;
+        // 예약주문인지 확인
+        if (order is ScheduledOverseasOrderRequest scheduledOrder)
+            return await PlaceScheduledOrderAsync(scheduledOrder, user);
+        return await PlaceImmediateOrderAsync(order, user);
     }
 
     #endregion
@@ -176,6 +162,76 @@ public class TradingService : ITradingService
             StockTrading.Domain.Enums.Market.Hongkong => Currency.Hkd,
             _ => Currency.Usd
         };
+    }
+
+    private async Task<OverseasOrderResponse> PlaceImmediateOrderAsync(OverseasOrderRequest order, UserInfo user)
+    {
+        var stockOrder = new StockOrder(
+            stockCode: order.PDNO,
+            tradeType: order.tr_id,
+            orderType: order.ORD_DVSN,
+            quantity: order.QuantityAsInt,
+            price: order.PriceAsDecimal,
+            market: order.Market,
+            currency: GetCurrencyEnum(order.Market),
+            userId: user.Id
+        );
+
+        await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
+
+        var apiResponse = await _kisOverseasTradingApiClient.PlaceOverseasOrderAsync(order, user);
+        await _orderRepository.AddAsync(stockOrder);
+        await transaction.CommitAsync();
+
+        _logger.LogInformation("해외 주식 즉시주문 완료: 사용자 {UserId}, 주문번호 {OrderNumber}",
+            user.Id, apiResponse.OrderNumber);
+
+        return apiResponse;
+    }
+
+    private async Task<OverseasOrderResponse> PlaceScheduledOrderAsync(ScheduledOverseasOrderRequest order,
+        UserInfo user)
+    {
+        var stockOrder = new StockOrder(
+            stockCode: order.PDNO,
+            tradeType: GetScheduledOrderTradeId(order),
+            orderType: order.ORD_DVSN,
+            quantity: order.QuantityAsInt,
+            price: order.PriceAsDecimal,
+            market: order.Market,
+            currency: GetCurrencyEnum(order.Market),
+            userId: user.Id,
+            scheduledExecutionTime: order.ScheduledExecutionTime
+        );
+
+        await using var transaction = await _dbContextWrapper.BeginTransactionAsync();
+
+        var apiResponse = await _kisOverseasTradingApiClient.PlaceScheduledOverseasOrderAsync(order, user);
+        
+        // 예약주문번호 설정
+        stockOrder.SetReservedOrderNumber(apiResponse.OrderNumber);
+        await _orderRepository.AddAsync(stockOrder);
+        await transaction.CommitAsync();
+
+        _logger.LogInformation("해외 주식 예약주문 접수 완료: 사용자 {UserId}, 예약주문번호 {ReservedOrderNumber}, 예약시간 {ScheduledTime}",
+            user.Id, apiResponse.OrderNumber, order.ScheduledExecutionTime);
+
+        return apiResponse;
+    }
+    
+    private string GetScheduledOrderTradeId(ScheduledOverseasOrderRequest request)
+    {
+        var isUsOrder = IsUsOrder(request.OVRS_EXCG_CD);
+        var isBuyOrder = request.tr_id.Contains("1002") || request.tr_id.Contains("3014");
+
+        if (isUsOrder)
+            return isBuyOrder ? "VTTT3014U" : "VTTT3016U"; // 미국 예약 매수/매도
+        return "VTTS3013U"; // 아시아 예약주문 (통합)
+    }
+
+    private bool IsUsOrder(string exchangeCode)
+    {
+        return exchangeCode == "NASD" || exchangeCode == "NYSE" || exchangeCode == "AMEX";
     }
 
     #endregion

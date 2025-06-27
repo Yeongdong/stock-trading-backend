@@ -75,6 +75,7 @@ public class KisEndpoints
     public string OverseasBuyableInquiryPath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-psamount";
     public string OverseasCurrentPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/price";
     public string OverseasPeriodPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/dailyprice";
+    public string OverseasScheduledOrderPath { get; set; } = "/uapi/overseas-stock/v1/trading/order-resv";
 }
 
 public class KisDefaults

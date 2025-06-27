@@ -38,6 +38,33 @@ public class OverseasOrderDataConverter
     }
 
     /// <summary>
+    /// KIS 예약주문 응답을 도메인 모델로 변환
+    /// </summary>
+    public OverseasOrderResponse ConvertToScheduledOrderResponse(KisScheduledOverseasOrderResponse kisResponse,
+        ScheduledOverseasOrderRequest request)
+    {
+        // 미국 주문과 아시아 주문에 따라 주문번호 필드가 다름
+        var orderNumber = kisResponse.Output?.OrderNumber ??
+                          kisResponse.Output?.OverseasReservedOrderNumber ?? string.Empty;
+
+        return new OverseasOrderResponse
+        {
+            OrderNumber = orderNumber,
+            OrderTime = DateTime.Now.ToString("HHmmss"),
+            StockCode = request.PDNO,
+            Market = GetMarketFromExchangeCode(request.OVRS_EXCG_CD),
+            TradeType = GetTradeTypeName(request.tr_id),
+            OrderDivision = "예약주문",
+            Quantity = int.Parse(request.ORD_QTY),
+            Price = decimal.Parse(request.OVRS_ORD_UNPR),
+            Currency = GetCurrencyFromExchangeCode(request.OVRS_EXCG_CD),
+            OrderStatus = "예약접수",
+            IsSuccess = kisResponse.IsSuccess,
+            Message = kisResponse.Message
+        };
+    }
+
+    /// <summary>
     /// KIS 해외 주식 체결 내역 응답을 애플리케이션 응답으로 변환
     /// </summary>
     public List<OverseasOrderExecution> ConvertToOverseasOrderExecutions(KisOverseasOrderExecutionResponse kisResponse)
@@ -180,6 +207,55 @@ public class OverseasOrderDataConverter
         // 실제 해외 주식 세금 계산 로직 필요
         // 임시로 0.05% 적용
         return executedAmount * 0.0005m;
+    }
+
+    private StockTrading.Domain.Enums.Market GetMarketFromExchangeCode(string exchangeCode)
+    {
+        return exchangeCode switch
+        {
+            "NASD" => Domain.Enums.Market.Nasdaq,
+            "NYSE" => Domain.Enums.Market.Nyse,
+            "AMEX" => Domain.Enums.Market.Nyse, // AMEX는 NYSE로 처리
+            "SEHK" => Domain.Enums.Market.Hongkong,
+            "TKSE" => Domain.Enums.Market.Tokyo,
+            // "SHAA" => Domain.Enums.Market.Shanghai,
+            // "SZAA" => Domain.Enums.Market.Shenzhen,
+            _ => Domain.Enums.Market.Nasdaq
+        };
+    }
+
+    private string GetTradeTypeName(string tradeType)
+    {
+        return tradeType switch
+        {
+            "VTTT1002U" or "VTTT3014U" => "매수",
+            "VTTT1001U" or "VTTT3016U" => "매도",
+            "VTTS3013U" => "예약주문",
+            _ => "알 수 없음"
+        };
+    }
+
+    private string GetOrderDivisionName(string orderDivision)
+    {
+        return orderDivision switch
+        {
+            "00" => "지정가",
+            "01" => "시장가",
+            "31" => "MOO(장개시시장가)",
+            _ => "알 수 없음"
+        };
+    }
+
+    private string GetCurrencyFromExchangeCode(string exchangeCode)
+    {
+        return exchangeCode switch
+        {
+            "NASD" or "NYSE" or "AMEX" => "USD",
+            "SEHK" => "HKD",
+            "TKSE" => "JPY",
+            "SHAA" or "SZAA" => "CNY",
+            _ => "USD"
+        };
     }
 
     #endregion

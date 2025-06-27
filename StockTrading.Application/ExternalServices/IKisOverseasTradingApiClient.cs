@@ -7,5 +7,6 @@ namespace StockTrading.Application.ExternalServices;
 public interface IKisOverseasTradingApiClient
 {
     Task<OverseasOrderResponse> PlaceOverseasOrderAsync(OverseasOrderRequest request, UserInfo user);
+    Task<OverseasOrderResponse> PlaceScheduledOverseasOrderAsync(ScheduledOverseasOrderRequest request, UserInfo user);
     Task<List<OverseasOrderExecution>> GetOverseasOrderExecutionsAsync(string startDate, string endDate, UserInfo user);
 }

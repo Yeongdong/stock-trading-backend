@@ -169,6 +169,17 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            
+            entity.Property(e => e.IsScheduledOrder)
+                .HasColumnName("is_scheduled_order")
+                .HasDefaultValue(false);
+            
+            entity.Property(e => e.ScheduledExecutionTime)
+                .HasColumnName("scheduled_execution_time");
+            
+            entity.Property(e => e.ReservedOrderNumber)
+                .HasColumnName("reserved_order_number")
+                .HasMaxLength(50);
 
             entity.HasOne(e => e.User)
                 .WithMany()
