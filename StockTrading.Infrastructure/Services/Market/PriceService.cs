@@ -60,6 +60,23 @@ public class PriceService : IPriceService
         return response;
     }
 
+    public async Task<OverseasPeriodPriceResponse> GetOverseasPeriodPriceAsync(OverseasPeriodPriceRequest request,
+        UserInfo user)
+    {
+        ValidateUserForKisApi(user);
+        ValidateOverseasPeriodPriceRequest(request);
+
+        _logger.LogInformation("해외 주식 기간별시세 조회 시작: 사용자 {UserId}, 종목 {StockCode}, 기간 {Period}",
+            user.Id, request.StockCode, request.PeriodDivCode);
+
+        var response = await _kisPriceApiClient.GetOverseasPeriodPriceAsync(request, user);
+
+        _logger.LogInformation("해외 주식 기간별시세 조회 완료: 사용자 {UserId}, 종목 {StockCode}, 데이터 건수 {Count}",
+            user.Id, request.StockCode, response.PriceData.Count);
+
+        return response;
+    }
+
     #endregion
 
     #region Private Helper Methods
@@ -116,6 +133,40 @@ public class PriceService : IPriceService
             Domain.Enums.Market.Hongkong => "HKSE",
             _ => throw new ArgumentException($"지원하지 않는 해외 시장: {market}")
         };
+    }
+
+    private void ValidateOverseasPeriodPriceRequest(OverseasPeriodPriceRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.StockCode))
+            throw new ArgumentException("종목코드는 필수입니다.");
+
+        if (string.IsNullOrWhiteSpace(request.StartDate))
+            throw new ArgumentException("시작일자는 필수입니다.");
+
+        if (string.IsNullOrWhiteSpace(request.EndDate))
+            throw new ArgumentException("종료일자는 필수입니다.");
+
+        ValidateDateRange(request.StartDate, request.EndDate);
+        ValidateOverseasMaxDataRange(request.StartDate, request.EndDate, request.PeriodDivCode);
+    }
+
+    private void ValidateOverseasMaxDataRange(string startDate, string endDate, string periodDivCode)
+    {
+        var start = DateTime.ParseExact(startDate, "yyyyMMdd", null);
+        var end = DateTime.ParseExact(endDate, "yyyyMMdd", null);
+        var daysDifference = (end - start).Days;
+
+        var maxDays = periodDivCode switch
+        {
+            "D" => 365, // 일봉: 1년
+            "W" => 1400, // 주봉: 약 200주
+            "M" => 3650, // 월봉: 약 120개월
+            "Y" => 36500, // 년봉: 약 100년
+            _ => 365
+        };
+
+        if (daysDifference > maxDays)
+            throw new ArgumentException($"조회 기간이 너무 깁니다. {periodDivCode} 기간으로는 최대 {maxDays}일까지 조회 가능합니다.");
     }
 
     #endregion

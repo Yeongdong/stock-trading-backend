@@ -64,7 +64,6 @@ public class KisEndpoints
     public string DomesticOrderExecutionPath { get; init; } = "/uapi/domestic-stock/v1/trading/inquire-daily-ccld";
     public string DomesticBuyableInquiryPath { get; init; } = "/uapi/domestic-stock/v1/trading/inquire-psbl-order";
     public string DomesticCurrentPricePath { get; init; } = "/uapi/domestic-stock/v1/quotations/inquire-price";
-
     public string DomesticPeriodPricePath { get; init; } =
         "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice";
 
@@ -74,7 +73,7 @@ public class KisEndpoints
     public string OverseasOrderExecutionPath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-ccnl";
     public string OverseasBuyableInquiryPath { get; init; } = "/uapi/overseas-stock/v1/trading/inquire-psamount";
     public string OverseasCurrentPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/price";
-    public string OverseasPeriodPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/dailyprice";
+    public string OverseasPeriodPricePath { get; init; } = "/uapi/overseas-price/v1/quotations/inquire-daily-chartprice";
     public string OverseasScheduledOrderPath { get; set; } = "/uapi/overseas-stock/v1/trading/order-resv";
 }
 

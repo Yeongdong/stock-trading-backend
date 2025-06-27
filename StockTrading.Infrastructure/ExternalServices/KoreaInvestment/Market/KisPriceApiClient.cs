@@ -68,6 +68,21 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
 
         return _priceConverter.ConvertToOverseasCurrentPriceResponse(kisResponse.Output, request.StockCode);
     }
+    
+    public async Task<OverseasPeriodPriceResponse> GetOverseasPeriodPriceAsync(OverseasPeriodPriceRequest request, UserInfo user)
+    {
+        var queryParams = CreateOverseasPeriodPriceQueryParams(request);
+        var httpRequest = CreateOverseasPeriodPriceHttpRequest(queryParams, user);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        var kisResponse = await response.Content.ReadFromJsonAsync<KisOverseasPeriodPriceResponse>();
+
+        ValidateOverseasPeriodPriceResponse(kisResponse);
+
+        return _priceConverter.ConvertToOverseasPeriodPriceResponse(kisResponse, request.StockCode);
+    }
+
+    
 
     #endregion
 
@@ -173,5 +188,35 @@ public class KisPriceApiClient : KisApiClientBase, IKisPriceApiClient
             throw new Exception("해외 주식 현재가 조회 데이터가 없습니다.");
     }
 
+    private Dictionary<string, string> CreateOverseasPeriodPriceQueryParams(OverseasPeriodPriceRequest request)
+    {
+        return new Dictionary<string, string>
+        {
+            ["FID_COND_MRKT_DIV_CODE"] = request.MarketDivCode,
+            ["FID_INPUT_ISCD"] = request.StockCode,
+            ["FID_INPUT_DATE_1"] = request.StartDate,
+            ["FID_INPUT_DATE_2"] = request.EndDate,
+            ["FID_PERIOD_DIV_CODE"] = request.PeriodDivCode
+        };
+    }
+    
+    private HttpRequestMessage CreateOverseasPeriodPriceHttpRequest(Dictionary<string, string> queryParams, UserInfo user)
+    {
+        var url = BuildGetUrl(_settings.Endpoints.OverseasPeriodPricePath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.OverseasPeriodPriceTransactionId, user);
+        return httpRequest;
+    }
+
+    private void ValidateOverseasPeriodPriceResponse(KisOverseasPeriodPriceResponse? response)
+    {
+        if (response == null)
+            throw new InvalidOperationException("해외 주식 기간별시세 조회 응답이 null입니다.");
+
+        if (!response.IsSuccess)
+            throw new InvalidOperationException($"해외 주식 기간별시세 조회 실패: {response.Message}");
+    }
+    
     #endregion
 }

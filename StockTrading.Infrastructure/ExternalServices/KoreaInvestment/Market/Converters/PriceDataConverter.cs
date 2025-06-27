@@ -83,6 +83,34 @@ public class PriceDataConverter
         };
     }
 
+    public OverseasPeriodPriceResponse ConvertToOverseasPeriodPriceResponse(KisOverseasPeriodPriceResponse kisResponse,
+        string stockCode)
+    {
+        if (!kisResponse.IsSuccess || kisResponse.Output == null)
+        {
+            return new OverseasPeriodPriceResponse
+            {
+                StockCode = stockCode,
+                StockName = stockCode,
+                PriceData = []
+            };
+        }
+
+        var output = kisResponse.Output;
+
+        return new OverseasPeriodPriceResponse
+        {
+            StockCode = string.IsNullOrEmpty(output.StockCode) ? stockCode : output.StockCode,
+            StockName = string.IsNullOrEmpty(output.StockName) ? stockCode : output.StockName,
+            CurrentPrice = ParseHelper.ParseDecimalSafely(output.CurrentPrice),
+            PriceChange = ParseHelper.ParseDecimalSafely(output.PreviousDayChange),
+            ChangeRate = ParseHelper.ParseDecimalSafely(output.PreviousDayChangeRate),
+            ChangeSign = output.PreviousDayChangeSign,
+            TotalVolume = ParseHelper.ParseLongSafely(output.AccumulatedVolume),
+            PriceData = kisResponse.PriceItems?.Select(ConvertToOverseasPriceData).ToList() ?? []
+        };
+    }
+
     #endregion
 
     #region Helper Methods
@@ -107,6 +135,19 @@ public class PriceDataConverter
         return change < 0
             ? MessageTypes.ChangeType.Fall
             : MessageTypes.ChangeType.Flat;
+    }
+
+    private OverseasPriceData ConvertToOverseasPriceData(KisOverseasPriceItem item)
+    {
+        return new OverseasPriceData
+        {
+            Date = item.BusinessDate,
+            OpenPrice = ParseHelper.ParseDecimalSafely(item.OpenPrice),
+            HighPrice = ParseHelper.ParseDecimalSafely(item.HighPrice),
+            LowPrice = ParseHelper.ParseDecimalSafely(item.LowPrice),
+            ClosePrice = ParseHelper.ParseDecimalSafely(item.ClosePrice),
+            Volume = ParseHelper.ParseLongSafely(item.Volume)
+        };
     }
 
     #endregion

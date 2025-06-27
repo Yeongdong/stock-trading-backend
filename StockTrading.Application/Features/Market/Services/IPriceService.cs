@@ -12,4 +12,5 @@ public interface IPriceService
     // 해외 주식 시세
     Task<OverseasCurrentPriceResponse> GetOverseasCurrentPriceAsync(string stockCode,
         StockTrading.Domain.Enums.Market market, UserInfo userInfo);
+    Task<OverseasPeriodPriceResponse> GetOverseasPeriodPriceAsync(OverseasPeriodPriceRequest request, UserInfo user);
 }

@@ -12,4 +12,5 @@ public interface IKisPriceApiClient
 
     // 해외 주식
     Task<OverseasCurrentPriceResponse> GetOverseasCurrentPriceAsync(OverseasPriceRequest request, UserInfo user);
+    Task<OverseasPeriodPriceResponse> GetOverseasPeriodPriceAsync(OverseasPeriodPriceRequest request, UserInfo user);
 }

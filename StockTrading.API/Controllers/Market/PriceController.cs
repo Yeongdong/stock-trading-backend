@@ -75,5 +75,21 @@ public class PriceController : BaseController
         return Ok(response);
     }
 
+    [HttpGet("overseas/period-price")]
+    public async Task<IActionResult> GetOverseasPeriodPrice([FromQuery] OverseasPeriodPriceRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await GetCurrentUserAsync();
+
+        _logger.LogInformation("해외 주식 기간별시세 조회 요청: 사용자 {UserId}, 종목 {StockCode}, 기간 {Period}",
+            user.Id, request.StockCode, request.PeriodDivCode);
+
+        var response = await _priceService.GetOverseasPeriodPriceAsync(request, user);
+
+        return Ok(response);
+    }
+
     #endregion
 }
