@@ -77,20 +77,21 @@ public class JwtServiceTest
 
         Assert.NotNull(refreshToken);
         Assert.NotEmpty(refreshToken);
-            
+        
         // Base64 형식 확인 (디코딩 가능한지)
         var base64Regex = new System.Text.RegularExpressions.Regex(
             @"^[a-zA-Z0-9\+/]*={0,3}$", System.Text.RegularExpressions.RegexOptions.None);
         Assert.Matches(base64Regex, refreshToken);
-            
+        
         // 길이 확인 (32바이트 -> Base64로 인코딩 후 약 44자)
         Assert.True(refreshToken.Length >= 42 && refreshToken.Length <= 46, 
             "리프레시 토큰은 Base64로 인코딩된 32바이트여야 합니다.");
-            
-        // 만료 시간 확인
-        var expectedExpiration = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes);
-        Assert.True(Math.Abs((expectedExpiration - expiryDate).TotalMinutes) < 5,
-            "토큰 만료 시간이 예상 범위 내에 있어야 합니다.");
+        
+        // 만료 시간 확인 - 리프레시 토큰은 RefreshTokenExpirationDays 사용
+        var expectedExpiration = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
+        var timeDifference = Math.Abs((expectedExpiration - expiryDate).TotalHours);
+        Assert.True(timeDifference < 1, 
+            $"토큰 만료 시간이 예상 범위 내에 있어야 합니다. 예상: {expectedExpiration:yyyy-MM-dd HH:mm:ss}, 실제: {expiryDate:yyyy-MM-dd HH:mm:ss}, 차이: {timeDifference}시간");
     }
     
     [Fact]
