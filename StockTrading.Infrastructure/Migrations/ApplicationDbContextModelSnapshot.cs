@@ -47,15 +47,6 @@ namespace StockTrading.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_revoked");
 
-                    b.Property<string>("ReplacedByToken")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("replaced_by_token");
-
-                    b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("revoked_at");
-
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -67,9 +58,6 @@ namespace StockTrading.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ReplacedByToken")
-                        .HasDatabaseName("IX_refresh_tokens_replaced_by_token");
 
                     b.HasIndex("Token")
                         .IsUnique()
