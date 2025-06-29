@@ -41,8 +41,8 @@ ApplicationDbContextModelSnapshot.cs
 *.sqlite
 *.sqlite3
 # Migrations
-[0-9]*_*.cs
-**/Migrations/*.cs
+# [0-9]*_*.cs
+# **/Migrations/*.cs
 !**/Migrations/readme.md
 
 # 환경설정 파일
