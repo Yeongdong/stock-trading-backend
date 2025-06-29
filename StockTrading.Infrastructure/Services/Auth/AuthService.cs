@@ -25,7 +25,9 @@ public class AuthService : IAuthService
     private readonly ICookieService _cookieService;
     private readonly ILogger<AuthService> _logger;
 
-    public AuthService(IJwtService jwtService, IUserService userService, IRefreshTokenRepository refreshTokenRepository, IGoogleAuthValidator googleAuthValidator, IConfiguration configuration, ICookieService cookieService, ILogger<AuthService> logger)
+    public AuthService(IJwtService jwtService, IUserService userService, IRefreshTokenRepository refreshTokenRepository,
+        IGoogleAuthValidator googleAuthValidator, IConfiguration configuration, ICookieService cookieService,
+        ILogger<AuthService> logger)
     {
         _jwtService = jwtService;
         _userService = userService;
@@ -38,8 +40,8 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> GoogleLoginAsync(string credential)
     {
-
-        var payload = await _googleAuthValidator.ValidateAsync(credential, _configuration["Authentication:Google:ClientId"]);
+        var payload =
+            await _googleAuthValidator.ValidateAsync(credential, _configuration["Authentication:Google:ClientId"]);
         var user = await _userService.CreateOrGetGoogleUserAsync(payload);
 
         await _refreshTokenRepository.RevokeAllByUserIdAsync(user.Id);
@@ -69,19 +71,22 @@ public class AuthService : IAuthService
 
     public async Task<RefreshTokenResponse> RefreshTokenAsync()
     {
-        // 쿠키에서 Refresh Token 추출
         var refreshToken = _cookieService.GetRefreshToken();
         if (string.IsNullOrWhiteSpace(refreshToken))
             throw new AuthenticationException("Refresh Token이 없습니다.");
 
         var refreshTokenEntity = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
-        
-        if (refreshTokenEntity is not { IsActive: true })
+
+        // 조건 완화 - 폐기되었어도 만료되지 않았으면 허용
+        if (refreshTokenEntity == null || DateTime.UtcNow >= refreshTokenEntity.ExpiresAt)
             throw new AuthenticationException("유효하지 않은 Refresh Token입니다.");
 
-        // 기존 토큰 폐기 (RTR)
-        refreshTokenEntity.IsRevoked = true;
-        await _refreshTokenRepository.UpdateAsync(refreshTokenEntity);
+        // 기존 토큰 폐기 (이미 폐기되었을 수도 있음)
+        if (!refreshTokenEntity.IsRevoked)
+        {
+            refreshTokenEntity.IsRevoked = true;
+            await _refreshTokenRepository.UpdateAsync(refreshTokenEntity);
+        }
 
         // 새 토큰 생성
         var user = refreshTokenEntity.User;
@@ -99,12 +104,13 @@ public class AuthService : IAuthService
         };
         await _refreshTokenRepository.AddAsync(newRefreshTokenEntity);
 
-        // 새 Refresh Token을 쿠키로 설정 (RTR)
+        // 새 Refresh Token을 쿠키로 설정
         _cookieService.SetRefreshTokenCookie(newRefreshToken);
 
         return new RefreshTokenResponse
         {
             AccessToken = newAccessToken,
+            ExpiresIn = 3600,
             Message = "토큰 갱신 성공"
         };
     }
@@ -112,10 +118,10 @@ public class AuthService : IAuthService
     public async Task LogoutAsync(int userId)
     {
         await _refreshTokenRepository.RevokeAllByUserIdAsync(userId);
-        
+
         _cookieService.DeleteAuthCookie();
         _cookieService.DeleteRefreshTokenCookie();
-        
+
         _logger.LogInformation("로그아웃: 사용자 {UserId}", userId);
     }
 

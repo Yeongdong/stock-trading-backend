@@ -101,12 +101,12 @@ public static class ServiceCollectionExtensions
 
         // Validators
         services.AddScoped<IGoogleAuthValidator, GoogleAuthValidator>();
-        
+
         // Converters
         services.AddSingleton<StockDataConverter>();
         services.AddSingleton<PriceDataConverter>();
         services.AddSingleton<OrderDataConverter>();
-        services.AddSingleton<OverseasOrderDataConverter>(); 
+        services.AddSingleton<OverseasOrderDataConverter>();
 
         return services;
     }
@@ -140,6 +140,9 @@ public static class ServiceCollectionExtensions
     }
 
 
+    // StockTrading.API/Extensions/ServiceCollectionExtensions.cs
+// AddCorsServices 메서드 강화
+
     private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
     {
         var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
@@ -155,22 +158,82 @@ public static class ServiceCollectionExtensions
                 builder.WithOrigins(frontendUrl)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials();
+                    .AllowCredentials(); // ✅ 쿠키 허용
             });
 
-            // Development 정책
+            // Development 정책 - 🔄 변경: 쿠키 전송 강화
             options.AddPolicy("Development", builder =>
             {
-                builder.WithOrigins("http://localhost:3000", "https://localhost:3000")
+                builder.WithOrigins(
+                        "http://localhost:3000", 
+                        "https://localhost:3000",
+                        "http://localhost:3001",
+                        "https://localhost:3001"
+                    )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials()
-                    .SetIsOriginAllowed(_ => true);
+                    .AllowCredentials() // ✅ 쿠키 허용
+                    .SetIsOriginAllowed(origin => 
+                    {
+                        if (isDevelopment)
+                        {
+                            var isLocalhost = origin.StartsWith("http://localhost:") || 
+                                              origin.StartsWith("https://localhost:");
+                            Console.WriteLine($"🌐 CORS 확인: {origin} → {(isLocalhost ? "허용" : "차단")}");
+                            return isLocalhost;
+                        }
+                        return false;
+                    })
+                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // ➕ 추가: Preflight 캐시
             });
         });
 
         return services;
     }
+
+    // private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
+    // {
+    //     var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+    //     var frontendUrl = isDevelopment
+    //         ? "http://localhost:3000"
+    //         : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
+    //
+    //     services.AddCors(options =>
+    //     {
+    //         // Production용 정책
+    //         options.AddPolicy("AllowReactApp", builder =>
+    //         {
+    //             builder.WithOrigins(frontendUrl)
+    //                 .AllowAnyMethod()
+    //                 .AllowAnyHeader()
+    //                 .AllowCredentials();
+    //         });
+    //
+    //         // Development 정책
+    //         options.AddPolicy("Development", builder =>
+    //         {
+    //             builder.WithOrigins(
+    //                     "http://localhost:3000",
+    //                     "https://localhost:3000"
+    //                 )
+    //                 .AllowAnyMethod()
+    //                 .AllowAnyHeader()
+    //                 .AllowCredentials()
+    //                 .SetIsOriginAllowed(origin =>
+    //                 {
+    //                     if (isDevelopment)
+    //                     {
+    //                         return origin.StartsWith("http://localhost:") ||
+    //                                origin.StartsWith("https://localhost:");
+    //                     }
+    //
+    //                     return false;
+    //                 });
+    //         });
+    //     });
+    //
+    //     return services;
+    // }
 
     private static IServiceCollection AddCacheServices(this IServiceCollection services, IConfiguration configuration)
     {

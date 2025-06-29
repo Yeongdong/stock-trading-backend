@@ -36,6 +36,7 @@ public class CookieService : ICookieService
         context.Response.Cookies.Append(AuthCookieName, token, cookieOptions);
     }
 
+
     public void SetRefreshTokenCookie(string refreshToken)
     {
         var context = _httpContextAccessor.HttpContext;
@@ -45,7 +46,7 @@ public class CookieService : ICookieService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
             Path = "/"
         };
@@ -74,7 +75,7 @@ public class CookieService : ICookieService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.Lax,
             Path = "/"
         });
     }
@@ -84,6 +85,7 @@ public class CookieService : ICookieService
         var context = _httpContextAccessor.HttpContext;
         return context?.Request.Cookies.TryGetValue(AuthCookieName, out var token) == true ? token : null;
     }
+
 
     public string? GetRefreshToken()
     {

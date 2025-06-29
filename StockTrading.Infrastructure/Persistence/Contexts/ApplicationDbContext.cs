@@ -169,14 +169,14 @@ public class ApplicationDbContext : DbContext
                 .HasColumnName("created_at")
                 .HasColumnType("timestamp with time zone")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
-            
+
             entity.Property(e => e.IsScheduledOrder)
                 .HasColumnName("is_scheduled_order")
                 .HasDefaultValue(false);
-            
+
             entity.Property(e => e.ScheduledExecutionTime)
                 .HasColumnName("scheduled_execution_time");
-            
+
             entity.Property(e => e.ReservedOrderNumber)
                 .HasColumnName("reserved_order_number")
                 .HasMaxLength(50);
@@ -273,40 +273,46 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.ToTable("refresh_tokens");
-            entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.Id)
+            entity.HasKey(rt => rt.Id);
+
+            entity.Property(rt => rt.Id)
                 .HasColumnName("id")
-                .UseIdentityAlwaysColumn();
+                .ValueGeneratedOnAdd();
 
-            entity.Property(e => e.Token)
+            entity.Property(rt => rt.Token)
                 .HasColumnName("token")
-                .IsRequired()
-                .HasMaxLength(256);
+                .HasMaxLength(500)
+                .IsRequired();
 
-            entity.Property(e => e.ExpiresAt)
+            entity.Property(rt => rt.ExpiresAt)
                 .HasColumnName("expires_at")
-                .HasColumnType("timestamp with time zone");
+                .IsRequired();
 
-            entity.Property(e => e.IsRevoked)
+            entity.Property(rt => rt.IsRevoked)
                 .HasColumnName("is_revoked")
                 .HasDefaultValue(false);
 
-            entity.Property(e => e.CreatedAt)
+            entity.Property(rt => rt.CreatedAt)
                 .HasColumnName("created_at")
-                .HasColumnType("timestamp with time zone")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasDefaultValueSql("NOW()");
 
-            entity.Property(e => e.UserId)
-                .HasColumnName("user_id");
+            entity.Property(rt => rt.UserId)
+                .HasColumnName("user_id")
+                .IsRequired();
 
-            entity.HasOne(e => e.User)
+            // 인덱스 설정
+            entity.HasIndex(rt => rt.Token)
+                .HasDatabaseName("IX_refresh_tokens_token")
+                .IsUnique();
+
+            entity.HasIndex(rt => rt.UserId)
+                .HasDatabaseName("IX_refresh_tokens_user_id");
+
+            entity.HasOne(rt => rt.User)
                 .WithMany()
-                .HasForeignKey(e => e.UserId)
+                .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(e => e.Token).IsUnique();
-            entity.HasIndex(e => e.UserId);
         });
 
         modelBuilder.Entity<ForeignStock>(entity =>

@@ -29,13 +29,13 @@ namespace StockTrading.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
@@ -47,10 +47,19 @@ namespace StockTrading.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_revoked");
 
+                    b.Property<string>("ReplacedByToken")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("replaced_by_token");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("token");
 
                     b.Property<int>("UserId")
@@ -59,10 +68,15 @@ namespace StockTrading.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Token")
-                        .IsUnique();
+                    b.HasIndex("ReplacedByToken")
+                        .HasDatabaseName("IX_refresh_tokens_replaced_by_token");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("IX_refresh_tokens_token");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_refresh_tokens_user_id");
 
                     b.ToTable("refresh_tokens", (string)null);
                 });
