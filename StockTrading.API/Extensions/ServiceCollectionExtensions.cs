@@ -139,10 +139,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-
-    // StockTrading.API/Extensions/ServiceCollectionExtensions.cs
-// AddCorsServices 메서드 강화
-
     private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
     {
         var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
@@ -158,82 +154,34 @@ public static class ServiceCollectionExtensions
                 builder.WithOrigins(frontendUrl)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials(); // ✅ 쿠키 허용
+                    .AllowCredentials();
             });
 
-            // Development 정책 - 🔄 변경: 쿠키 전송 강화
             options.AddPolicy("Development", builder =>
             {
                 builder.WithOrigins(
-                        "http://localhost:3000", 
-                        "https://localhost:3000",
-                        "http://localhost:3001",
-                        "https://localhost:3001"
+                        "http://localhost:3000",
+                        "https://localhost:3000"
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials() // ✅ 쿠키 허용
-                    .SetIsOriginAllowed(origin => 
+                    .AllowCredentials()
+                    .SetIsOriginAllowed(origin =>
                     {
                         if (isDevelopment)
                         {
-                            var isLocalhost = origin.StartsWith("http://localhost:") || 
+                            var isLocalhost = origin.StartsWith("http://localhost:") ||
                                               origin.StartsWith("https://localhost:");
-                            Console.WriteLine($"🌐 CORS 확인: {origin} → {(isLocalhost ? "허용" : "차단")}");
                             return isLocalhost;
                         }
                         return false;
                     })
-                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10)); // ➕ 추가: Preflight 캐시
+                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
             });
         });
 
         return services;
     }
-
-    // private static IServiceCollection AddCorsServices(this IServiceCollection services, IConfiguration configuration)
-    // {
-    //     var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-    //     var frontendUrl = isDevelopment
-    //         ? "http://localhost:3000"
-    //         : "https://happy-glacier-0243a741e.6.azurestaticapps.net";
-    //
-    //     services.AddCors(options =>
-    //     {
-    //         // Production용 정책
-    //         options.AddPolicy("AllowReactApp", builder =>
-    //         {
-    //             builder.WithOrigins(frontendUrl)
-    //                 .AllowAnyMethod()
-    //                 .AllowAnyHeader()
-    //                 .AllowCredentials();
-    //         });
-    //
-    //         // Development 정책
-    //         options.AddPolicy("Development", builder =>
-    //         {
-    //             builder.WithOrigins(
-    //                     "http://localhost:3000",
-    //                     "https://localhost:3000"
-    //                 )
-    //                 .AllowAnyMethod()
-    //                 .AllowAnyHeader()
-    //                 .AllowCredentials()
-    //                 .SetIsOriginAllowed(origin =>
-    //                 {
-    //                     if (isDevelopment)
-    //                     {
-    //                         return origin.StartsWith("http://localhost:") ||
-    //                                origin.StartsWith("https://localhost:");
-    //                     }
-    //
-    //                     return false;
-    //                 });
-    //         });
-    //     });
-    //
-    //     return services;
-    // }
 
     private static IServiceCollection AddCacheServices(this IServiceCollection services, IConfiguration configuration)
     {
