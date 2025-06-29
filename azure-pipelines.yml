@@ -113,6 +113,8 @@ stages:
     displayName: 'Deploy to Development'
     dependsOn: Build
     condition: succeeded()
+    variables:
+      - group: stockTradingDb
     jobs:
       - deployment: DeployWebApp
         displayName: 'Deploy Web App'
@@ -129,24 +131,23 @@ stages:
                   inputs:
                     packageType: 'sdk'
                     version: '8.0.x'
-                    
-                    # # EF Core 마이그레이션 실행
-                    # - script: |
-                    #     # EF Core Tools 설치
-                    #     dotnet tool install --global dotnet-ef
-                    
-                    #     # 소스 디렉토리에서 마이그레이션 실행
-                    #     export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=1635411qQ!;Ssl Mode=Require;"
-                    
-                    #     # 프로젝트 restore
-                    #     dotnet restore
-                    
-                    #     # 새로운 마이그레이션 생성 (모델 변경사항이 있는 경우)
-                    #     #dotnet ef migrations add AzureDeployment --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --context ApplicationDbContext || echo "Migration already exists or no changes"
-                  
-                  #     # 데이터베이스 업데이트
-                  #     #dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --context ApplicationDbContext
-                  #   displayName: 'Run Database Migration'
+
+                # EF Core 마이그레이션 실행
+                - script: |
+                    # EF Core Tools 설치
+                    dotnet tool install --global dotnet-ef
+
+                    # 소스 디렉토리에서 마이그레이션 실행
+                    export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;"
+
+                    # 프로젝트 restore
+                    dotnet restore
+
+                    # 데이터베이스 업데이트 (pending 마이그레이션 적용)
+                    dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --context ApplicationDbContext
+                  displayName: 'Run Database Migration'
+                  env:
+                    POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
 
                 - task: AzureWebApp@1
                   displayName: 'Deploy to Azure Web App'
