@@ -11,7 +11,7 @@ namespace StockTrading.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "WebSocketToken",
+                name: "websocket_token",
                 table: "users",
                 type: "text",
                 nullable: true);
@@ -21,7 +21,7 @@ namespace StockTrading.Infrastructure.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "WebSocketToken",
+                name: "websocket_token",
                 table: "users");
         }
     }
