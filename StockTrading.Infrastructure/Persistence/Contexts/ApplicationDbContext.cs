@@ -89,6 +89,10 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(1000)
                 .IsRequired(false);
 
+            entity.Property(e => e.PreviousDayTotalAmount)
+                .HasColumnName("previous_day_total_amount")
+                .HasColumnType("decimal(18,2)");
+
             entity.HasIndex(e => e.GoogleId)
                 .HasDatabaseName("ix_users_google_id");
 

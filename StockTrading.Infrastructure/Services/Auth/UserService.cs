@@ -1,7 +1,10 @@
 using Google.Apis.Auth;
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.Common.Interfaces;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Features.Auth.Services;
+using StockTrading.Application.Features.Trading.DTOs.Portfolio;
+using StockTrading.Application.Features.Trading.Services;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Repositories;
 using StockTrading.Application.Features.Users.Services;
@@ -66,6 +69,23 @@ public class UserService : IUserService
         _logger.LogInformation("회원 탈퇴 완료: 사용자 ID {UserId}, 이메일 {Email}", userId, user.Email);
     }
 
+    public async Task<AccountBalance> GetAccountBalanceWithDailyProfitAsync(UserInfo user,
+        ITradingService tradingService)
+    {
+        // 기본 잔고 조회
+        var balance = await tradingService.GetStockBalanceAsync(user);
+
+        // 당일손익 계산
+        var dailyProfitLoss = await CalculateDailyProfitLossAsync(user.Id, balance.Summary);
+
+        return new AccountBalance
+        {
+            Positions = balance.Positions,
+            Summary = balance.Summary,
+            DailyProfitLossAmount = dailyProfitLoss.Amount,
+            DailyProfitLossRate = dailyProfitLoss.Rate
+        };
+    }
 
     private async Task<UserInfo> CreateNewGoogleUserAsync(GoogleJsonWebSignature.Payload payload)
     {
@@ -110,5 +130,36 @@ public class UserService : IUserService
                     TokenType = user.KisToken.TokenType,
                 }
         };
+    }
+
+    private async Task<(decimal Amount, decimal Rate)> CalculateDailyProfitLossAsync(
+        int userId, KisAccountSummaryResponse summary)
+    {
+        var currentTotalAmount = decimal.Parse(summary.TotalEvaluation);
+
+        // 사용자의 전일 총평가금액 조회
+        var user = await _userRepository.GetByIdAsync(userId);
+        var previousDayAmount = user?.PreviousDayTotalAmount;
+
+        if (previousDayAmount == null || previousDayAmount == 0)
+        {
+            // 전일 데이터가 없으면 당일손익은 0
+            return (0, 0);
+        }
+
+        // 당일손익 = 현재 총평가금액 - 전일 총평가금액
+        var dailyProfitAmount = currentTotalAmount - previousDayAmount.Value;
+
+        // 당일손익률 = (당일손익 / 전일 총평가금액) * 100
+        var dailyProfitRate = previousDayAmount.Value != 0
+            ? (dailyProfitAmount / previousDayAmount.Value) * 100
+            : 0;
+
+        return (dailyProfitAmount, dailyProfitRate);
+    }
+
+    public async Task UpdatePreviousDayTotalAmountAsync(UserInfo user, decimal currentTotalAmount)
+    {
+        await _userRepository.UpdatePreviousDayTotalAmountAsync(user.Id, currentTotalAmount);
     }
 }

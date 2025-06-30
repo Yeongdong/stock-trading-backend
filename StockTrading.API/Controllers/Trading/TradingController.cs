@@ -3,6 +3,7 @@ using StockTrading.API.Services;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
 using StockTrading.Application.Features.Trading.DTOs.Orders;
 using StockTrading.Application.Features.Trading.Services;
+using StockTrading.Application.Features.Users.Services;
 
 namespace StockTrading.API.Controllers.Trading;
 
@@ -10,12 +11,14 @@ namespace StockTrading.API.Controllers.Trading;
 public class TradingController : BaseController
 {
     private readonly ITradingService _tradingService;
+    private readonly IUserService _userService;
     private readonly ILogger<TradingController> _logger;
 
-    public TradingController(ITradingService tradingService, IUserContextService userContextService,
+    public TradingController(ITradingService tradingService, IUserService userService, IUserContextService userContextService,
         ILogger<TradingController> logger) : base(userContextService)
     {
         _tradingService = tradingService;
+        _userService = userService;
         _logger = logger;
     }
 
@@ -55,7 +58,8 @@ public class TradingController : BaseController
     public async Task<IActionResult> GetBalance()
     {
         var user = await GetCurrentUserAsync();
-        var balance = await _tradingService.GetStockBalanceAsync(user);
+        var balance = await _userService.GetAccountBalanceWithDailyProfitAsync(user, _tradingService);
+    
         return Ok(balance);
     }
 

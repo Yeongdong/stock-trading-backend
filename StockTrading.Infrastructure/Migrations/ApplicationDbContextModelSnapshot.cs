@@ -385,6 +385,10 @@ namespace StockTrading.Infrastructure.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("password_hash");
 
+                    b.Property<decimal?>("PreviousDayTotalAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("previous_day_total_amount");
+
                     b.Property<int>("Role")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")

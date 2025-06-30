@@ -54,4 +54,9 @@ public abstract class BaseRepository<TEntity, TKey> : IBaseRepository<TEntity, T
     {
         return await DbSet.FindAsync(id) != null;
     }
+    
+    public virtual async Task<List<TEntity>> GetAllAsync()
+    {
+        return await DbSet.ToListAsync();
+    }
 }

@@ -16,4 +16,5 @@ public class User
     public string? AccountNumber { get; set; }
     public KisToken? KisToken { get; init; }
     public string? WebSocketToken { get; set; }
+    public decimal? PreviousDayTotalAmount { get; set; }
 }
