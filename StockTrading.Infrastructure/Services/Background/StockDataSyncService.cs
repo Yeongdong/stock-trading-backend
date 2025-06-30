@@ -29,80 +29,56 @@ public class StockDataSyncService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_settings.Enabled) return;
+        if (!_settings.Enabled)
+        {
+            _logger.LogInformation("주식 데이터 동기화가 비활성화됨");
+            return;
+        }
+
+        _logger.LogInformation("주식 데이터 동기화 서비스 시작 - 매일 {Hour:D2}:{Minute:D2}에 실행", _settings.SyncHour,
+            _settings.SyncMinute);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             var nextRunTime = GetNextRuntime();
             var delay = nextRunTime - DateTime.Now;
 
-            if (delay <= TimeSpan.Zero) continue;
             _logger.LogInformation("다음 동기화 예정: {NextRunTime:yyyy-MM-dd HH:mm:ss}", nextRunTime);
-            try
-            {
+
+            if (delay > TimeSpan.Zero)
                 await Task.Delay(delay, stoppingToken);
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
+
+            if (stoppingToken.IsCancellationRequested) break;
 
             await ExecuteSyncAsync();
+
+            // 동기화 후 1분 대기 (중복 실행 방지)
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 
     private async Task ExecuteSyncAsync()
     {
-        using var scope = _serviceProvider.CreateScope();
+        _logger.LogInformation("주식 데이터 동기화 실행 시작");
 
+        using var scope = _serviceProvider.CreateScope();
         var stockService = scope.ServiceProvider.GetRequiredService<IStockService>();
-        var stockCacheService = scope.ServiceProvider.GetRequiredService<IStockCacheService>();
 
         await stockService.SyncDomesticStockDataAsync();
-        await WarmupCacheAsync(stockCacheService, stockService);
 
-        if (_settings.ResetMetricsOnSync)
-        {
-            var metrics = await stockCacheService.GetCacheMetricsAsync();
-        }
-
-        _logger.LogInformation("종목 데이터 동기화 완료: {DateTime:yyyy-MM-dd HH:mm:ss}", DateTime.Now);
-    }
-
-    private async Task WarmupCacheAsync(IStockCacheService stockCacheService, IStockService stockService)
-    {
-        if (!_settings.EnableCacheWarmup) return;
-
-        var popularTerms = await stockCacheService.GetPopularSearchTermsAsync(10);
-
-        foreach (var term in popularTerms)
-        {
-            await stockService.SearchStocksAsync(term.Term, 1, 20);
-            
-            // 과부하 방지를 위한 딜레이
-            await Task.Delay(100);
-        }
-        
-        var majorStocks = new[] { "005930", "000660", "035420", "005490", "051910" };
-
-        foreach (var stockCode in majorStocks)
-        {
-            await stockService.GetStockByCodeAsync(stockCode);
-            
-            await Task.Delay(100);
-        }
+        _logger.LogInformation("주식 데이터 동기화 실행 완료");
     }
 
     private DateTime GetNextRuntime()
     {
         var now = DateTime.Now;
+        var today = now.Date;
         var targetTime = new TimeSpan(_settings.SyncHour, _settings.SyncMinute, 0);
+        var todayTarget = today.Add(targetTime);
 
-        var nextRun = now.Date.Add(targetTime);
-
-        if (nextRun <= now)
-            nextRun = nextRun.AddDays(1);
-        
-        return nextRun;
+        // 오늘 실행 시간이 지났다면 내일로
+        return todayTarget <= now
+            ? today.AddDays(1).Add(targetTime)
+            : todayTarget; // 아직 오늘 실행 시간이 남았다면 오늘
     }
 }
