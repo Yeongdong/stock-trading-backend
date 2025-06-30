@@ -45,11 +45,23 @@ public class StockRepository : BaseRepository<Stock, string>, IStockRepository
 
     public async Task<bool> BulkUpsertAsync(List<Stock> stocks)
     {
+        if (stocks.Count == 0) return false;
+
+        Logger.LogInformation("대량 업데이트 시작: {Count}개 종목 처리", stocks.Count);
+
+        // 모든 종목 코드를 한 번의 쿼리로 조회
+        var stockCodes = stocks.Select(s => s.Code).ToList();
+        var existingStocks = await DbSet
+            .Where(s => stockCodes.Contains(s.Code))
+            .ToDictionaryAsync(s => s.Code, s => s);
+
+        var updateCount = 0;
+        var insertCount = 0;
+
         foreach (var stock in stocks)
         {
-            var existing = await DbSet.FindAsync(stock.Code);
-            
-            if (existing != null)
+            if (existingStocks.TryGetValue(stock.Code, out var existing))
+            {
                 existing.UpdateInfo(
                     name: stock.Name,
                     fullName: stock.FullName,
@@ -62,13 +74,18 @@ public class StockRepository : BaseRepository<Stock, string>, IStockRepository
                     listedShares: stock.ListedShares,
                     listedDate: stock.ListedDate
                 );
+                updateCount++;
+            }
             else
+            {
                 await DbSet.AddAsync(stock);
+                insertCount++;
+            }
         }
-    
+
         var affectedRows = await Context.SaveChangesAsync();
-        Logger.LogInformation("대량 업데이트 완료: {AffectedRows}개 행 처리", affectedRows);
-    
+        Logger.LogInformation("대량 업데이트 완료: 업데이트 {UpdateCount}개, 삽입 {InsertCount}개", updateCount, insertCount);
+
         return true;
     }
 

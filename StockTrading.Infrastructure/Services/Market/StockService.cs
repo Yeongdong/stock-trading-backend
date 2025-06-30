@@ -160,7 +160,7 @@ public class StockService : IStockService
         var stockListResponse = await _krxApiClient.GetStockListAsync();
         var validStocks = stockListResponse.Stocks
             .Where(item => !string.IsNullOrWhiteSpace(item.Code) && item.Code.Length == 6)
-            .Select(item => new Domain.Entities.Stock(
+            .Select(item => new Stock(
                 code: item.Code,
                 name: item.Name,
                 fullName: item.FullName,
@@ -299,19 +299,6 @@ public class StockService : IStockService
                 Country = stock.Country
             }).ToList(),
             Count = stocks.Count
-        };
-    }
-
-    private static string ExtractMicFromExchange(string exchange)
-    {
-        return exchange switch
-        {
-            "NYSE" => "XNYS",
-            "NASDAQ" => "XNAS",
-            "LSE" => "XLON",
-            "TSE" => "XTSE",
-            "HKEX" => "XHKG",
-            _ => string.Empty
         };
     }
 
