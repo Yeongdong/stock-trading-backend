@@ -20,7 +20,6 @@ public static class SettingsExtensions
         services.AddOptionsWithValidation<KoreaInvestmentSettings>(configuration);
         services.AddOptionsWithValidation<KrxApiSettings>(configuration);
         services.AddOptionsWithValidation<RealTimeDataSettings>(configuration);
-        services.AddOptionsWithValidation<FinnhubSettings>(configuration);
 
         // Infrastructure Settings
         services.AddOptionsWithValidation<JwtSettings>(configuration);

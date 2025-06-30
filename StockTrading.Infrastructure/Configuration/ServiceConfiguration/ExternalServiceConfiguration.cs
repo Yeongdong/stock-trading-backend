@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StockTrading.Application.ExternalServices;
 using StockTrading.Domain.Settings.ExternalServices;
-using StockTrading.Infrastructure.ExternalServices.Finnhub;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Auth;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Trading;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Market;
@@ -16,11 +15,9 @@ public static class ExternalServiceConfiguration
     {
         var kisSettings = configuration.GetSection(KoreaInvestmentSettings.SectionName).Get<KoreaInvestmentSettings>();
         var krxSettings = configuration.GetSection(KrxApiSettings.SectionName).Get<KrxApiSettings>();
-        var finnhubSettings = configuration.GetSection(FinnhubSettings.SectionName).Get<FinnhubSettings>(); // 추가
 
         AddKoreaInvestmentClients(services, kisSettings);
         AddKrxClient(services, krxSettings);
-        AddFinnhubClient(services, finnhubSettings);
 
         return services;
     }
@@ -96,26 +93,5 @@ public static class ExternalServiceConfiguration
             healthChecks.AddUrlGroup(new Uri(krxSettings.BaseUrl), "krx-api");
 
         return services;
-    }
-
-    private static void AddFinnhubClient(IServiceCollection services, FinnhubSettings? settings)
-    {
-        if (settings?.BaseUrl == null) return;
-
-        // Finnhub HTTP 클라이언트 등록
-        services.AddHttpClient<FinnhubApiClient>(client =>
-            ConfigureFinnhubHttpClient(client, settings));
-
-        // 인터페이스 등록
-        services.AddScoped<IFinnhubApiClient>(provider =>
-            provider.GetRequiredService<FinnhubApiClient>());
-    }
-
-    private static void ConfigureFinnhubHttpClient(HttpClient client, FinnhubSettings settings)
-    {
-        client.BaseAddress = new Uri(settings.BaseUrl);
-        client.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds);
-
-        client.DefaultRequestHeaders.Add("User-Agent", "StockTrading/1.0");
     }
 }

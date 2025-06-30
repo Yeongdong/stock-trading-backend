@@ -62,9 +62,12 @@ public class StockController : BaseController
     #region 해외 주식
 
     [HttpGet("overseas/search")]
-    public async Task<IActionResult> SearchForeignStocks([FromQuery] string query,
-        [FromQuery] string? exchange = null, [FromQuery] int limit = 50)
+    public async Task<IActionResult> SearchForeignStocks([FromQuery] string market, [FromQuery] string query,
+        [FromQuery] int limit = 50)
     {
+        if (string.IsNullOrWhiteSpace(market))
+            return BadRequest("거래소 시장을 입력해주세요. (예: nasdaq, nyse, tokyo 등)");
+
         if (string.IsNullOrWhiteSpace(query))
             return BadRequest("검색어를 입력해주세요.");
 
@@ -73,12 +76,14 @@ public class StockController : BaseController
 
         var request = new ForeignStockSearchRequest
         {
+            Market = market,
             Query = query,
-            Exchange = exchange,
             Limit = limit
         };
 
-        var result = await _stockService.SearchForeignStocksAsync(request);
+        var userInfo = await GetCurrentUserAsync();
+        var result = await _stockService.SearchForeignStocksAsync(request, userInfo);
+
         return Ok(result);
     }
 

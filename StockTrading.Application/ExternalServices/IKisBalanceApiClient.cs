@@ -1,3 +1,5 @@
+using StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
 using StockTrading.Application.Features.Trading.DTOs.Portfolio;
 using StockTrading.Application.Features.Users.DTOs;
@@ -12,4 +14,5 @@ public interface IKisBalanceApiClient
     
     // 해외 주식 잔고
     Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user);
+    Task<KisOverseasStockSearchResponse> SearchOverseasStocksAsync(KisOverseasStockSearchRequest request, UserInfo user);
 }

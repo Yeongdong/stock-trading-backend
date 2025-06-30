@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Requests;
 using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
@@ -8,6 +10,7 @@ using StockTrading.Application.Features.Trading.DTOs.Portfolio;
 using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Domain.Settings.ExternalServices;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Common;
+using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Common.Helpers;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment.RealTime.Converters;
 
 namespace StockTrading.Infrastructure.ExternalServices.KoreaInvestment.Trading;
@@ -98,6 +101,69 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
             Positions = allPositions,
             DepositInfo = depositInfo ?? new OverseasDepositInfo()
         };
+    }
+
+    public async Task<KisOverseasStockSearchResponse> SearchOverseasStocksAsync(KisOverseasStockSearchRequest request,
+        UserInfo user)
+    {
+        KisValidationHelper.ValidateUserForKisApi(user);
+
+        var queryParams = new Dictionary<string, string>
+        {
+            ["AUTH"] = request.AUTH,
+            ["EXCD"] = request.EXCD,
+            ["KEYB"] = request.KEYB,
+            // 모든 조건 파라미터를 빈 문자열로 설정 (전체 조회)
+            ["CO_YN_PRICECUR"] = "",
+            ["CO_ST_PRICECUR"] = "",
+            ["CO_EN_PRICECUR"] = "",
+            ["CO_YN_RATE"] = "",
+            ["CO_ST_RATE"] = "",
+            ["CO_EN_RATE"] = "",
+            ["CO_YN_VALX"] = "",
+            ["CO_ST_VALX"] = "",
+            ["CO_EN_VALX"] = "",
+            ["CO_YN_SHAR"] = "",
+            ["CO_ST_SHAR"] = "",
+            ["CO_EN_SHAR"] = "",
+            ["CO_YN_VOLUME"] = "",
+            ["CO_ST_VOLUME"] = "",
+            ["CO_EN_VOLUME"] = "",
+            ["CO_YN_AMT"] = "",
+            ["CO_ST_AMT"] = "",
+            ["CO_EN_AMT"] = "",
+            ["CO_YN_EPS"] = "",
+            ["CO_ST_EPS"] = "",
+            ["CO_EN_EPS"] = "",
+            ["CO_YN_PER"] = "",
+            ["CO_ST_PER"] = "",
+            ["CO_EN_PER"] = ""
+        };
+
+        var url = BuildGetUrl(_settings.Endpoints.OverseasStockSearchPath, queryParams);
+        var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+
+        SetStandardHeaders(httpRequest, _settings.DefaultValues.OverseasStockSearchTransactionId, user);
+        httpRequest.Headers.Add("content-type", "application/json; charset=utf-8");
+
+        _logger.LogInformation("해외주식 조건검색 API 호출: 거래소={ExchangeCode}", request.EXCD);
+
+        var response = await _httpClient.SendAsync(httpRequest);
+        var responseContent = await ValidateAndReadResponse(response);
+
+        var result = JsonSerializer.Deserialize<KisOverseasStockSearchResponse>(responseContent);
+
+        if (result == null)
+            throw new Exception("해외주식 조건검색 응답을 파싱할 수 없습니다.");
+
+        if (result.rt_cd != "0")
+        {
+            _logger.LogWarning("해외주식 조건검색 실패: {ErrorCode} - {ErrorMessage}", result.msg_cd, result.msg1);
+            throw new Exception($"해외주식 조건검색 실패: {result.msg1}");
+        }
+
+        _logger.LogInformation("해외주식 조건검색 성공: {Count}개 종목 조회", result.output1?.Count ?? 0);
+        return result;
     }
 
     #endregion

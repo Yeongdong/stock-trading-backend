@@ -1,4 +1,5 @@
 using StockTrading.Application.Features.Market.DTOs.Stock;
+using StockTrading.Application.Features.Users.DTOs;
 
 namespace StockTrading.Application.Features.Market.Services;
 
@@ -12,5 +13,5 @@ public interface IStockService
     Task SyncDomesticStockDataAsync();
 
     // 해외 주식
-    Task<ForeignStockSearchResult> SearchForeignStocksAsync(ForeignStockSearchRequest request);
+    public Task<ForeignStockSearchResult> SearchForeignStocksAsync(ForeignStockSearchRequest request, UserInfo userInfo);
 }
