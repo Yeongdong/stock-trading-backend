@@ -23,11 +23,12 @@ public class AuthService : IAuthService
     private readonly IGoogleAuthValidator _googleAuthValidator;
     private readonly IConfiguration _configuration;
     private readonly ICookieService _cookieService;
+    private readonly IKisTokenRefreshService _kisTokenRefreshService;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(IJwtService jwtService, IUserService userService, IRefreshTokenRepository refreshTokenRepository,
         IGoogleAuthValidator googleAuthValidator, IConfiguration configuration, ICookieService cookieService,
-        ILogger<AuthService> logger)
+        IKisTokenRefreshService kisTokenRefreshService, ILogger<AuthService> logger)
     {
         _jwtService = jwtService;
         _userService = userService;
@@ -35,6 +36,7 @@ public class AuthService : IAuthService
         _googleAuthValidator = googleAuthValidator;
         _configuration = configuration;
         _cookieService = cookieService;
+        _kisTokenRefreshService = kisTokenRefreshService;
         _logger = logger;
     }
 
@@ -57,8 +59,10 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow
         };
         await _refreshTokenRepository.AddAsync(refreshTokenEntity);
-
         _cookieService.SetRefreshTokenCookie(refreshToken);
+        
+        if (ShouldRefreshKisToken(user))
+            await _kisTokenRefreshService.EnsureValidTokenAsync(user);
 
         return new LoginResponse
         {
@@ -139,5 +143,21 @@ public class AuthService : IAuthService
             AccountNumber = user.AccountNumber,
             WebSocketToken = user.WebSocketToken
         };
+    }
+    
+    private static bool ShouldRefreshKisToken(UserInfo user)
+    {
+        // KIS 정보가 없으면 갱신 불필요
+        if (string.IsNullOrEmpty(user.KisAppKey) || 
+            string.IsNullOrEmpty(user.KisAppSecret) || 
+            string.IsNullOrEmpty(user.AccountNumber))
+        {
+            return false;
+        }
+
+        // 토큰이 없거나 만료된 경우에만 갱신
+        return user.KisToken == null || 
+               string.IsNullOrEmpty(user.KisToken.AccessToken) ||
+               user.KisToken.ExpiresIn <= DateTime.UtcNow;
     }
 }
