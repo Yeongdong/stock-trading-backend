@@ -63,10 +63,10 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
 
     #endregion
 
-
     #region 해외 주식 체결 내역 조회
 
-    public async Task<List<OverseasOrderExecution>> GetOverseasOrderExecutionsAsync(string startDate, string endDate,
+    public async Task<KisOverseasOrderExecutionResponse> GetOverseasOrderExecutionsAsync(string startDate,
+        string endDate,
         UserInfo user)
     {
         var queryParams = CreateOverseasOrderExecutionQueryParams(startDate, endDate, user);
@@ -78,7 +78,9 @@ public class KisOverseasTradingApiClient : KisApiClientBase, IKisOverseasTrading
         var kisResponse = JsonSerializer.Deserialize<KisOverseasOrderExecutionResponse>(responseContent);
         ValidateOverseasOrderExecutionResponse(kisResponse);
 
-        return _orderConverter.ConvertToOverseasOrderExecutions(kisResponse);
+        var result = _orderConverter.ConvertToOverseasOrderExecutions(kisResponse);
+
+        return kisResponse ?? new KisOverseasOrderExecutionResponse();
     }
 
     #endregion

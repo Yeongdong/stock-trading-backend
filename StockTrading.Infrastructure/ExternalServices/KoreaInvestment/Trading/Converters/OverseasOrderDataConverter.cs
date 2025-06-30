@@ -69,9 +69,9 @@ public class OverseasOrderDataConverter
     /// </summary>
     public List<OverseasOrderExecution> ConvertToOverseasOrderExecutions(KisOverseasOrderExecutionResponse kisResponse)
     {
-        if (!kisResponse.HasData || kisResponse.Output == null)
+        if (!kisResponse.IsSuccess || kisResponse.Output == null || kisResponse.Output.Count == 0)
             return [];
-
+        
         return kisResponse.Output.Select(ConvertToOverseasOrderExecution).ToList();
     }
 
@@ -82,9 +82,9 @@ public class OverseasOrderDataConverter
     {
         return new OverseasOrderExecution
         {
-            ExecutionNumber = GenerateExecutionNumber(data.OrderNumber, data.ExecutionDate, data.ExecutionTime),
+            ExecutionNumber = GenerateExecutionNumber(data.OrderNumber, data.OrderDate, data.OrderTime),
             OrderNumber = data.OrderNumber,
-            ExecutionTime = ParseExecutionDateTime(data.ExecutionDate, data.ExecutionTime),
+            ExecutionTime = ParseExecutionDateTime(data.OrderDate, data.OrderTime),
             StockCode = data.StockCode,
             StockName = data.StockName,
             Market = GetMarketFromCurrency(data.CurrencyCode),
@@ -93,9 +93,9 @@ public class OverseasOrderDataConverter
             ExecutedPrice = ParseDecimalSafely(data.ExecutedPrice),
             ExecutedAmount = ParseDecimalSafely(data.ExecutedAmount),
             Currency = data.CurrencyCode,
-            Commission = CalculateCommission(ParseDecimalSafely(data.ExecutedAmount)), // TODO: 실제 수수료 계산 로직 필요
-            Tax = CalculateTax(ParseDecimalSafely(data.ExecutedAmount)), // TODO: 실제 세금 계산 로직 필요
-            ExchangeRate = ParseDecimalSafely(data.ExchangeRate)
+            Commission = CalculateCommission(ParseDecimalSafely(data.ExecutedAmount)),
+            Tax = CalculateTax(ParseDecimalSafely(data.ExecutedAmount)),
+            ExchangeRate = 1.0m // 환율 정보는 별도 API 호출 필요
         };
     }
 

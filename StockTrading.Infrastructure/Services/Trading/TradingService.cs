@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using StockTrading.Application.Common.Interfaces;
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.ExternalServices;
 using StockTrading.Application.Features.Market.Services;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
@@ -111,17 +112,17 @@ public class TradingService : ITradingService
 
     #region 해외 주식 조회
 
-    public async Task<List<OverseasOrderExecution>> GetOverseasOrderExecutionsAsync(string startDate, string endDate,
+    public async Task<List<KisOverseasOrderExecutionData>> GetOverseasOrderExecutionsAsync(string startDate, string endDate,
         UserInfo user)
     {
         ArgumentNullException.ThrowIfNull(startDate);
         ArgumentNullException.ThrowIfNull(endDate);
         KisValidationHelper.ValidateUserForKisApi(user);
 
-        var executions =
+        var kisResponse =
             await _kisOverseasTradingApiClient.GetOverseasOrderExecutionsAsync(startDate, endDate, user);
 
-        return executions;
+        return kisResponse?.Output ?? [];
     }
 
     public async Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user)

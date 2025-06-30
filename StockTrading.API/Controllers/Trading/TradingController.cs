@@ -95,6 +95,15 @@ public class TradingController : BaseController
 
     #region 해외 주식 조회
 
+    [HttpGet("overseas/balance")]
+    public async Task<IActionResult> GetOverseasBalance()
+    {
+        var user = await GetCurrentUserAsync();
+        var balance = await _tradingService.GetOverseasStockBalanceAsync(user);
+
+        return Ok(balance);
+    }
+
     [HttpGet("overseas/executions")]
     public async Task<IActionResult> GetOverseasOrderExecutions([FromQuery] string startDate,
         [FromQuery] string endDate)
@@ -105,14 +114,5 @@ public class TradingController : BaseController
         return Ok(executions);
     }
 
-    [HttpGet("overseas/balance")]
-    public async Task<IActionResult> GetOverseasBalance()
-    {
-        var user = await GetCurrentUserAsync();
-        var balance = await _tradingService.GetOverseasStockBalanceAsync(user);
-
-        return Ok(balance);
-    }
-    
     #endregion
 }

@@ -1,3 +1,4 @@
+using StockTrading.Application.DTOs.External.KoreaInvestment.Responses;
 using StockTrading.Application.Features.Trading.DTOs.Inquiry;
 using StockTrading.Application.Features.Trading.DTOs.Orders;
 using StockTrading.Application.Features.Trading.DTOs.Portfolio;
@@ -20,6 +21,6 @@ public interface ITradingService
     Task<OverseasOrderResponse> PlaceOverseasOrderAsync(OverseasOrderRequest order, UserInfo user);
 
     // 해외 주식 조회
-    Task<List<OverseasOrderExecution>> GetOverseasOrderExecutionsAsync(string startDate, string endDate, UserInfo user);
+    Task<List<KisOverseasOrderExecutionData>> GetOverseasOrderExecutionsAsync(string startDate, string endDate, UserInfo user);
     Task<OverseasAccountBalance> GetOverseasStockBalanceAsync(UserInfo user);
 }
