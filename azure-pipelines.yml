@@ -111,16 +111,41 @@ stages:
 
                     export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;"
 
-                    psql "$ConnectionStrings__DefaultConnection" -c "
-                      INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") 
-                      VALUES ('20250629121402_SyncDatabaseState', '8.0.0') 
-                      ON CONFLICT (\"MigrationId\") DO NOTHING;
-                    "
+                    # SQL 스크립트 생성
+                    cat > fix_migration.sql << 'EOF'
+                    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") 
+                    VALUES ('20250629121402_SyncDatabaseState', '8.0.0') 
+                    ON CONFLICT ("MigrationId") DO NOTHING;
+                    
+                    ALTER TABLE users ADD COLUMN IF NOT EXISTS previous_day_total_amount DECIMAL(18,2);
+                    EOF
 
-                    psql "$ConnectionStrings__DefaultConnection" -c "
-                      ALTER TABLE users ADD COLUMN IF NOT EXISTS previous_day_total_amount DECIMAL(18,2);
-                    "
+                    # C# 코드로 SQL 실행
+                    cat > execute_sql.cs << 'EOF'
+                    using Npgsql;
+                    using System;
+                    using System.IO;
 
+                    var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+                    var sql = File.ReadAllText("fix_migration.sql");
+
+                    try {
+                        using var connection = new NpgsqlConnection(connectionString);
+                        connection.Open();
+                        using var command = new NpgsqlCommand(sql, connection);
+                        command.ExecuteNonQuery();
+                        Console.WriteLine("SQL executed successfully");
+                    }
+                    catch (Exception ex) {
+                        Console.WriteLine($"Error: {ex.Message}");
+                    }
+                    EOF
+
+                    # C# 스크립트 실행
+                    dotnet add package Npgsql
+                    dotnet script execute_sql.cs
+
+                    # 마이그레이션 실행
                     dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj
                   displayName: 'Database Migration'
                   env:
