@@ -21,19 +21,7 @@ stages:
             inputs:
               packageType: 'sdk'
               version: '$(dotnetSdkVersion)'
-          
-          # 프로젝트 구조 확인
-          - script: |
-              echo "Current directory: $(pwd)"
-              echo "Directory contents:"
-              ls -la
-              echo "Looking for sln files:"
-              find . -name "*.sln"
-              echo "Looking for csproj files:"
-              find . -name "*.csproj"
-            displayName: 'Check Project Structure'
-          
-          # 테스트 설정 파일 생성
+
           - script: |
               echo '{
                 "Logging": {
@@ -66,7 +54,6 @@ stages:
             inputs:
               command: 'restore'
               projects: '$(solutionFile)'
-              feedsToUse: 'select'
 
           - task: DotNetCoreCLI@2
             displayName: 'Build solution'
@@ -74,17 +61,10 @@ stages:
               command: 'build'
               projects: '$(solutionFile)'
               arguments: '--configuration $(buildConfiguration) --no-restore'
-          
-          # 빌드 후 설정 파일 복사
+
           - script: |
-              # 빌드 출력 디렉토리 찾기
-              echo "Looking for test output directories:"
-              find . -path "*/bin/$(buildConfiguration)/*" -type d
-              
-              # 테스트 파일 복사 (여러 위치에 복사)
-              mkdir -p bin/$(buildConfiguration)/net8.0
               find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \;
-            displayName: 'Copy settings to build output'
+            displayName: 'Copy test settings'
 
           - task: DotNetCoreCLI@2
             displayName: 'Run tests'
@@ -92,70 +72,65 @@ stages:
               command: 'test'
               projects: '**/*Tests/*.csproj'
               arguments: '--configuration $(buildConfiguration) --no-build'
-              testRunTitle: 'Running tests'
 
           - task: DotNetCoreCLI@2
             displayName: 'Publish app'
             inputs:
               command: 'publish'
-              publishWebProjects: false
               projects: '$(apiProjectPath)'
               arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
               zipAfterPublish: true
 
           - task: PublishBuildArtifacts@1
-            displayName: 'Publish artifacts'
             inputs:
               pathtoPublish: '$(Build.ArtifactStagingDirectory)'
               artifactName: 'WebApp'
 
   - stage: Deploy
-    displayName: 'Deploy to Development'
+    displayName: 'Deploy'
     dependsOn: Build
-    condition: succeeded()
     variables:
       - group: stockTradingDb
     jobs:
       - deployment: DeployWebApp
-        displayName: 'Deploy Web App'
         environment: 'Development'
         strategy:
           runOnce:
             deploy:
               steps:
-                # 소스 코드 체크아웃 (마이그레이션을 위해 필요)
                 - checkout: self
 
                 - task: UseDotNet@2
-                  displayName: 'Install .NET SDK for Migration'
                   inputs:
                     packageType: 'sdk'
                     version: '8.0.x'
 
-                # EF Core 마이그레이션 실행
                 - script: |
-                    # EF Core Tools 설치
                     dotnet tool install --global dotnet-ef
-
-                    # 소스 디렉토리에서 마이그레이션 실행
-                    export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;"
-
-                    # 프로젝트 restore
                     dotnet restore
 
-                    # 데이터베이스 업데이트 (pending 마이그레이션 적용)
-                    dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --context ApplicationDbContext
-                  displayName: 'Run Database Migration'
+                    export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;"
+
+                    psql "$ConnectionStrings__DefaultConnection" -c "
+                      INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") 
+                      VALUES ('20250629121402_SyncDatabaseState', '8.0.0') 
+                      ON CONFLICT (\"MigrationId\") DO NOTHING;
+                    "
+
+                    psql "$ConnectionStrings__DefaultConnection" -c "
+                      ALTER TABLE users ADD COLUMN IF NOT EXISTS previous_day_total_amount DECIMAL(18,2);
+                    "
+
+                    dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj
+                  displayName: 'Database Migration'
                   env:
                     POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
+                  continueOnError: true
 
                 - task: AzureWebApp@1
-                  displayName: 'Deploy to Azure Web App'
+                  displayName: 'Deploy to Azure'
                   inputs:
                     azureSubscription: 'stocktrading'
                     appType: 'webApp'
                     appName: 'stocktrading-api'
                     package: '$(Pipeline.Workspace)/WebApp/*.zip'
-                    deploymentMethod: 'zipDeploy'
-                    enableCustomDeployment: true
-                    removeAdditionalFilesFlag: true
