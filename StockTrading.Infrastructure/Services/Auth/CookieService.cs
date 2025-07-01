@@ -46,7 +46,7 @@ public class CookieService : ICookieService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Lax,
+            SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays),
             Path = "/"
         };
@@ -75,7 +75,7 @@ public class CookieService : ICookieService
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Lax,
+            SameSite = SameSiteMode.None,
             Path = "/"
         });
     }

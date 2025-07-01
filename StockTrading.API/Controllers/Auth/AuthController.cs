@@ -79,6 +79,8 @@ public class AuthController : BaseController
 
         return Ok(new LoginResponse
         {
+            AccessToken = token,
+            ExpiresIn = 3600,
             User = user,
             IsAuthenticated = true,
         });

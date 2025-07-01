@@ -1,7 +1,6 @@
 using System.Security.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using StockTrading.Application.Common.Interfaces;
 using StockTrading.Application.Features.Auth.DTOs;
 using StockTrading.Application.Features.Auth.Repositories;
@@ -10,7 +9,6 @@ using StockTrading.Application.Features.Users.DTOs;
 using StockTrading.Application.Features.Users.Services;
 using StockTrading.Domain.Entities;
 using StockTrading.Domain.Entities.Auth;
-using StockTrading.Domain.Settings.Infrastructure;
 using StockTrading.Infrastructure.Validator.Interfaces;
 
 namespace StockTrading.Infrastructure.Services.Auth;
@@ -141,10 +139,19 @@ public class AuthService : IAuthService
             KisAppKey = user.KisAppKey,
             KisAppSecret = user.KisAppSecret,
             AccountNumber = user.AccountNumber,
-            WebSocketToken = user.WebSocketToken
+            WebSocketToken = user.WebSocketToken,
+            KisToken = user.KisToken == null
+                ? null
+                : new KisTokenInfo
+                {
+                    Id = user.KisToken.Id,
+                    AccessToken = user.KisToken.AccessToken,
+                    ExpiresIn = user.KisToken.ExpiresIn,
+                    TokenType = user.KisToken.TokenType,
+                }
         };
     }
-    
+
     private static bool ShouldRefreshKisToken(UserInfo user)
     {
         // KIS 정보가 없으면 갱신 불필요

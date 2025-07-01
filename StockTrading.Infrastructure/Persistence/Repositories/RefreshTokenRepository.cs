@@ -17,6 +17,7 @@ public class RefreshTokenRepository : BaseRepository<RefreshToken, int>, IRefres
     {
         return await DbSet
             .Include(rt => rt.User)
+            .ThenInclude(u => u.KisToken)
             .FirstOrDefaultAsync(rt => rt.Token == token);
     }
 
