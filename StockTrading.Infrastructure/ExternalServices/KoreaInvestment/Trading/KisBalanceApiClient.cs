@@ -161,7 +161,7 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
             throw new Exception($"해외주식 조건검색 실패: {result.msg1}");
         }
 
-        _logger.LogInformation("해외주식 조건검색 성공: {Count}개 종목 조회", result.output1?.Count ?? 0);
+        _logger.LogInformation("해외주식 조건검색 성공: {Count}개 종목 조회", result.output2?.Count ?? 0);
         return result;
     }
 

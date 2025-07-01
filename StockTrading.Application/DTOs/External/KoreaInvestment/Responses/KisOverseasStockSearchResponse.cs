@@ -8,8 +8,8 @@ public class KisOverseasStockSearchResponse
     public string rt_cd { get; set; } = string.Empty;
     public string msg_cd { get; set; } = string.Empty;
     public string msg1 { get; set; } = string.Empty;
-    public KisOverseasSearchOutput? output { get; set; }
-    public List<KisOverseasStockItem> output1 { get; set; } = [];
+    public KisOverseasSearchOutput? output1 { get; set; }
+    public List<KisOverseasStockItem> output2 { get; set; } = [];
 }
 
 public class KisOverseasSearchOutput

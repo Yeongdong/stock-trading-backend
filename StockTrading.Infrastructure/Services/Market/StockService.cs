@@ -312,22 +312,33 @@ public class StockService : IStockService
     }
 
     private static ForeignStockSearchResult ConvertKisResponseToForeignStockResult(
-        KisOverseasStockSearchResponse kisResponse, string market)
+        KisOverseasStockSearchResponse kisResponse, string requestedMarket)
     {
         var result = new ForeignStockSearchResult
         {
-            Market = market,
-            Status = kisResponse.output?.stat ?? "",
-            Count = kisResponse.output1?.Count ?? 0,
+            Market = requestedMarket,
+            Status = kisResponse.output1?.stat ?? "",
+            Count = 0,
             Stocks = []
         };
 
-        if (kisResponse.output1 == null || !kisResponse.output1.Any())
+        if (kisResponse.output2 == null || kisResponse.output2.Count == 0)
             return result;
 
-        var (currency, country) = GetMarketInfo(kisResponse.output1.First().excd);
+        var requestedExchangeCode = MapMarketToExchangeCode(requestedMarket);
 
-        result.Stocks = kisResponse.output1
+        var filteredStocks = kisResponse.output2
+            .Where(item => item.excd == requestedExchangeCode)
+            .Where(item => !string.IsNullOrWhiteSpace(item.symb) && !string.IsNullOrWhiteSpace(item.name))
+            .ToList();
+
+        if (filteredStocks.Count == 0)
+            return result;
+
+        var (currency, country) = GetMarketInfo(requestedExchangeCode);
+
+        result.Count = filteredStocks.Count;
+        result.Stocks = filteredStocks
             .Select(item => ConvertKisItemToForeignStockInfo(item, currency, country))
             .ToList();
 
