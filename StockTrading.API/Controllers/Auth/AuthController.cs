@@ -97,7 +97,10 @@ public class AuthController : BaseController
 
         return Ok(new LoginResponse
         {
+            AccessToken = token,
+            ExpiresIn = 3600,   
             User = masterUser,
+            IsAuthenticated = true,
             Message = "마스터 로그인 성공"
         });
     }
