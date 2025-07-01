@@ -144,7 +144,6 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
 
         SetStandardHeaders(httpRequest, _settings.DefaultValues.OverseasStockSearchTransactionId, user);
-        httpRequest.Headers.Add("content-type", "application/json; charset=utf-8");
 
         _logger.LogInformation("해외주식 조건검색 API 호출: 거래소={ExchangeCode}", request.EXCD);
 
