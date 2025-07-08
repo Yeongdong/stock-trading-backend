@@ -17,7 +17,6 @@ variables:
   infrastructureProjectPath: '**/StockTrading.Infrastructure.csproj'
   testProjectPath: '**/StockTrading.Tests.csproj'
   
-  # 환경별 변수
   ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     deploymentEnvironment: 'Production'
     webAppName: 'stocktrading-api'
@@ -38,17 +37,15 @@ stages:
               packageType: 'sdk'
               version: '$(dotnetSdkVersion)'
 
-          # 빌드 캐시로 성능 개선
           - task: Cache@2
             displayName: 'Cache NuGet packages'
             inputs:
-              key: 'nuget | "$(Agent.OS)" | **/packages.lock.json,**/Directory.Packages.props'
+              key: 'nuget | "$(Agent.OS)" | **/*.csproj'
               restoreKeys: |
                 nuget | "$(Agent.OS)"
                 nuget
               path: ~/.nuget/packages
 
-          # 테스트 설정 파일 생성
           - script: |
               echo '{
                 "Logging": {
@@ -75,13 +72,12 @@ stages:
                   "DefaultConnection": "InMemory=true"
                 },
                 "KisApi": {
-                  "BaseUrl": "https://openapi.koreainvestment.com:29443",
+                  "BaseUrl": "https://openapi.koreainvestment.com:9443",
                   "MockMode": true
                 }
               }' > StockTrading.Tests/appsettings.Testing.json
             displayName: 'Create Test Configuration'
 
-          # 패키지 복원
           - task: DotNetCoreCLI@2
             displayName: 'Restore NuGet packages'
             inputs:
@@ -90,7 +86,6 @@ stages:
               feedsToUse: 'select'
               includeNuGetOrg: true
 
-          # 솔루션 빌드
           - task: DotNetCoreCLI@2
             displayName: 'Build solution'
             inputs:
@@ -98,21 +93,24 @@ stages:
               projects: '$(solutionFile)'
               arguments: '--configuration $(buildConfiguration) --no-restore --verbosity minimal'
 
-          # 테스트 설정 복사
           - script: |
               find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \; 2>/dev/null || true
-            displayName: 'Copy test configuration files'
+              
+              echo "=== Test Configuration Files ==="
+              find . -name "appsettings.Testing.json" -ls
+              
+              echo "=== Built Test Assemblies ==="
+              find . -path "*/bin/$(buildConfiguration)/net8.0/StockTrading.Tests.*" -ls
+            displayName: 'Copy test configuration and debug'
 
-          # 단위 테스트 실행
           - task: DotNetCoreCLI@2
             displayName: 'Run unit tests'
             inputs:
               command: 'test'
               projects: '$(testProjectPath)'
-              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)/TestResults --verbosity normal'
               testRunTitle: 'Unit Tests'
 
-          # 테스트 결과 발행
           - task: PublishTestResults@2
             displayName: 'Publish test results'
             condition: succeededOrFailed()
@@ -121,15 +119,13 @@ stages:
               testResultsFiles: '$(Agent.TempDirectory)/TestResults/**/*.trx'
               testRunTitle: 'Unit Tests'
 
-          # 코드 커버리지 발행
-          - task: PublishCodeCoverageResults@1
+          - task: PublishCodeCoverageResults@2
             displayName: 'Publish code coverage'
             condition: succeededOrFailed()
             inputs:
-              codeCoverageTool: 'Cobertura'
               summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
+              codeCoverageTool: 'Cobertura'
 
-          # 애플리케이션 발행
           - task: DotNetCoreCLI@2
             displayName: 'Publish application'
             inputs:
@@ -139,7 +135,6 @@ stages:
               zipAfterPublish: true
               modifyOutputPath: false
 
-          # 아티팩트 발행
           - task: PublishBuildArtifacts@1
             displayName: 'Publish build artifacts'
             inputs:
@@ -153,7 +148,6 @@ stages:
     condition: and(succeeded(), in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/develop'))
     variables:
       - group: stockTradingDb
-      # 환경별 변수 그룹 추가
       - ${{ if eq(variables.deploymentEnvironment, 'Production') }}:
           - group: stockTradingProd
       - ${{ if eq(variables.deploymentEnvironment, 'Development') }}:
@@ -188,19 +182,16 @@ stages:
                     command: 'restore'
                     projects: '$(infrastructureProjectPath)'
 
-                # 현재 DB 상태 확인
                 - script: |
                     echo "Checking current database state..."
                     CONNECTION_STRING="Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;"
                     
-                    # 연결 테스트
-                    dotnet ef database update --dry-run --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --verbose || echo "⚠️ Database connection test completed"
+                    dotnet ef database update --dry-run --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --verbose || echo "Database connection test completed"
                   displayName: 'Check database connectivity'
                   env:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
                     ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
 
-                # 마이그레이션 스크립트 생성 (백업용)
                 - task: DotNetCoreCLI@2
                   displayName: 'Generate migration script'
                   inputs:
@@ -211,7 +202,6 @@ stages:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
                     ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
 
-                # 실제 마이그레이션 실행
                 - task: DotNetCoreCLI@2
                   displayName: 'Execute database migration'
                   inputs:
@@ -222,7 +212,6 @@ stages:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
                     ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
 
-                # 마이그레이션 상태 검증
                 - script: |
                     echo "Verifying migration status..."
                     dotnet ef migrations list --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --json > $(Build.ArtifactStagingDirectory)/migrations-status.json
@@ -237,7 +226,6 @@ stages:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
                     ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
 
-                # 마이그레이션 아티팩트 저장
                 - task: PublishBuildArtifacts@1
                   displayName: 'Publish migration artifacts'
                   condition: always()
@@ -256,7 +244,6 @@ stages:
                 - download: current
                   artifact: drop
 
-                # Azure Web App 배포
                 - task: AzureWebApp@1
                   displayName: 'Deploy to Azure Web App'
                   inputs:
@@ -282,13 +269,11 @@ stages:
                       -Cache__Enabled "true"
                       -Cache__Provider "Redis"
 
-                # 애플리케이션 시작 대기
                 - script: |
                     echo "Waiting for application to start..."
                     sleep 45
                   displayName: 'Wait for application startup'
 
-                # 헬스 체크
                 - script: |
                     echo "Performing health check..."
                     
@@ -298,13 +283,11 @@ stages:
                     while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
                       echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
                     
-                      # 헬스 체크 엔드포인트 호출
                       response=$(curl -s -o /dev/null -w "%{http_code}" https://$(webAppName).azurewebsites.net/health 2>/dev/null || echo "000")
                     
                       if [ "$response" = "200" ]; then
                         echo "Application is healthy (HTTP $response)"
                     
-                        # API 기본 엔드포인트 테스트
                         api_response=$(curl -s -o /dev/null -w "%{http_code}" https://$(webAppName).azurewebsites.net/api/health 2>/dev/null || echo "000")
                         echo "API endpoint status: HTTP $api_response"
                     
@@ -324,7 +307,6 @@ stages:
                     exit 1
                   displayName: 'Health check with retry'
 
-                # 배포 완료 알림
                 - script: |
                     echo "Deployment completed successfully!"
                     echo "Application URL: https://$(webAppName).azurewebsites.net"
