@@ -1,5 +1,10 @@
 trigger:
   - main
+  - develop
+
+pr:
+  - main
+  - develop
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -9,12 +14,23 @@ variables:
   dotnetSdkVersion: '8.0.x'
   solutionFile: '**/*.sln'
   apiProjectPath: '**/StockTrading.API.csproj'
+  infrastructureProjectPath: '**/StockTrading.Infrastructure.csproj'
+  testProjectPath: '**/StockTrading.Tests.csproj'
+  
+  # 환경별 변수
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    deploymentEnvironment: 'Production'
+    webAppName: 'stocktrading-api'
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/develop') }}:
+    deploymentEnvironment: 'Development'
+    webAppName: 'stocktrading-api-dev'
 
 stages:
   - stage: Build
-    displayName: 'Build Stage'
+    displayName: 'Build & Test'
     jobs:
       - job: Build
+        displayName: 'Build Application'
         steps:
           - task: UseDotNet@2
             displayName: 'Install .NET SDK'
@@ -22,12 +38,24 @@ stages:
               packageType: 'sdk'
               version: '$(dotnetSdkVersion)'
 
+          # 빌드 캐시로 성능 개선
+          - task: Cache@2
+            displayName: 'Cache NuGet packages'
+            inputs:
+              key: 'nuget | "$(Agent.OS)" | **/packages.lock.json,**/Directory.Packages.props'
+              restoreKeys: |
+                nuget | "$(Agent.OS)"
+                nuget
+              path: ~/.nuget/packages
+
+          # 테스트 설정 파일 생성
           - script: |
               echo '{
                 "Logging": {
                   "LogLevel": {
                     "Default": "Information",
-                    "Microsoft.AspNetCore": "Warning"
+                    "Microsoft.AspNetCore": "Warning",
+                    "Microsoft.EntityFrameworkCore": "Warning"
                   }
                 },
                 "JwtSettings": {
@@ -45,117 +73,262 @@ stages:
                 },
                 "ConnectionStrings": {
                   "DefaultConnection": "InMemory=true"
+                },
+                "KisApi": {
+                  "BaseUrl": "https://openapi.koreainvestment.com:29443",
+                  "MockMode": true
                 }
               }' > StockTrading.Tests/appsettings.Testing.json
-            displayName: 'Create Test Settings File'
+            displayName: 'Create Test Configuration'
 
+          # 패키지 복원
           - task: DotNetCoreCLI@2
-            displayName: 'Restore packages'
+            displayName: 'Restore NuGet packages'
             inputs:
               command: 'restore'
               projects: '$(solutionFile)'
+              feedsToUse: 'select'
+              includeNuGetOrg: true
 
+          # 솔루션 빌드
           - task: DotNetCoreCLI@2
             displayName: 'Build solution'
             inputs:
               command: 'build'
               projects: '$(solutionFile)'
-              arguments: '--configuration $(buildConfiguration) --no-restore'
+              arguments: '--configuration $(buildConfiguration) --no-restore --verbosity minimal'
 
+          # 테스트 설정 복사
           - script: |
-              find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \;
-            displayName: 'Copy test settings'
+              find . -path "*/bin/$(buildConfiguration)/net8.0" -type d -exec cp StockTrading.Tests/appsettings.Testing.json {} \; 2>/dev/null || true
+            displayName: 'Copy test configuration files'
 
+          # 단위 테스트 실행
           - task: DotNetCoreCLI@2
-            displayName: 'Run tests'
+            displayName: 'Run unit tests'
             inputs:
               command: 'test'
-              projects: '**/*Tests/*.csproj'
-              arguments: '--configuration $(buildConfiguration) --no-build'
+              projects: '$(testProjectPath)'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+              testRunTitle: 'Unit Tests'
 
+          # 테스트 결과 발행
+          - task: PublishTestResults@2
+            displayName: 'Publish test results'
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: 'VSTest'
+              testResultsFiles: '$(Agent.TempDirectory)/TestResults/**/*.trx'
+              testRunTitle: 'Unit Tests'
+
+          # 코드 커버리지 발행
+          - task: PublishCodeCoverageResults@1
+            displayName: 'Publish code coverage'
+            condition: succeededOrFailed()
+            inputs:
+              codeCoverageTool: 'Cobertura'
+              summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
+
+          # 애플리케이션 발행
           - task: DotNetCoreCLI@2
-            displayName: 'Publish app'
+            displayName: 'Publish application'
             inputs:
               command: 'publish'
               projects: '$(apiProjectPath)'
-              arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)'
+              arguments: '--configuration $(buildConfiguration) --no-build --output $(Build.ArtifactStagingDirectory)/app'
               zipAfterPublish: true
+              modifyOutputPath: false
 
+          # 아티팩트 발행
           - task: PublishBuildArtifacts@1
+            displayName: 'Publish build artifacts'
             inputs:
               pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-              artifactName: 'WebApp'
+              artifactName: 'drop'
+              publishLocation: 'Container'
 
   - stage: Deploy
-    displayName: 'Deploy'
+    displayName: 'Deploy to $(deploymentEnvironment)'
     dependsOn: Build
+    condition: and(succeeded(), in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/develop'))
     variables:
       - group: stockTradingDb
+      # 환경별 변수 그룹 추가
+      - ${{ if eq(variables.deploymentEnvironment, 'Production') }}:
+          - group: stockTradingProd
+      - ${{ if eq(variables.deploymentEnvironment, 'Development') }}:
+          - group: stockTradingDev
     jobs:
-      - deployment: DeployWebApp
-        environment: 'Development'
+      - deployment: DatabaseMigration
+        displayName: 'Database Migration'
+        environment: '$(deploymentEnvironment)-DB'
         strategy:
           runOnce:
             deploy:
               steps:
                 - checkout: self
+                  persistCredentials: true
 
                 - task: UseDotNet@2
+                  displayName: 'Install .NET SDK'
                   inputs:
                     packageType: 'sdk'
-                    version: '8.0.x'
+                    version: '$(dotnetSdkVersion)'
 
+                - task: DotNetCoreCLI@2
+                  displayName: 'Install EF Core Tools'
+                  inputs:
+                    command: 'custom'
+                    custom: 'tool'
+                    arguments: 'install --global dotnet-ef --version 8.0.0'
+
+                - task: DotNetCoreCLI@2
+                  displayName: 'Restore packages'
+                  inputs:
+                    command: 'restore'
+                    projects: '$(infrastructureProjectPath)'
+
+                # 현재 DB 상태 확인
                 - script: |
-                    dotnet tool install --global dotnet-ef
-                    dotnet restore
-
-                    export ConnectionStrings__DefaultConnection="Host=stocktrading-postgres.postgres.database.azure.com;Database=postgres;Port=5432;User Id=stockadmin;Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;"
-
-                    # SQL 스크립트 생성
-                    cat > fix_migration.sql << 'EOF'
-                    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion") 
-                    VALUES ('20250629121402_SyncDatabaseState', '8.0.0') 
-                    ON CONFLICT ("MigrationId") DO NOTHING;
+                    echo "Checking current database state..."
+                    CONNECTION_STRING="Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;"
                     
-                    ALTER TABLE users ADD COLUMN IF NOT EXISTS previous_day_total_amount DECIMAL(18,2);
-                    EOF
-
-                    # C# 코드로 SQL 실행
-                    cat > execute_sql.cs << 'EOF'
-                    using Npgsql;
-                    using System;
-                    using System.IO;
-
-                    var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
-                    var sql = File.ReadAllText("fix_migration.sql");
-
-                    try {
-                        using var connection = new NpgsqlConnection(connectionString);
-                        connection.Open();
-                        using var command = new NpgsqlCommand(sql, connection);
-                        command.ExecuteNonQuery();
-                        Console.WriteLine("SQL executed successfully");
-                    }
-                    catch (Exception ex) {
-                        Console.WriteLine($"Error: {ex.Message}");
-                    }
-                    EOF
-
-                    # C# 스크립트 실행
-                    dotnet add package Npgsql
-                    dotnet script execute_sql.cs
-
-                    # 마이그레이션 실행
-                    dotnet ef database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj
-                  displayName: 'Database Migration'
+                    # 연결 테스트
+                    dotnet ef database update --dry-run --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --verbose || echo "⚠️ Database connection test completed"
+                  displayName: 'Check database connectivity'
                   env:
-                    POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
-                  continueOnError: true
+                    ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
+                    ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
 
+                # 마이그레이션 스크립트 생성 (백업용)
+                - task: DotNetCoreCLI@2
+                  displayName: 'Generate migration script'
+                  inputs:
+                    command: 'custom'
+                    custom: 'ef'
+                    arguments: 'migrations script --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --output $(Build.ArtifactStagingDirectory)/migration-$(Build.BuildNumber).sql --idempotent'
+                  env:
+                    ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
+                    ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
+
+                # 실제 마이그레이션 실행
+                - task: DotNetCoreCLI@2
+                  displayName: 'Execute database migration'
+                  inputs:
+                    command: 'custom'
+                    custom: 'ef'
+                    arguments: 'database update --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --verbose'
+                  env:
+                    ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
+                    ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
+
+                # 마이그레이션 상태 검증
+                - script: |
+                    echo "Verifying migration status..."
+                    dotnet ef migrations list --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --json > $(Build.ArtifactStagingDirectory)/migrations-status.json
+                    
+                    echo "Applied migrations:"
+                    cat $(Build.ArtifactStagingDirectory)/migrations-status.json | jq -r '.[] | select(.applied == true) | .name'
+                    
+                    echo "Pending migrations:"
+                    cat $(Build.ArtifactStagingDirectory)/migrations-status.json | jq -r '.[] | select(.applied == false) | .name' || echo "No pending migrations"
+                  displayName: 'Verify migration status'
+                  env:
+                    ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
+                    ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
+
+                # 마이그레이션 아티팩트 저장
+                - task: PublishBuildArtifacts@1
+                  displayName: 'Publish migration artifacts'
+                  condition: always()
+                  inputs:
+                    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+                    artifactName: 'migration-$(deploymentEnvironment)-$(Build.BuildNumber)'
+
+      - deployment: DeployWebApp
+        displayName: 'Deploy Web Application'
+        dependsOn: DatabaseMigration
+        environment: '$(deploymentEnvironment)'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - download: current
+                  artifact: drop
+
+                # Azure Web App 배포
                 - task: AzureWebApp@1
-                  displayName: 'Deploy to Azure'
+                  displayName: 'Deploy to Azure Web App'
                   inputs:
                     azureSubscription: 'stocktrading'
                     appType: 'webApp'
-                    appName: 'stocktrading-api'
-                    package: '$(Pipeline.Workspace)/WebApp/*.zip'
+                    appName: '$(webAppName)'
+                    package: '$(Pipeline.Workspace)/drop/app/*.zip'
+                    appSettings: |
+                      -ASPNETCORE_ENVIRONMENT $(deploymentEnvironment)
+                      -ConnectionStrings__DefaultConnection "Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;"
+                      -JwtSettings__Key "$(JWT_KEY)"
+                      -JwtSettings__Issuer "$(JWT_ISSUER)"
+                      -JwtSettings__Audience "$(JWT_AUDIENCE)"
+                      -Authentication__Google__ClientId "$(GOOGLE_CLIENT_ID)"
+                      -Authentication__Google__ClientSecret "$(GOOGLE_CLIENT_SECRET)"
+                      -Authentication__Google__masterId "$(GOOGLE_MASTER_ID)"
+                      -Encryption__Key "$(ENCRYPTION_KEY)"
+                      -Encryption__IV "$(ENCRYPTION_IV)"
+                      -KoreaInvestment__BaseUrl "https://openapi.koreainvestment.com:9443"
+                      -Redis__ConnectionString "$(REDIS_CONNECTION_STRING)"
+                      -Redis__InstanceName "$(REDIS_INSTANCE_NAME)"
+                      -Redis__Enabled "true"
+                      -Cache__Enabled "true"
+                      -Cache__Provider "Redis"
+
+                # 애플리케이션 시작 대기
+                - script: |
+                    echo "Waiting for application to start..."
+                    sleep 45
+                  displayName: 'Wait for application startup'
+
+                # 헬스 체크
+                - script: |
+                    echo "Performing health check..."
+                    
+                    MAX_RETRIES=5
+                    RETRY_COUNT=0
+                    
+                    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+                      echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
+                    
+                      # 헬스 체크 엔드포인트 호출
+                      response=$(curl -s -o /dev/null -w "%{http_code}" https://$(webAppName).azurewebsites.net/health 2>/dev/null || echo "000")
+                    
+                      if [ "$response" = "200" ]; then
+                        echo "Application is healthy (HTTP $response)"
+                    
+                        # API 기본 엔드포인트 테스트
+                        api_response=$(curl -s -o /dev/null -w "%{http_code}" https://$(webAppName).azurewebsites.net/api/health 2>/dev/null || echo "000")
+                        echo "API endpoint status: HTTP $api_response"
+                    
+                        exit 0
+                      else
+                        echo "Health check failed with status: $response"
+                        RETRY_COUNT=$((RETRY_COUNT + 1))
+                    
+                        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                          echo "Retrying in 30 seconds..."
+                          sleep 30
+                        fi
+                      fi
+                    done
+                    
+                    echo "Application health check failed after $MAX_RETRIES attempts"
+                    exit 1
+                  displayName: 'Health check with retry'
+
+                # 배포 완료 알림
+                - script: |
+                    echo "Deployment completed successfully!"
+                    echo "Application URL: https://$(webAppName).azurewebsites.net"
+                    echo "Health Check: https://$(webAppName).azurewebsites.net/health"
+                    echo "Environment: $(deploymentEnvironment)"
+                    echo "Build Number: $(Build.BuildNumber)"
+                  displayName: 'Deployment summary'

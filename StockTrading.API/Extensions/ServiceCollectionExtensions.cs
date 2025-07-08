@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using StackExchange.Redis;
 using StockTrading.Infrastructure.Configuration;
 using StockTrading.Infrastructure.Configuration.ServiceConfiguration;
@@ -227,7 +228,22 @@ public static class ServiceCollectionExtensions
 
     private static IServiceCollection AddHealthCheckServices(this IServiceCollection services)
     {
-        services.AddHealthChecks();
+        var serviceProvider = services.BuildServiceProvider();
+        var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    
+        var healthChecks = services.AddHealthChecks()
+            // 기본 애플리케이션 상태 체크
+            .AddCheck("self", () => HealthCheckResult.Healthy("Application is running"));
+
+        // Database Health Check 추가
+        services.AddDatabaseHealthChecks();
+    
+        // Cache (Redis) Health Check 추가
+        services.AddCacheHealthChecks(configuration);
+    
+        // External Services Health Check 추가
+        services.AddExternalServiceHealthChecks(configuration);
+
         return services;
     }
 }

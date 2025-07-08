@@ -1,3 +1,5 @@
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using StockTrading.API.Middleware;
 using StockTrading.Infrastructure.ExternalServices.KoreaInvestment;
 
@@ -37,7 +39,24 @@ public static class WebApplicationExtensions
         // 6. 엔드포인트 매핑
         app.MapControllers();
         app.MapHub<StockHub>("/stockhub");
-        app.MapHealthChecks("/health");
+        
+        // Health Check 엔드포인트들
+        app.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+
+        app.MapHealthChecks("/health/ready", new HealthCheckOptions
+        {
+            Predicate = check => check.Tags.Contains("ready") || check.Name == "self",
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
+
+        app.MapHealthChecks("/health/live", new HealthCheckOptions
+        {
+            Predicate = check => check.Name == "self",
+            ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+        });
 
         // 7. 기본 상태 확인
         app.MapGet("/", () => Results.Ok(new
