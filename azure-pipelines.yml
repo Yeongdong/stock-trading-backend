@@ -181,13 +181,13 @@ stages:
                   displayName: 'Restore packages'
                   inputs:
                     command: 'restore'
-                    projects: '$(infrastructureProjectPath)'
+                    projects: 'StockTrading.Infrastructure/StockTrading.Infrastructure.csproj'
 
                 - script: |
                     echo "Checking current database state..."
                     CONNECTION_STRING="Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;"
                     
-                    dotnet ef database update --dry-run --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --verbose || echo "Database connection test completed"
+                    dotnet ef database update --dry-run --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --verbose || echo "Database connection test completed"
                   displayName: 'Check database connectivity'
                   env:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
@@ -198,7 +198,7 @@ stages:
                   inputs:
                     command: 'custom'
                     custom: 'ef'
-                    arguments: 'migrations script --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --output $(Build.ArtifactStagingDirectory)/migration-$(Build.BuildNumber).sql --idempotent'
+                    arguments: 'migrations script --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --output $(Build.ArtifactStagingDirectory)/migration-$(Build.BuildNumber).sql --idempotent'
                   env:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
                     ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
@@ -208,14 +208,14 @@ stages:
                   inputs:
                     command: 'custom'
                     custom: 'ef'
-                    arguments: 'database update --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --verbose'
+                    arguments: 'database update --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --verbose'
                   env:
                     ASPNETCORE_ENVIRONMENT: '$(deploymentEnvironment)'
                     ConnectionStrings__DefaultConnection: 'Host=$(DB_HOST);Database=$(DB_NAME);Port=5432;User Id=$(DB_USER);Password=$(POSTGRES_PASSWORD);Ssl Mode=Require;Trust Server Certificate=true;'
 
                 - script: |
                     echo "Verifying migration status..."
-                    dotnet ef migrations list --project $(infrastructureProjectPath) --startup-project $(apiProjectPath) --json > $(Build.ArtifactStagingDirectory)/migrations-status.json
+                    dotnet ef migrations list --project StockTrading.Infrastructure/StockTrading.Infrastructure.csproj --startup-project StockTrading.API/StockTrading.API.csproj --json > $(Build.ArtifactStagingDirectory)/migrations-status.json
                     
                     echo "Applied migrations:"
                     cat $(Build.ArtifactStagingDirectory)/migrations-status.json | jq -r '.[] | select(.applied == true) | .name'
