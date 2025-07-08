@@ -108,7 +108,7 @@ stages:
             inputs:
               command: 'test'
               projects: '$(testProjectPath)'
-              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory $(Agent.TempDirectory)/TestResults --verbosity normal'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --results-directory $(Agent.TempDirectory)/TestResults --verbosity normal'
               testRunTitle: 'Unit Tests'
 
           - task: PublishTestResults@2
