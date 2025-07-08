@@ -108,22 +108,22 @@ stages:
             inputs:
               command: 'test'
               projects: '$(testProjectPath)'
-              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage" --results-directory $(Agent.TempDirectory)/TestResults --verbosity normal'
+              arguments: '--configuration $(buildConfiguration) --no-build --verbosity detailed --logger:"console;verbosity=detailed"'
               testRunTitle: 'Unit Tests'
 
           - task: PublishTestResults@2
             displayName: 'Publish test results'
-            condition: succeededOrFailed()
+            condition: always()
             inputs:
               testResultsFormat: 'VSTest'
-              testResultsFiles: '$(Agent.TempDirectory)/TestResults/**/*.trx'
+              testResultsFiles: '**/*.trx'
               testRunTitle: 'Unit Tests'
 
           - task: PublishCodeCoverageResults@2
             displayName: 'Publish code coverage'
-            condition: succeededOrFailed()
+            condition: always()
             inputs:
-              summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
+              summaryFileLocation: '**/coverage.cobertura.xml'
               codeCoverageTool: 'Cobertura'
 
           - task: DotNetCoreCLI@2
