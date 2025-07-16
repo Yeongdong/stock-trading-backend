@@ -34,10 +34,19 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         var httpRequest = CreateBalanceHttpRequest(queryParams, user);
 
         var response = await _httpClient.SendAsync(httpRequest);
+    
+        // HTTP 응답 내용을 먼저 로깅
+        var responseContent = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation("KIS API 응답 - StatusCode: {StatusCode}, Content: {Content}", 
+            response.StatusCode, responseContent);
+
         var kisResponse = await response.Content.ReadFromJsonAsync<KisBalanceResponse>();
+    
+        // 상세 응답 정보 로깅
+        _logger.LogInformation("KIS 응답 파싱 결과 - ReturnCode: {ReturnCode}, MessageCode: {MessageCode}, Message: {Message}", 
+            kisResponse?.ReturnCode, kisResponse?.MessageCode, kisResponse?.Message);
 
         ValidateBalanceResponse(kisResponse);
-
         return CreateAccountBalance(kisResponse);
     }
 
@@ -206,23 +215,30 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         {
             var errorDetail = $"코드: {kisResponse.ReturnCode}/{kisResponse.MessageCode}, 메시지: {kisResponse.Message}";
             _logger.LogError("잔고조회 실패 - {ErrorDetail}", errorDetail);
-            throw new Exception($"잔고조회 실패: {GetSimplifiedErrorMessage(kisResponse.MessageCode, kisResponse.Message)}");
+            throw new Exception($"잔고조회 실패: {GetDetailedErrorMessage(kisResponse.MessageCode, kisResponse.Message)}");
         }
 
         if (!kisResponse.HasData)
             throw new Exception("잔고조회 데이터가 없습니다.");
     }
 
-    private static string GetSimplifiedErrorMessage(string messageCode, string message)
+    private static string GetDetailedErrorMessage(string messageCode, string message)
     {
+        // 빈 메시지 처리
+        if (string.IsNullOrWhiteSpace(message))
+            message = "API 서버에서 상세 메시지를 제공하지 않음";
+        
+        if (string.IsNullOrWhiteSpace(messageCode))
+            messageCode = "UNKNOWN";
+
         return messageCode switch
         {
-            var code when code?.StartsWith("EGW") == true => "API 서버 에러",
-            var code when code?.StartsWith("40") == true => "인증 또는 권한 부족",
-            var code when code?.StartsWith("50") == true => "서버 내부 에러",
-            var code when code?.Contains("RATE") == true => "API 호출 제한 초과",
-            var code when code?.Contains("TOKEN") == true => "토큰 만료 또는 무효",
-            _ => message ?? "알 수 없는 에러"
+            var code when code?.StartsWith("EGW") == true => $"API 게이트웨이 에러 ({messageCode}): {message}",
+            var code when code?.StartsWith("40") == true => $"인증/권한 에러 ({messageCode}): {message}",
+            var code when code?.StartsWith("50") == true => $"서버 내부 에러 ({messageCode}): {message}",
+            var code when code?.Contains("RATE") == true => $"API 호출 제한 초과 ({messageCode}): {message}",
+            var code when code?.Contains("TOKEN") == true => $"토큰 관련 에러 ({messageCode}): {message}",
+            _ => $"알 수 없는 에러 (코드: {messageCode}): {message}"
         };
     }
 
