@@ -20,7 +20,7 @@ public class KisTokenRefreshService : IKisTokenRefreshService
             return false;
 
         if (KisValidationHelper.IsTokenValid(user.KisToken))
-            return false;
+            return true;
 
         return await RefreshTokenAsync(user);
     }
