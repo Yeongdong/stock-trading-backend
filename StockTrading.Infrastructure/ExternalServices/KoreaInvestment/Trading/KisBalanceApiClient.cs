@@ -197,13 +197,33 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
         return httpRequest;
     }
 
-    private static void ValidateBalanceResponse(KisBalanceResponse? kisResponse)
+    private void ValidateBalanceResponse(KisBalanceResponse? kisResponse)
     {
+        if (kisResponse == null)
+            throw new Exception("잔고조회 응답을 받지 못했습니다.");
+
         if (!kisResponse.IsSuccess)
-            throw new Exception($"잔고조회 실패: {kisResponse.Message}");
+        {
+            var errorDetail = $"코드: {kisResponse.ReturnCode}/{kisResponse.MessageCode}, 메시지: {kisResponse.Message}";
+            _logger.LogError("잔고조회 실패 - {ErrorDetail}", errorDetail);
+            throw new Exception($"잔고조회 실패: {GetSimplifiedErrorMessage(kisResponse.MessageCode, kisResponse.Message)}");
+        }
 
         if (!kisResponse.HasData)
             throw new Exception("잔고조회 데이터가 없습니다.");
+    }
+
+    private static string GetSimplifiedErrorMessage(string messageCode, string message)
+    {
+        return messageCode switch
+        {
+            var code when code?.StartsWith("EGW") == true => "API 서버 에러",
+            var code when code?.StartsWith("40") == true => "인증 또는 권한 부족",
+            var code when code?.StartsWith("50") == true => "서버 내부 에러",
+            var code when code?.Contains("RATE") == true => "API 호출 제한 초과",
+            var code when code?.Contains("TOKEN") == true => "토큰 만료 또는 무효",
+            _ => message ?? "알 수 없는 에러"
+        };
     }
 
     private static AccountBalance CreateAccountBalance(KisBalanceResponse? kisResponse)
