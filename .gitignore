@@ -68,3 +68,25 @@ key-*.xml
 *.ntvs*
 *.njsproj.user
 *.sln.iml
+
+cat >> .gitignore << 'EOF'
+
+# SonarQube 분석 결과
+.sonarqube/
+coverage/
+TestResults/
+**/TestResults/
+
+# NuGet 패키지 잠금 파일
+packages.lock.json
+**/packages.lock.json
+
+# Docker 볼륨 데이터
+sonarqube_data/
+postgresql_sonar_data/
+
+# 임시 분석 파일
+*.sarif
+sonar-project.properties
+
+EOF
