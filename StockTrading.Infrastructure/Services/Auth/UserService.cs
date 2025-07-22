@@ -38,7 +38,7 @@ public class UserService : IUserService
         return await CreateNewGoogleUserAsync(payload);
     }
 
-    public async Task<UserInfo> GetUserByEmailAsync(string email)
+    public async Task<UserInfo> GetUserByEmailAsync(string? email)
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("이메일은 필수입니다.", nameof(email));

@@ -8,7 +8,7 @@ namespace StockTrading.Application.Features.Users.Services;
 public interface IUserService
 {
     Task<UserInfo> CreateOrGetGoogleUserAsync(GoogleJsonWebSignature.Payload payload);
-    Task<UserInfo> GetUserByEmailAsync(string email);
+    Task<UserInfo> GetUserByEmailAsync(string? email);
     Task DeleteAccountAsync(int userId);
     Task<AccountBalance> GetAccountBalanceWithDailyProfitAsync(UserInfo user, ITradingService tradingService);
 }

@@ -5,7 +5,7 @@ namespace StockTrading.Domain.Entities;
 public class User
 {
     public int Id { get; init; }
-    public string Email { get; init; } = null!;
+    public string? Email { get; init; } = null!;
     public string Name { get; set; } = null!;
     public string GoogleId { get; init; } = null!;
     public DateTime CreatedAt { get; init; }

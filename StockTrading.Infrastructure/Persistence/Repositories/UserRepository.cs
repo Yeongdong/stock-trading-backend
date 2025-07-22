@@ -25,7 +25,7 @@ public class UserRepository : BaseRepository<User, int>, IUserRepository
         return await DbSet.FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<User?> GetByEmailWithTokenAsync(string email)
+    public async Task<User?> GetByEmailWithTokenAsync(string? email)
     {
         return await DbSet
             .Include(u => u.KisToken)

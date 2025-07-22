@@ -66,13 +66,13 @@ public class AuthController : BaseController
     [HttpGet("check")]
     public async Task<IActionResult> CheckAuth()
     {
-        var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+        var authHeader = Request.Headers.Authorization.FirstOrDefault();
         if (authHeader == null || !authHeader.StartsWith("Bearer "))
             return Unauthorized(new { Message = "인증되지 않음" });
 
         var token = authHeader["Bearer ".Length..].Trim();
 
-        var principal = _jwtService.ValidateToken(token);
+        _jwtService.ValidateToken(token);
         var user = await GetCurrentUserAsync();
 
         await _kisTokenRefreshService.EnsureValidTokenAsync(user);
@@ -98,7 +98,7 @@ public class AuthController : BaseController
         return Ok(new LoginResponse
         {
             AccessToken = token,
-            ExpiresIn = 3600,   
+            ExpiresIn = 3600,
             User = masterUser,
             IsAuthenticated = true,
             Message = "마스터 로그인 성공"
