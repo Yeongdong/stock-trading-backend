@@ -26,27 +26,36 @@ public class KrxApiClient
     {
         _logger.LogInformation("KRX 주식종목 목록 조회 시작");
 
-        var retryCount = 0;
-        Exception lastException = null!;
-
-        while (retryCount <= _settings.RetryCount)
+        for (var retryCount = 0; retryCount <= _settings.RetryCount; retryCount++)
         {
             var requestData = CreateStockListRequest();
             var response = await _httpClient.PostAsync(_settings.StockListEndpoint, requestData);
-            
-            if (!response.IsSuccessStatusCode)
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonContent = await response.Content.ReadAsStringAsync();
+                var result = ParseStockListResponse(jsonContent);
+                _logger.LogInformation("KRX 주식종목 목록 조회 완료: {Count}개 종목", result.Stocks.Count);
+                return result;
+            }
+
+            // 마지막 시도인 경우 예외 발생
+            if (retryCount == _settings.RetryCount)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 throw new HttpRequestException($"KRX API 호출 실패: {response.StatusCode} - {errorContent}");
             }
 
-            var jsonContent = await response.Content.ReadAsStringAsync();
-            var result = ParseStockListResponse(jsonContent);
-            _logger.LogInformation("KRX 주식종목 목록 조회 완료: {Count}개 종목", result.Stocks.Count);
-            return result;
+            // 재시도 로직
+            _logger.LogWarning("KRX API 호출 실패 (시도 {Current}/{Total}): {StatusCode}", retryCount + 1,
+                _settings.RetryCount + 1, response.StatusCode);
+
+            var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount + 1));
+            _logger.LogInformation("{Delay}초 후 재시도", delay.TotalSeconds);
+            await Task.Delay(delay);
         }
 
-        throw new InvalidOperationException("KRX API 호출 실패: 최대 재시도 횟수 초과", lastException);
+        throw new InvalidOperationException("예상치 못한 상황");
     }
 
     private void ConfigureHttpClient()
@@ -77,13 +86,13 @@ public class KrxApiClient
     {
         using var jsonDoc = JsonDocument.Parse(jsonContent);
         var root = jsonDoc.RootElement;
-    
+
         if (!root.TryGetProperty("OutBlock_1", out var dataArray))
             throw new InvalidOperationException("KRX API 응답에서 'OutBlock_1' 속성을 찾을 수 없습니다.");
-    
+
         var stocks = new List<KrxStockItem>();
         var invalidCount = 0;
-    
+
         foreach (var stock in dataArray.EnumerateArray()
                      .Select(item => JsonSerializer.Deserialize<KrxStockItem>(item.GetRawText())))
         {
@@ -92,10 +101,10 @@ public class KrxApiClient
             else
                 invalidCount++;
         }
-    
+
         if (invalidCount > 0)
             _logger.LogWarning("유효하지 않은 종목 데이터: {InvalidCount}개", invalidCount);
-    
+
         return new KrxStockListResponse { Stocks = stocks };
     }
 }
