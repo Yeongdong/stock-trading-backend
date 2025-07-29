@@ -1,108 +1,192 @@
-# 📈 Stock Trading Backend – C# Clean Architecture Project
+# 📈 실시간 주식 거래 시스템
 
-## 🎯 프로젝트 개요
-
-> 실제 증권사 API(한국투자증권 OpenAPI)를 연동하여 주식 실시간 시세 스트리밍, 주문 처리, 잔고 조회 등의 기능을 제공하는 **백엔드 중심 트레이딩 시스템**입니다.
+> 한국투자증권 OpenAPI 연동 실시간 주식 거래 플랫폼
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=flat&logo=dotnet)](https://dotnet.microsoft.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql)](https://postgresql.org/)
 [![SignalR](https://img.shields.io/badge/SignalR-WebSocket-007ACC?style=flat)](https://dotnet.microsoft.com/apps/aspnet/signalr)
 [![Clean Architecture](https://img.shields.io/badge/Architecture-Clean-green?style=flat)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 
-## 🛠 기술 스택
+[🔗 서비스 데모](https://happy-glacier-0243a741e.6.azurestaticapps.net) | [🎨 프론트엔드 저장소](https://github.com/Yeongdong/stock-trading-frontend)
 
-| 분류                 | 기술 스택                                     | 설명                                  |
-|:-------------------|:------------------------------------------|:------------------------------------|
-| **Backend**        | ASP.NET Core 8.0 (C# 12)                  | 고성능 백엔드 API 개발 및 최신 C# 문법 활용        |
-| **Architecture**   | Clean Architecture (DDD 적용)               | 비즈니스 로직의 독립성과 테스트 용이성을 위한 아키텍처 설계   |
-| **Database**       | PostgreSQL 16 + Entity Framework Core 9.0 | 관계형 데이터베이스 관리 및 ORM을 통한 효율적인 데이터 접근 |
-| **Real-time**      | SignalR (WebSocket 기반)                    | 클라이언트-서버 간 실시간 양방향 통신 구현            |
-| **Caching**        | Redis + 메모리 캐시                            | 분산/로컬 캐시를 통한 데이터 조회 성능 최적화          |
-| **Authentication** | JWT + Google OAuth 2.0                    | 안전한 사용자 인증 및 권한 부여 시스템 구축           |
-| **External API**   | 한국투자증권 OpenAPI + 한국거래소 API                | 실제 금융 데이터를 위한 외부 금융 API 연동 및 데이터 처리 |
-| **Testing**        | xUnit + Moq + FluentAssertions            | 단위 및 통합 테스트를 통한 코드 품질 및 안정성 확보      |
-| **Documentation**  | Swagger/OpenAPI 3.0                       | API 엔드포인트 자동 문서화 및 테스트 환경 제공        |
+## 🎯 프로젝트 개요
 
-## 🏗️ 아키텍처 개요
+**실시간 주식 트레이딩 시스템**은 한국투자증권 OpenAPI와 연동하여 실시간 주식 거래, 포트폴리오 관리, 시장 데이터 분석 기능을 제공하는 금융 거래 플랫폼입니다.
+
+### 주요 특징
+
+- **실제 증권사 API 연동**: 한국투자증권 OpenAPI 직접 연동
+- **실시간 데이터 처리**: SignalR을 통한 실시간 주가 스트리밍
+- **Clean Architecture**: 계층별 의존성 분리 및 테스트 용이성 확보
+- **고성능 캐싱**: Redis + 메모리 캐시 다층 구조로 응답 속도 최적화
+
+## 🏗️ 시스템 아키텍처
+
+### Clean Architecture 계층 구조
 
 ```
 ┌─────────────────────────────────────────────┐
 │           🌐 API Layer (ASP.NET)            │
-│     Controllers, SignalR, Middleware        │
+│     Controllers, SignalR Hubs, Middleware   │
 ├─────────────────────────────────────────────┤
 │           📋 Application Layer              │
-│      Services, DTOs, Business Logic         │
+│      Services, DTOs, UseCases, Validators   │
 ├─────────────────────────────────────────────┤
 │          🏗 Infrastructure Layer            │
-│     Repositories, External APIs, Cache      │
+│   Repositories, External APIs, Cache, DB    │
 ├─────────────────────────────────────────────┤
 │              💼 Domain Layer                │
-│        Entity, Enum, Exception, Rule        │
+│     Entities, ValueObjects, Enums, Rules    │
 └─────────────────────────────────────────────┘
 ```
 
-**Clean Architecture 핵심 원칙:**
+### 시스템 구성도
 
-- **의존성 역전(DIP)**: Application → Interface → Infrastructure 구조로 느슨한 결합
-- **도메인 중심 설계**: Stock, Order, User 등 핵심 엔티티 명확 정의
+```mermaid
+graph TB
+    Client[프론트엔드<br/>Next.js + TypeScript]
+    
+    subgraph "백엔드 시스템"
+        API[API Layer<br/>ASP.NET Core]
+        App[Application Layer<br/>Business Logic]
+        Hub[SignalR Hub<br/>실시간 통신]
+        Infra[Infrastructure Layer<br/>DB + Cache + External API]
+    end
+    
+    subgraph "데이터 저장소"
+        DB[(PostgreSQL<br/>사용자 데이터)]
+        Cache[(Redis<br/>캐시 데이터)]
+    end
+    
+    subgraph "외부 API"
+        KIS[한국투자증권<br/>OpenAPI]
+        KRX[한국거래소<br/>API]
+    end
+    
+    Client -.->|WebSocket| Hub
+    Client -->|HTTP| API
+    API --> App
+    App --> Infra
+    Infra --> DB
+    Infra --> Cache
+    Infra --> KIS
+    Infra --> KRX
+    Hub --> Client
+```
+
+## 🛠 기술 스택
+
+| 분류            | 기술                    | 버전    | 용도          |
+|---------------|-----------------------|-------|-------------|
+| **Framework** | ASP.NET Core          | 8.0   | 웹 API 프레임워크 |
+| **Language**  | C#                    | 12    | 프로그래밍 언어    |
+| **Database**  | PostgreSQL            | 16    | 관계형 데이터베이스  |
+| **ORM**       | Entity Framework Core | 8.0   | 데이터베이스 접근   |
+| **Cache**     | Redis                 | 분산 캐시 | 성능 최적화      |
+| **Real-time** | SignalR               | 8.0   | 실시간 통신      |
 
 ## 📁 프로젝트 구조
 
-```plaintext
+```
 StockTrading/
-├── StockTrading.API/            # API 진입점 (Controllers, SignalR Hubs)
-├── StockTrading.Application/    # 유즈케이스, 서비스 인터페이스
-├── StockTrading.Infrastructure/ # DB, Redis, 외부 API 구현체
-├── StockTrading.Domain/         # 핵심 비즈니스 모델 (Entity, Enum)
-└── StockTrading.Tests/          # 단위 및 통합 테스트
+├── StockTrading.API/                    # API 진입점
+│   ├── Controllers/                     # REST API 컨트롤러
+│   ├── Hubs/                           # SignalR 허브
+│   ├── Middlewares/                    # 미들웨어 (인증, 로깅, 예외처리)
+│   └── Program.cs                      # 애플리케이션 진입점
+│
+├── StockTrading.Application/            # 애플리케이션 계층
+│   ├── Services/                       # 비즈니스 서비스 인터페이스
+│   ├── DTOs/                          # 데이터 전송 객체
+│   ├── Features/                      # 기능별 유즈케이스
+│   │   ├── Auth/                      # 인증 관련
+│   │   ├── Market/                    # 시장 데이터
+│   │   ├── Trading/                   # 거래 관련
+│   │   └── Users/                     # 사용자 관리
+│   └── ExternalServices/              # 외부 서비스 인터페이스
+│
+├── StockTrading.Infrastructure/         # 인프라스트럭처 계층
+│   ├── Data/                          # 데이터베이스 컨텍스트
+│   ├── Repositories/                  # 데이터 접근 구현체
+│   ├── ExternalServices/              # 외부 서비스 구현
+│   │   └── KoreaInvestment/          # 한국투자증권 API 클라이언트
+│   │       ├── Common/               # 공통 기능
+│   │       ├── Market/               # 시장 데이터 API
+│   │       ├── Trading/              # 거래 API
+│   │       └── RealTime/             # 실시간 데이터
+│   └── Configurations/                # DI 설정 및 구성
+│
+├── StockTrading.Domain/                 # 도메인 계층
+│   ├── Entities/                      # 핵심 엔티티
+│   ├── ValueObjects/                  # 값 객체
+│   ├── Enums/                        # 열거형
+│   ├── Exceptions/                   # 도메인 예외
+│   └── Settings/                     # 설정 모델
+│
+└── StockTrading.Tests/                  # 테스트
+├── Unit/                          # 단위 테스트
+├── Integration/                   # 통합 테스트
+└── TestHelpers/                  # 테스트 헬퍼
 ```
 
-## 🚀 핵심 기능
+## 🚀 주요 API 엔드포인트
 
-### **실시간 주식 거래 API**
+### 인증 관련 API
 
-- `POST /api/trading/order` : 주식 주문 생성
-- `GET /api/trading/balance` : 계좌 잔고 조회
-- `GET /api/trading/buyable-inquiry` : 매수 가능 금액 조회
-- `GET /api/trading/executions` : 주문 체결 내역 조회
+```http
+POST   /api/auth/google              # Google OAuth 로그인
+POST   /api/auth/refresh             # JWT 토큰 갱신
+GET    /api/auth/profile             # 사용자 프로필 조회
+```
 
-### **시장 데이터 API**
+### 시장 데이터 API
 
-- `GET /api/stock/search` : 국내 주식 검색
-- `GET /api/stock/overseas/search` : 해외 주식 검색
-- `GET /api/stock/overseas/markets/{market}` : 시장별 종목 조회
+```http
+GET    /api/market/stocks/search            # 주식 종목 검색
+GET    /api/market/stocks/{stockCode}       # 종목 상세 정보
+GET    /api/market/stocks/overseas/search   # 해외 주식 검색
+GET    /api/market/stocks/overseas/markets/{market} # 시장별 종목 조회
+```
 
-### **인증 및 사용자 관리**
+### 거래 관련 API
 
-- `POST /api/auth/google` : Google OAuth 2.0 로그인
-- `POST /api/auth/refresh` : JWT 토큰 갱신
-- SignalR 실시간 연결 관리 및 브로드캐스팅
+```http
+POST   /api/trading/orders                  # 주문 생성
+GET    /api/trading/balance                 # 계좌 잔고 조회
+GET    /api/trading/buyable-inquiry         # 매수 가능 금액 조회
+GET    /api/trading/executions              # 체결 내역 조회
+```
 
 ## ⚡ 핵심 기술 구현
 
 ### **1. Clean Architecture 의존성 관리**
 
-**의존성 역전 원칙(DIP)** 을 통해 비즈니스 로직과 인프라 구현을 완전히 분리
+**의존성 역전 원칙(DIP)** 을 통한 계층 간 느슨한 결합 구현
 
 ```csharp
-// Application Layer - 인터페이스 정의
+// Application Layer - 서비스 인터페이스 정의
 public interface IStockService
 {
     Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page, int pageSize);
-    Task<StockSearchResult?> GetStockByCodeAsync(string code);
+    Task<StockDetails?> GetStockDetailsAsync(string stockCode);
 }
 
-// Infrastructure Layer - 캐시 전략이 포함된 구현체
+// Infrastructure Layer - 구현체
 public class StockService : IStockService
 {
-    public async Task<StockSearchResult?> GetStockByCodeAsync(string code)
+    private readonly IStockRepository _repository;
+    private readonly IStockCacheService _cacheService;
+
+    public async Task<StockDetails?> GetStockDetailsAsync(string stockCode)
     {
-        var cached = await _cacheService.GetStockByCodeAsync(code); // 캐시 우선
+        // 캐시 우선 조회
+        var cached = await _cacheService.GetStockDetailsAsync(stockCode);
         if (cached != null) return cached;
 
-        var result = await _repository.GetByCodeAsync(code); // DB 조회
+        // DB 조회 후 캐싱
+        var result = await _repository.GetByCodeAsync(stockCode);
         if (result != null)
-            await _cacheService.SetStockByCodeAsync(code, result); // 캐싱
+            await _cacheService.SetStockDetailsAsync(stockCode, result);
 
         return result;
     }
@@ -114,12 +198,15 @@ public class StockService : IStockService
 안정적인 실시간 주가 데이터 브로드캐스팅과 연결 상태 관리 구현
 
 ```csharp
-// SignalR Hub - 실시간 주가 브로드캐스팅
+// SignalR Hub - 실시간 통신 허브
+[Authorize]
 public class StockHub : Hub
 {
-    public async Task SendStockPrice(string symbol, decimal price)
+    public override async Task OnConnectedAsync()
     {
-        await Clients.All.SendAsync("ReceiveStockPrice", symbol, price);
+        var userEmail = Context.User?.FindFirst(ClaimTypes.Email)?.Value;
+        _logger.LogInformation("사용자 연결: {UserEmail}", userEmail);
+        await base.OnConnectedAsync();
     }
 
     // 연결 상태 확인
@@ -136,34 +223,67 @@ public class StockHub : Hub
 }
 ```
 
-### **3. 다층 캐싱 전략 (Redis + Memory)**
+### 3. 한국투자증권 API 연동
 
-**L1(메모리) + L2(Redis)** 캐시 조합으로 데이터 조회 성능 극대화
+실제 금융 API와의 안정적인 연동 및 에러 처리
 
 ```csharp
+// KIS API 클라이언트 베이스 클래스
+public abstract class KisApiClientBase
+{
+    protected readonly HttpClient _httpClient;
+    protected readonly KoreaInvestmentSettings _settings;
+
+    protected async Task<T> SendRequestAsync<T>(HttpRequestMessage request)
+    {
+        var response = await _httpClient.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<T>(content);
+    }
+}
+
+// 잔고 조회 API 클라이언트
+public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
+{
+    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
+    {
+        var queryParams = CreateBalanceQueryParams(user);
+        var httpRequest = CreateBalanceHttpRequest(queryParams, user);
+        
+        var kisResponse = await SendRequestAsync<KisBalanceResponse>(httpRequest);
+        return CreateAccountBalance(kisResponse);
+    }
+}
+```
+
+### 4. 다층 캐싱 전략 구현
+
+L1(메모리) + L2(Redis) 캐시로 성능 최적화
+
+```csharp
+// 캐시 서비스 구현
 public class StockCacheService : IStockCacheService
 {
-    private readonly IDistributedCache _distributedCache; // Redis
-    private readonly IMemoryCache _memoryCache; // L1 Cache
+    private readonly IDistributedCache _distributedCache; // Redis (L2)
+    private readonly IMemoryCache _memoryCache;           // Memory (L1)
 
     public async Task<StockSearchResponse?> GetSearchResultAsync(string searchTerm, int page, int pageSize)
     {
-        var key = CacheKeys.SearchResult(searchTerm, page, pageSize);
+        var cacheKey = GenerateCacheKey("search", searchTerm, page, pageSize);
         
-        // L1 캐시 확인
-        if (_memoryCache.TryGetValue(key, out StockSearchResponse? cached))
-        {
-            _cacheMetrics.RecordHit(key);
-            return cached;
-        }
+        // L1 캐시 확인 (메모리)
+        if (_memoryCache.TryGetValue(cacheKey, out StockSearchResponse? memoryResult))
+            return memoryResult;
 
-        // L2 캐시 확인
-        var distributedData = await _distributedCache.GetStringAsync(key);
-        if (distributedData != null)
+        // L2 캐시 확인 (Redis)
+        var distributedData = await _distributedCache.GetStringAsync(cacheKey);
+        if (!string.IsNullOrEmpty(distributedData))
         {
-            var result = JsonSerializer.Deserialize<StockSearchResponse>(distributedData);
-            _memoryCache.Set(key, result, TimeSpan.FromMinutes(5)); // L1에 캐싱
-            return result;
+            var redisResult = JsonSerializer.Deserialize<StockSearchResponse>(distributedData);
+            _memoryCache.Set(cacheKey, redisResult, TimeSpan.FromMinutes(5));
+            return redisResult;
         }
 
         return null;
@@ -171,163 +291,48 @@ public class StockCacheService : IStockCacheService
 }
 ```
 
-### **4. 한국투자증권 API 연동**
-
-실제 금융 API와의 안정적인 연동 및 에러 처리 구현
-
-```csharp
-public class KisPriceApiClient : KisApiClientBase
-{
-    public async Task<DomesticCurrentPriceResponse> GetDomesticCurrentPriceAsync(
-        CurrentPriceRequest request, UserInfo user)
-    {
-        var queryParams = CreateCurrentPriceQueryParams(request);
-        var httpRequest = CreateCurrentPriceHttpRequest(queryParams, user);
-
-        var response = await _httpClient.SendAsync(httpRequest);
-        response.EnsureSuccessStatusCode();
-        
-        var kisResponse = await response.Content.ReadFromJsonAsync<KisStockPriceResponse>();
-        return _priceConverter.ConvertToDomesticCurrentPrice(kisResponse);
-    }
-}
-```
-
-## 🎯 기술적 도전과 해결 과정
-
-### **도전 1: 대용량 실시간 데이터 처리**
-
-**문제**: 초당 수백 건의 주가 데이터 처리 시 메모리 사용량 급증  
-**해결**: Redis 기반 분산 캐시 + 메모리 캐시 조합으로 **응답 시간 92% 개선**
-
-### **도전 2: 외부 API 의존성 관리**
-
-**문제**: 한국투자증권 API 장애 시 전체 시스템 마비  
-**해결**: Circuit Breaker 패턴 + 재시도 전략으로 **API 에러율 98% 감소**
-
 ## 📊 성능 최적화 결과
 
 | 메트릭         | Before | After | 개선율       |
 |-------------|--------|-------|-----------|
 | 주식 검색 응답 시간 | 200ms  | 15ms  | **92% ↓** |
 | 캐시 히트율      | -      | 85%   | **신규**    |
-| 동시 연결 처리    | 100    | 1000+ | **10배 ↑** |
 | API 에러율     | 5%     | 0.1%  | **98% ↓** |
 
-## 🧪 테스트 전략
+## 🧪 테스트 구성
+
+### 테스트 예시
 
 ```csharp
-// 단위 테스트 - Arrange, Act, Assert 패턴
-[Fact]
-public async Task GetStockByCode_ValidCode_ReturnsStock()
+// 단위 테스트 - 서비스 레이어
+public class StockServiceTests
 {
-    // Arrange
-    var mockRepository = new Mock<IStockRepository>();
-    mockRepository.Setup(r => r.GetByCodeAsync("005930"))
-              .ReturnsAsync(new Stock { Code = "005930", Name = "삼성전자" });
-    
-    var service = new StockService(mockRepository.Object);
-    
-    // Act
-    var result = await service.GetStockByCodeAsync("005930");
-    
-    // Assert
-    result.Should().NotBeNull();
-    result.Code.Should().Be("005930");
-}
+    private readonly Mock<IStockRepository> _mockRepository;
+    private readonly StockService _service;
 
-// 통합 테스트
-[Fact]
-public async Task GetStock_ValidCode_ReturnsOkResult()
-{
-    var response = await _client.GetAsync("/api/market/stock/005930");
-    response.StatusCode.Should().Be(HttpStatusCode.OK);
+    [Fact]
+    public async Task GetStockDetailsAsync_ValidCode_ReturnsStockDetails()
+    {
+        // Arrange
+        var stockCode = "005930";
+        var expectedStock = new Stock { Code = stockCode, Name = "삼성전자" };
+        _mockRepository.Setup(x => x.GetByCodeAsync(stockCode))
+                      .ReturnsAsync(expectedStock);
+
+        // Act
+        var result = await _service.GetStockDetailsAsync(stockCode);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Code.Should().Be(stockCode);
+    }
 }
 ```
-
-**테스트 커버리지**: Controllers, Services, Repositories, Infrastructure 계층별 85% 달성
-
-## 💡 핵심 학습 성과
-
-### **아키텍처 설계 역량**
-
-- Clean Architecture 패턴 실무 적용으로 **계층 분리와 의존성 관리** 경험
-- SOLID 원칙 준수한 객체지향 설계로 **확장 가능한 코드 구조** 구현
-
-### **실시간 시스템 구현**
-
-- SignalR을 활용한 **WebSocket 기반 실시간 통신** 기술 완전 습득
-- 대용량 동시 연결 처리 및 **연결 상태 관리** 메커니즘 구현
-
-### **성능 최적화**
-
-- **다층 캐싱 전략** 설계로 응답 시간 92% 개선 달성
-- Redis 분산 캐시 아키텍처 학습 및 실무 적용
-
-## 🔧 설치 및 실행
-
-### **Prerequisites**
-
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [PostgreSQL 16+](https://www.postgresql.org/download/)
-- [Redis](https://redis.io/download/)
-
-### **Quick Start**
-
-```bash
-# 1. 저장소 클론
-git clone https://github.com/Yeongdong/stock-trading-backend.git
-cd stock-trading-backend
-
-# 2. 데이터베이스 생성
-createdb stock_trading
-
-# 3. 환경 설정
-cp appsettings.Example.json appsettings.Development.json
-
-# 4. 마이그레이션 적용
-dotnet ef database update --project StockTrading.Infrastructure
-
-# 5. 애플리케이션 실행
-dotnet run --project StockTrading.API
-```
-
-### **환경설정 예시**
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=stock_trading;Username=postgres;Password=your_password"
-  },
-  "KoreaInvestmentSettings": {
-    "BaseUrl": "https://openapi.koreainvestment.com:9443",
-    "AppKey": "YOUR_APP_KEY",
-    "AppSecret": "YOUR_APP_SECRET"
-  },
-  "RedisSettings": {
-    "ConnectionString": "localhost:6379"
-  }
-}
-```
-
-🌐 **실행 후 접속:** `https://localhost:7072/swagger`
-
-## 🔮 향후 개발 계획
-
-- [ ] **Kubernetes** 기반 컨테이너 오케스트레이션 구축
-- [ ] **gRPC** 도입으로 마이크로서비스 간 통신 최적화
-- [ ] **Event Sourcing** 패턴 적용으로 거래 이력 추적 강화
-- [ ] **ML.NET** 활용한 주가 예측 모델 연동
 
 ---
 
-## 📞 연락처
+## 📞 문의사항
 
-**정영동** - 백엔드 개발자
-
-- 📧 **이메일**: jyd37855@gmail.com
-- 🐙 **GitHub**: [GitHub 프로필](https://github.com/Yeongdong)
-- 🎨 **프론트엔드 저장소**: [Stock Trading Frontend](https://github.com/your-username/stock-trading-frontend)
-
-> 이 프로젝트는 Clean Architecture를 실무에 적용하여 확장 가능하고 테스트 가능한 금융 시스템을 구현한 결과물입니다. 복잡한 비즈니스 도메인 모델링과 외부 API 연동의 안정성 확보, 실시간 데이터
-> 처리 성능 최적화 경험을 통해 실제 서비스 개발에 기여할 준비가 되어 있습니다.
+- **개발자**: 정영동  
+- **이메일**: jyd37855@gmail.com  
+- **GitHub**: [@Yeongdong](https://github.com/Yeongdong)
