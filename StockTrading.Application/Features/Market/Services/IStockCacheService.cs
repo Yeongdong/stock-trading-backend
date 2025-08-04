@@ -1,51 +1,38 @@
-using StockTrading.Application.Features.Market.DTOs.Cache;
 using StockTrading.Application.Features.Market.DTOs.Stock;
 
 namespace StockTrading.Application.Features.Market.Services;
 
 public interface IStockCacheService
 {
-    #region 검색 결과 캐시
+    #region 통합 검색
 
-    Task<StockSearchResponse?> GetSearchResultAsync(string searchTerm, int page, int pageSize);
-    Task SetSearchResultAsync(string searchTerm, int page, int pageSize, StockSearchResponse response);
-
-    #endregion
-
-    #region 자동완성 캐시
-
-    Task<CachedAutoCompleteResponse?> GetAutoCompleteAsync(string prefix, int maxResults = 10);
-    Task SetAutoCompleteAsync(string prefix, List<CachedAutoCompleteItem> items, int maxResults = 10);
+    Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20);
+    Task LoadAllStocksAsync();
+    Task RefreshCacheAsync();
 
     #endregion
 
-    #region 종목 상세 캐시
+    #region 종목 상세
 
     Task<StockSearchResult?> GetStockByCodeAsync(string code);
-    Task SetStockByCodeAsync(string code, StockSearchResult stock);
-
-    #endregion
-
-    #region 요약 정보 캐시
-
-    Task<CachedStockSummary?> GetStockSummaryAsync();
-    Task SetStockSummaryAsync(StockSearchSummary summary);
 
     #endregion
 
     #region 캐시 관리
 
-    Task InvalidateSearchCacheAsync();
-    Task InvalidateAllStockCacheAsync();
-    Task InvalidateCacheByPatternAsync(string pattern);
-    Task<CachePerformanceSummary> GetCacheMetricsAsync();
+    void InvalidateCache();
+    CacheStats GetCacheStats();
 
     #endregion
+}
 
-    #region 인기 검색어 관리
-
-    Task IncrementSearchCountAsync(string searchTerm);
-    Task<List<PopularSearchTerm>> GetPopularSearchTermsAsync(int count = 10);
-
-    #endregion
+/// <summary>
+/// 캐시 통계
+/// </summary>
+public class CacheStats
+{
+    public int TotalStocks { get; set; }
+    public DateTime LastLoadedAt { get; set; }
+    public long SearchCount { get; set; }
+    public double HitRatio { get; set; }
 }

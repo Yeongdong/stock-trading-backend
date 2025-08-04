@@ -39,118 +39,70 @@ public class StockService : IStockService
 
     public async Task<StockSearchResponse> SearchStocksAsync(string searchTerm, int page = 1, int pageSize = 20)
     {
-        var cachedResult = await _stockCacheService.GetSearchResultAsync(searchTerm, page, pageSize);
-        if (cachedResult != null)
-            return cachedResult;
-
-        var stocks = await _stockRepository.SearchByNameAsync(searchTerm, page, pageSize);
-        var totalCount = await GetSearchTotalCountAsync(searchTerm);
-
-        var stockResults = stocks.Select(s => new StockSearchResult
+        if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            Code = s.Code,
-            Name = s.Name,
-            FullName = s.FullName,
-            EnglishName = s.EnglishName,
-            Sector = s.Sector,
-            Market = s.Market.GetDescription(),
-            Currency = s.Currency.GetDescription(),
-            StockType = s.StockType,
-            ListedDate = s.ListedDate,
-            LastUpdated = s.LastUpdated
-        }).ToList();
+            return new StockSearchResponse
+            {
+                Results = [],
+                TotalCount = 0,
+                Page = page,
+                PageSize = pageSize,
+                HasMore = false
+            };
+        }
 
-        var response = new StockSearchResponse
-        {
-            Results = stockResults,
-            TotalCount = totalCount,
-            Page = page,
-            PageSize = pageSize,
-            TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-            HasMore = (page * pageSize) < totalCount
-        };
-
-        await _stockCacheService.SetSearchResultAsync(searchTerm, page, pageSize, response);
-        return response;
+        return await _stockCacheService.SearchStocksAsync(searchTerm, page, pageSize);
     }
 
     public async Task<StockSearchResult?> GetStockByCodeAsync(string code)
     {
-        var cachedStock = await _stockCacheService.GetStockByCodeAsync(code);
-        if (cachedStock != null)
-            return cachedStock;
-
-        var stock = await _stockRepository.GetByCodeAsync(code);
-        if (stock == null)
+        if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
             return null;
 
-        var result = new StockSearchResult
-        {
-            Code = stock.Code,
-            Name = stock.Name,
-            FullName = stock.FullName,
-            EnglishName = stock.EnglishName,
-            Sector = stock.Sector,
-            Market = stock.Market.GetDescription(),
-            Currency = stock.Currency.GetDescription(),
-            StockType = stock.StockType,
-            ListedDate = stock.ListedDate,
-            LastUpdated = stock.LastUpdated
-        };
+        // 1. 메모리 캐시에서 조회
+        var cachedResult = await _stockCacheService.GetStockByCodeAsync(code);
+        if (cachedResult != null)
+            return cachedResult;
 
-        await _stockCacheService.SetStockByCodeAsync(code, result);
-        return result;
+        // 2. DB에서 조회
+        var stock = await _stockRepository.GetByCodeAsync(code);
+        return stock != null ? MapToSearchResult(stock) : null;
     }
 
-    public async Task<List<StockSearchResult>> GetStocksByMarketAsync(StockTrading.Domain.Enums.Market market)
+    public async Task<List<StockSearchResult>> GetStocksByMarketAsync(Domain.Enums.Market market)
     {
         var stocks = await _stockRepository.GetByMarketAsync(market);
-
-        return stocks.Select(s => new StockSearchResult
-        {
-            Code = s.Code,
-            Name = s.Name,
-            FullName = s.FullName,
-            EnglishName = s.EnglishName,
-            Sector = s.Sector,
-            Market = s.Market.GetDescription(),
-            Currency = s.Currency.GetDescription(),
-            StockType = s.StockType,
-            ListedDate = s.ListedDate,
-            LastUpdated = s.LastUpdated
-        }).ToList();
+        return stocks.Select(MapToSearchResult).ToList();
     }
 
     public async Task<StockSearchSummary> GetSearchSummaryAsync()
     {
-        var cachedSummary = await _stockCacheService.GetStockSummaryAsync();
-        if (cachedSummary != null)
+        // 메모리 캐시에서 통계 계산
+        var cacheStats = _stockCacheService.GetCacheStats();
+
+        if (cacheStats.TotalStocks > 0)
+        {
+            // 메모리 캐시에서 시장별 카운트 계산
+            var marketCounts = await GetMarketCountsFromCacheAsync();
+
             return new StockSearchSummary
             {
-                TotalCount = cachedSummary.TotalCount,
-                LastUpdated = cachedSummary.LastUpdated,
-                MarketCounts = cachedSummary.MarketCounts
+                TotalCount = cacheStats.TotalStocks,
+                LastUpdated = cacheStats.LastLoadedAt,
+                MarketCounts = marketCounts
             };
-
-        var totalCount = await _stockRepository.GetTotalCountAsync();
-        var lastUpdated = await _stockRepository.GetLastUpdatedAsync();
-
-        var marketCounts = new Dictionary<string, int>();
-        foreach (var market in Enum.GetValues<StockTrading.Domain.Enums.Market>())
-        {
-            var stocks = await _stockRepository.GetByMarketAsync(market);
-            marketCounts[market.GetDescription()] = stocks.Count;
         }
 
-        var summary = new StockSearchSummary
+        // 캐시가 없으면 DB에서 조회
+        var totalCount = await _stockRepository.GetTotalCountAsync();
+        var dbMarketCounts = await GetMarketCountsFromDbAsync();
+
+        return new StockSearchSummary
         {
             TotalCount = totalCount,
-            LastUpdated = lastUpdated,
-            MarketCounts = marketCounts
+            LastUpdated = DateTime.UtcNow,
+            MarketCounts = dbMarketCounts
         };
-
-        await _stockCacheService.SetStockSummaryAsync(summary);
-        return summary;
     }
 
     #endregion
@@ -161,6 +113,7 @@ public class StockService : IStockService
     {
         _logger.LogInformation("국내 주식 데이터 동기화 시작");
 
+        // 1. KRX API에서 최신 주식 데이터 가져오기
         var stockListResponse = await _krxApiClient.GetStockListAsync();
         var validStocks = stockListResponse.Stocks
             .Where(item => !string.IsNullOrWhiteSpace(item.Code) && item.Code.Length == 6)
@@ -178,12 +131,13 @@ public class StockService : IStockService
                 listedDate: ParseListedDate(item.ListedDate)))
             .ToList();
 
+        // 2. DB 업데이트
         await _stockRepository.BulkUpsertAsync(validStocks);
 
-        var summary = await GetSearchSummaryAsync();
-        await _stockCacheService.SetStockSummaryAsync(summary);
+        // 3. 메모리 캐시 갱신
+        await _stockCacheService.RefreshCacheAsync();
 
-        _logger.LogInformation("국내 주식 데이터 동기화 완료: {Count}개", validStocks.Count);
+        _logger.LogInformation("국내 주식 데이터 동기화 완료: {Count}개 종목", validStocks.Count);
     }
 
     #endregion
@@ -257,10 +211,35 @@ public class StockService : IStockService
 
     #region Private Helper Methods
 
-    private async Task<int> GetSearchTotalCountAsync(string searchTerm)
+    private async Task<Dictionary<string, int>> GetMarketCountsFromCacheAsync()
     {
-        var allResults = await _stockRepository.SearchByNameAsync(searchTerm, 1, int.MaxValue);
-        return allResults.Count;
+        // 메모리 캐시에서 모든 종목 조회 후 그룹핑
+        var allStocks = await _stockCacheService.SearchStocksAsync("", 1, int.MaxValue);
+
+        return allStocks.Results
+            .GroupBy(s => s.Market)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private async Task<Dictionary<string, int>> GetMarketCountsFromDbAsync()
+    {
+        // DB에서 모든 종목 조회 후 그룹핑 (캐시 없을 때만)
+        var allStocks = await _stockRepository.GetAllAsync();
+
+        return allStocks
+            .GroupBy(s => s.Market.ToString())
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+
+    private static StockSearchResult MapToSearchResult(Stock stock)
+    {
+        return new StockSearchResult
+        {
+            Code = stock.Code,
+            Name = stock.Name,
+            Sector = stock.Sector,
+            Market = stock.Market.ToString()
+        };
     }
 
     private static string NormalizeSector(string? sector)

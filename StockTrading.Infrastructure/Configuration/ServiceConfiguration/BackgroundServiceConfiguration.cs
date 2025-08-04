@@ -8,6 +8,7 @@ public static class BackgroundServiceConfiguration
     public static IServiceCollection AddBackgroundServices(this IServiceCollection services)
     {
         services.AddHostedService<StockDataSyncService>();
+        services.AddHostedService<MemoryCacheInitializationService>();
         
         return services;
     }

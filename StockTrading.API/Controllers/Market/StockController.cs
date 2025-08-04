@@ -108,7 +108,7 @@ public class StockController : BaseController
 
         var startTime = DateTime.Now;
         await _stockService.SyncDomesticStockDataAsync();
-        var metrics = await _stockCacheService.GetCacheMetricsAsync();
+        var metrics = _stockCacheService.GetCacheStats();
         var duration = DateTime.Now - startTime;
 
         return Ok(new
@@ -116,11 +116,7 @@ public class StockController : BaseController
             message = "종목 데이터 동기화 완료",
             syncTime = startTime.ToString("yyyy-MM-dd HH:mm:ss"),
             duration = duration.TotalSeconds,
-            cacheMetrics = new
-            {
-                hitRatio = metrics.HitRatio,
-                totalRequests = metrics.TotalHits + metrics.TotalMisses
-            }
+            hitRatio = metrics.HitRatio,
         });
     }
 
