@@ -55,10 +55,10 @@ public class TradingController : BaseController
     #region 국내 주식 조회
 
     [HttpGet("balance")]
-    public async Task<IActionResult> GetBalance()
+    public async Task<IActionResult> GetBalance(CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync();
-        var balance = await _userService.GetAccountBalanceWithDailyProfitAsync(user, _tradingService);
+        var balance = await _userService.GetAccountBalanceWithDailyProfitAsync(user, _tradingService, cancellationToken);
     
         return Ok(balance);
     }

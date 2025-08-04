@@ -9,7 +9,7 @@ namespace StockTrading.Application.ExternalServices;
 public interface IKisBalanceApiClient
 {
     // 국내 주식 잔고
-    Task<AccountBalance> GetStockBalanceAsync(UserInfo user);
+    Task<AccountBalance> GetStockBalanceAsync(UserInfo user, CancellationToken cancellationToken = default);
     Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo user);
     
     // 해외 주식 잔고

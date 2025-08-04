@@ -33,9 +33,9 @@ public abstract class KisApiClientBase
         return $"{path}?{query}";
     }
 
-    protected async Task<string> ValidateAndReadResponse(HttpResponseMessage response)
+    protected async Task<string> ValidateAndReadResponse(HttpResponseMessage response, CancellationToken cancellationToken = default)
     {
-        var responseContent = await response.Content.ReadAsStringAsync();
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
             throw new Exception($"KIS API 호출 실패 ({response.StatusCode}): {responseContent}");

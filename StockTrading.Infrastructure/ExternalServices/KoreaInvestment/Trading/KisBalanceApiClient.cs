@@ -28,75 +28,15 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
     #region 국내 주식
 
-    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
+    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user, CancellationToken cancellationToken)
     {
-        Console.WriteLine("=== 잔고조회 시작 ===");
-        Console.WriteLine($"UserId: {user.Id}");
-        Console.WriteLine($"AccountNumber: {user.AccountNumber}");
-        Console.WriteLine($"KisAppKey: {user.KisAppKey}");
-        Console.WriteLine($"KisToken: {user.KisToken?.AccessToken?.Substring(0, 20)}...");
-
         var queryParams = CreateBalanceQueryParams(user);
-        Console.WriteLine("=== 요청 파라미터 ===");
-        foreach (var param in queryParams)
-        {
-            Console.WriteLine($"{param.Key}: {param.Value}");
-        }
-
         var httpRequest = CreateBalanceHttpRequest(queryParams, user);
+        var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        Console.WriteLine("=== 요청 헤더 ===");
-        Console.WriteLine($"Method: {httpRequest.Method}");
-        Console.WriteLine($"RequestUri: {httpRequest.RequestUri}");
-        foreach (var header in httpRequest.Headers)
-        {
-            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-        }
-
-        Console.WriteLine("=== HTTP 요청 전송 ===");
-        var response = await _httpClient.SendAsync(httpRequest);
-
-        Console.WriteLine("=== HTTP 응답 ===");
-        Console.WriteLine($"StatusCode: {response.StatusCode} ({(int)response.StatusCode})");
-        Console.WriteLine($"ReasonPhrase: {response.ReasonPhrase}");
-
-        Console.WriteLine("=== 응답 헤더 ===");
-        foreach (var header in response.Headers)
-        {
-            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-        }
-
-        foreach (var header in response.Content.Headers)
-        {
-            Console.WriteLine($"{header.Key}: {string.Join(", ", header.Value)}");
-        }
-
-        var responseContent = await response.Content.ReadAsStringAsync();
-        Console.WriteLine("=== 응답 본문 ===");
-        Console.WriteLine(responseContent);
-
-        try
-        {
-            var kisResponse = JsonSerializer.Deserialize<KisBalanceResponse>(responseContent);
-            Console.WriteLine("=== JSON 파싱 결과 ===");
-            Console.WriteLine($"ReturnCode: '{kisResponse?.ReturnCode}'");
-            Console.WriteLine($"MessageCode: '{kisResponse?.MessageCode}'");
-            Console.WriteLine($"Message: '{kisResponse?.Message}'");
-            Console.WriteLine($"Output1 Count: {kisResponse?.Positions?.Count ?? 0}");
-            Console.WriteLine($"Output2 Count: {kisResponse?.Summary?.Count ?? 0}");
-            Console.WriteLine($"IsSuccess: {kisResponse?.IsSuccess}");
-            Console.WriteLine($"HasData: {kisResponse?.HasData}");
-
-            ValidateBalanceResponse(kisResponse);
-            return CreateAccountBalance(kisResponse);
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine($"=== JSON 파싱 에러 ===");
-            Console.WriteLine($"Error: {ex.Message}");
-            Console.WriteLine($"응답이 JSON 형식이 아닙니다.");
-            throw new Exception($"KIS API 응답 파싱 실패: {ex.Message}");
-        }
+        var kisResponse = JsonSerializer.Deserialize<KisBalanceResponse>(responseContent);
+        return CreateAccountBalance(kisResponse);
     }
 
     public async Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo user)
@@ -253,56 +193,6 @@ public class KisBalanceApiClient : KisApiClientBase, IKisBalanceApiClient
 
         SetStandardHeaders(httpRequest, _settings.DefaultValues.DomesticBalanceTransactionId, user);
         return httpRequest;
-    }
-
-    private void ValidateBalanceResponse(KisBalanceResponse? kisResponse)
-    {
-        Console.WriteLine("=== 유효성 검사 ===");
-
-        if (kisResponse == null)
-        {
-            Console.WriteLine("kisResponse is null");
-            throw new Exception("잔고조회 응답을 받지 못했습니다.");
-        }
-
-        Console.WriteLine($"Validation - IsSuccess: {kisResponse.IsSuccess}");
-        Console.WriteLine($"Validation - HasData: {kisResponse.HasData}");
-
-        if (!kisResponse.IsSuccess)
-        {
-            var errorDetail = $"코드: {kisResponse.ReturnCode}/{kisResponse.MessageCode}, 메시지: {kisResponse.Message}";
-            Console.WriteLine($"API 에러: {errorDetail}");
-            _logger.LogError("잔고조회 실패 - {ErrorDetail}", errorDetail);
-            throw new Exception($"잔고조회 실패: {GetDetailedErrorMessage(kisResponse.MessageCode, kisResponse.Message)}");
-        }
-
-        if (!kisResponse.HasData)
-        {
-            Console.WriteLine("데이터가 없음");
-            throw new Exception("잔고조회 데이터가 없습니다.");
-        }
-
-        Console.WriteLine("유효성 검사 통과");
-    }
-
-    private static string GetDetailedErrorMessage(string messageCode, string message)
-    {
-        // 빈 메시지 처리
-        if (string.IsNullOrWhiteSpace(message))
-            message = "API 서버에서 상세 메시지를 제공하지 않음";
-
-        if (string.IsNullOrWhiteSpace(messageCode))
-            messageCode = "UNKNOWN";
-
-        return messageCode switch
-        {
-            var code when code?.StartsWith("EGW") == true => $"API 게이트웨이 에러 ({messageCode}): {message}",
-            var code when code?.StartsWith("40") == true => $"인증/권한 에러 ({messageCode}): {message}",
-            var code when code?.StartsWith("50") == true => $"서버 내부 에러 ({messageCode}): {message}",
-            var code when code?.Contains("RATE") == true => $"API 호출 제한 초과 ({messageCode}): {message}",
-            var code when code?.Contains("TOKEN") == true => $"토큰 관련 에러 ({messageCode}): {message}",
-            _ => $"알 수 없는 에러 (코드: {messageCode}): {message}"
-        };
     }
 
     private static AccountBalance CreateAccountBalance(KisBalanceResponse? kisResponse)

@@ -13,7 +13,7 @@ public interface ITradingService
     Task<BuyableInquiryResponse> GetBuyableInquiryAsync(BuyableInquiryRequest request, UserInfo userInfo);
 
     // 국내 주식 조회
-    Task<AccountBalance> GetStockBalanceAsync(UserInfo user);
+    Task<AccountBalance> GetStockBalanceAsync(UserInfo user, CancellationToken cancellationToken = default);
     Task<OrderExecutionInquiryResponse>
         GetOrderExecutionsAsync(OrderExecutionInquiryRequest request, UserInfo userInfo);
 

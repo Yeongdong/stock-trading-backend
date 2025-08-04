@@ -70,7 +70,7 @@ public class UserService : IUserService
     }
 
     public async Task<AccountBalance> GetAccountBalanceWithDailyProfitAsync(UserInfo user,
-        ITradingService tradingService)
+        ITradingService tradingService, CancellationToken cancellationToken)
     {
         // 기본 잔고 조회
         var balance = await tradingService.GetStockBalanceAsync(user);

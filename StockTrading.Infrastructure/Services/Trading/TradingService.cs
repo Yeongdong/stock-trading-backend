@@ -76,10 +76,10 @@ public class TradingService : ITradingService
 
     #region 국내 주식 조회
 
-    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user)
+    public async Task<AccountBalance> GetStockBalanceAsync(UserInfo user, CancellationToken cancellationToken = default)
     {
         KisValidationHelper.ValidateUserForKisApi(user);
-        return await _kisBalanceApiClient.GetStockBalanceAsync(user);
+        return await _kisBalanceApiClient.GetStockBalanceAsync(user, cancellationToken);
     }
 
     public async Task<OrderExecutionInquiryResponse> GetOrderExecutionsAsync(OrderExecutionInquiryRequest request,
